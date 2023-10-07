@@ -2,11 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Validation\ValidatesRequests;
+use App\Helpers\ResponseHelper;
+use App\Stories\StoryPlot;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller as BaseController;
 
 class Controller extends BaseController
 {
-    use AuthorizesRequests, ValidatesRequests;
+    use ResponseHelper;
+
+    public function index(): Response
+    {
+        $response = new StoryPlot();
+        $response->setStatus(Response::HTTP_OK);
+        $response->data = [
+            'message' => 'Welcome to Pane RestAPI',
+        ];
+        return $this->success($response);
+    }
 }

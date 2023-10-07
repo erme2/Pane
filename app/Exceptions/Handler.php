@@ -3,6 +3,8 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\App;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -26,5 +28,25 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+    public function render($request, Throwable $e)
+    {
+        $content = [
+            'status' => Response::$statusTexts[Response::HTTP_INTERNAL_SERVER_ERROR] ?? '',
+            'data' => [
+                'message' => $e->getMessage(),
+            ],
+        ];
+        if (env('APP_DEBUG')) {
+            $content['data']['file'] = $e->getFile();
+            $content['data']['line'] = $e->getLine();
+            $content['data']['trace'] = $e->getTrace();
+        }
+
+        $response = new Response();
+        $response->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR);
+        $response->setContent($content);
+        return $response;
     }
 }
