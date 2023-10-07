@@ -3,7 +3,6 @@
 namespace App\Stories;
 
 use App\Exceptions\PaneException;
-use Illuminate\Http\Response;
 
 class StoryPlot
 {
@@ -42,12 +41,23 @@ class StoryPlot
         return $this->contentType;
     }
 
+    /**
+     * returns the story plot status code (HTTP status code)
+     *
+     * @return int
+     */
     public function getStatus(): int
     {
         return $this->status ?? 0;
     }
 
-
+    /**
+     * checks if the content type is valid and sets it
+     *
+     * @param string $contentType
+     * @return $this
+     * @throws PaneException
+     */
     public function setContentType(string $contentType): StoryPlot
     {
         if (!in_array($contentType, self::VALID_CONTENT_TYPES)) {
