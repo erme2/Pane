@@ -9,7 +9,7 @@ use Illuminate\Routing\Controller as BaseController;
 
 class Controller extends BaseController
 {
-    use ResponseHelper;
+    use  ResponseHelper;
 
     public function index(): Response
     {
@@ -19,5 +19,10 @@ class Controller extends BaseController
             'message' => 'Welcome to Pane RestAPI',
         ];
         return $this->success($response);
+    }
+
+    public function runStory(string $story, string $subject, $key = null): Response
+    {
+die("Running $story on $subject ($key)");
     }
 }
