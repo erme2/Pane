@@ -12,11 +12,16 @@ abstract class AbstractStory
     public array $actions = [];
     public StoryPlot $plot;
 
-    public function run(): StoryPlot
+    public function run(string $subject, $key = null): StoryPlot
     {
-
         $this->plot = new StoryPlot();
-print_R($this->plot);
+
+        foreach ($this->actions as $actionName) {
+            $action = $this->loadAction($actionName);
+            $this->plot = $action->exec($subject, $this->plot, $key);
+        }
+
+print_R($this->actions);
 die('OK!');
     }
 }

@@ -7,6 +7,8 @@ use Illuminate\Support\Str;
 
 trait StoryHelper
 {
+    use StringHelper;
+
     /**
      * loads the requested action class and returns it
      *
@@ -16,7 +18,7 @@ trait StoryHelper
      */
     public function loadAction(string $name): object
     {
-        return $this->loadObject($name, 'Actions');
+        return $this->loadObject("{$name}Action", 'Actions');
     }
 
     /**
@@ -28,7 +30,7 @@ trait StoryHelper
      */
     public function loadStory(string $name): object
     {
-        return $this->loadObject($name, 'Stories');
+        return $this->loadObject("{$name}Story", 'Stories');
     }
 
     /**

@@ -3,7 +3,6 @@
 namespace App\Stories;
 
 use App\Exceptions\PaneException;
-use Illuminate\Http\Response;
 
 class StoryPlot
 {
