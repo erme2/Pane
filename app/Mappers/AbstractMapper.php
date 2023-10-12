@@ -8,11 +8,35 @@ use App\Helpers\StringHelper;
 abstract class AbstractMapper
 {
     const MAPPING_TABLES = [
-        'tables' => 'pane_tables',
-        'fields' => 'pane_fields',
-        'field_types' => 'pane_field_types',
-        'field_validations' => 'pane_field_validations',
-        'field_validation_types' => 'pane_field_validation_types',
+        'tables' => [
+            'id' => 1,
+            'name' => 'map_tables',
+        ],
+        'fields' => [
+            'id' => 2,
+            'name' => 'map_fields',
+        ],
+        'field_types' => [
+            'id' => 3,
+            'name' => 'map_field_types',
+        ],
+        'field_validations' => [
+            'id' => 4,
+            'name' => 'map_field_validations',
+        ],
+        'field_validation_types' => [
+            'id' => 5,
+            'name' => 'map_field_validation_types',
+        ],
+    ];
+    const MAPPING_FIELD_TYPES = [
+        'integer' => 1,
+        'string' => 2,
+        'text' => 3,
+        'boolean' => 4,
+        'timestamp' => 5,
+        'array' => 6,
+        'password' => 7,
     ];
 
     public string $name;
