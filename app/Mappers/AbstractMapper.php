@@ -24,9 +24,9 @@ abstract class AbstractMapper
             'id' => 4,
             'name' => 'map_field_validations',
         ],
-        'field_validation_types' => [
+        'validation_types' => [
             'id' => 5,
-            'name' => 'map_field_validation_types',
+            'name' => 'map_validation_types',
         ],
     ];
     const MAPPING_FIELD_TYPES = [
@@ -37,6 +37,13 @@ abstract class AbstractMapper
         'timestamp' => 5,
         'array' => 6,
         'password' => 7,
+    ];
+    const MAPPING_VALIDATION_TYPES = [
+        'required' => 1,
+        'unique' => 2,
+        'exists' => 3,
+        'min' => 4,
+        'max' => 5,
     ];
 
     public string $name;
