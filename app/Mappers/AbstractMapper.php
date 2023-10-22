@@ -7,14 +7,16 @@ use App\Helpers\StringHelper;
 
 abstract class AbstractMapper
 {
+    const MAP_TABLES_PREFIX = 'map_';
+
     const TABLES = [
-        'tables' => 'map_tables',
-        'fields' => 'map_fields',
-        'field_types' => 'map_field_types',
-        'field_validations' => 'map_field_validations',
-        'validation_types' => 'map_validation_types',
-        'users' => 'map_users',
-        'user_types' => 'map_user_types',
+        'tables' => 'tables',
+        'fields' => 'fields',
+        'field_types' => 'field_types',
+        'field_validations' => 'field_validations',
+        'validation_types' => 'validation_types',
+        'users' => 'users',
+        'user_types' => 'user_types',
     ];
     const FIELD_TYPES = [
         'integer' => 1,
