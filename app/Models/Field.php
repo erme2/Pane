@@ -6,7 +6,6 @@ use App\Mappers\AbstractMapper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Field extends Model
 {
@@ -15,9 +14,9 @@ class Field extends Model
     protected $table = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
     protected $primaryKey = 'field_id';
 
-    public function fieldValidations(): HasMany
+    public function getValidationFields(): Collection
     {
-        return $this->hasMany(FieldValidation::class, 'field_id', 'field_id');
+        return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')->get();
     }
 
     public function getFields(string $table): Collection

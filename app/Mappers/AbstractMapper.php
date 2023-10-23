@@ -60,11 +60,31 @@ abstract class AbstractMapper
 
     public function getValidationRules(): array
     {
+        $array = [];
         $return = [];
         foreach ($this->getFields($this->name) as $field) {
-            $rules = $field->fieldValidations()->get();
-            $return[$field->name] = $field->toArray();
-            $return[$field->name]['rules'] = $rules->toArray();
+            $array[$field->name] = [];
+            foreach ($field->getValidationFields() as $validationField) {
+                $type = $validationField->getValidationType();
+                switch ($type->name) {
+                    case "exists":
+                    case "max":
+                    case "min":
+                        $array[$field->name][] = $type->name.':'.$validationField->value;
+                        break;
+                    case "required":
+                    case "unique":
+                        $array[$field->name][] = $type->name;
+                        break;
+                    default:
+                        throw new PaneException("Validation rule not found for {$type->name}");
+                }
+            }
+        }
+        foreach ($array as $key => $value) {
+            if (!empty($array[$key])) {
+                $return[$key] = implode('|', $value);
+            }
         }
         return $return;
     }
