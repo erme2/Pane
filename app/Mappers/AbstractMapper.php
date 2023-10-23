@@ -4,9 +4,14 @@ namespace App\Mappers;
 
 use App\Exceptions\PaneException;
 use App\Helpers\StringHelper;
+use App\Models\Field;
+use App\Models\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 abstract class AbstractMapper
 {
+    use StringHelper;
+
     const MAP_TABLES_PREFIX = 'map_';
 
     const TABLES = [
@@ -18,6 +23,7 @@ abstract class AbstractMapper
         'users' => 'users',
         'user_types' => 'user_types',
     ];
+
     const FIELD_TYPES = [
         'integer' => 1,
         'string' => 2,
@@ -29,6 +35,7 @@ abstract class AbstractMapper
         'email' => 8,
         'json' => 9,
     ];
+
     const VALIDATION_TYPES = [
         'required' => 1,
         'unique' => 2,
@@ -39,7 +46,12 @@ abstract class AbstractMapper
         'array' => 7,
     ];
 
-    public string $name;
+    private string $name;
+
+    public function __construct(string $name)
+    {
+        $this->name = $name;
+    }
 
     public function getValidationMessages(): array
     {
@@ -48,6 +60,18 @@ abstract class AbstractMapper
 
     public function getValidationRules(): array
     {
-        throw new PaneException("Validation rules not found for $this->name");
+        $return = [];
+        foreach ($this->getFields($this->name) as $field) {
+            $rules = $field->fieldValidations()->get();
+            $return[$field->name] = $field->toArray();
+            $return[$field->name]['rules'] = $rules->toArray();
+        }
+        return $return;
     }
+
+    public function getFields(string $tableName): Collection
+    {
+        return (new Field())->getFields($tableName);
+    }
+
 }

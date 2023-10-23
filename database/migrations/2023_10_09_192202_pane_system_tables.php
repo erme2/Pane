@@ -46,13 +46,15 @@ return new class extends Migration
 
     private function buildMainStructure(): void
     {
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'], function (Blueprint $table) {
+        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'],
+            function (Blueprint $table) {
             $table->unsignedInteger('table_id')->autoIncrement();
             $table->string('name', 255)->index();
             $table->string('sql_name', 255)->nullable();
             $table->text('description')->nullable();
         });
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'], function (Blueprint $table) {
+        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'],
+            function (Blueprint $table) {
             $table->unsignedBigInteger('field_id')->autoIncrement();
             $table->unsignedInteger('table_id')->index();
             $table->unsignedSmallInteger('field_type_id')->index();
@@ -64,17 +66,20 @@ return new class extends Migration
             $table->boolean('nullable')->default(false);
             $table->string('default')->nullable();
         });
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'], function (Blueprint $table) {
+        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'],
+            function (Blueprint $table) {
             $table->unsignedSmallInteger('field_type_id')->autoIncrement();
             $table->string('name', 255);
         });
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'], function (Blueprint $table) {
+        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'],
+            function (Blueprint $table) {
             $table->unsignedInteger('field_validation_id')->autoIncrement();
             $table->unsignedBigInteger('field_id')->index();
             $table->unsignedSmallInteger('validation_type_id');
             $table->string('value', 255)->nullable();
         });
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'], function (Blueprint $table) {
+        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'],
+            function (Blueprint $table) {
             $table->unsignedInteger('validation_type_id')->autoIncrement();
             $table->string('name', 255);
         });
@@ -83,27 +88,32 @@ return new class extends Migration
     private function tablesInserts(): void
     {
         // tables
-        $this->insertKeys['tables']['tables'] = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+        $this->insertKeys['tables']['tables'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
             'name' => AbstractMapper::TABLES['tables'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'],
             'description' => "pane system table for storing tables",
         ]);
-        $this->insertKeys['tables']['fields'] = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+        $this->insertKeys['tables']['fields'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
             'name' => AbstractMapper::TABLES['fields'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'],
             'description' => "pane system table for storing fields",
         ]);
-        $this->insertKeys['tables']['field_types'] = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+        $this->insertKeys['tables']['field_types'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
             'name' => AbstractMapper::TABLES['field_types'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'],
             'description' => "pane system table for storing field types",
         ]);
-        $this->insertKeys['tables']['field_validations'] = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+        $this->insertKeys['tables']['field_validations'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
             'name' => AbstractMapper::TABLES['field_validations'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'],
             'description' => "pane system table for storing field validations rules",
         ]);
-        $this->insertKeys['tables']['validation_types'] = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+        $this->insertKeys['tables']['validation_types'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
             'name' => AbstractMapper::TABLES['validation_types'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'],
             'description' => "pane system table for storing validations rule types",

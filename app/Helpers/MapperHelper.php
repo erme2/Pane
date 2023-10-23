@@ -9,6 +9,11 @@ trait MapperHelper
     public function getMapper(string $subject): string
     {
         $mapper = new class($subject) extends AbstractMapper {};
+        $rules = $mapper->getValidationRules();
+
+print_R($rules);
+die("AAAA");
+
         $errors = \Validator::make(
             \request()->all(),
             $mapper->getValidationRules(),
