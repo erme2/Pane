@@ -15,7 +15,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'], function (Blueprint $table) {
+        Schema::create(
+            AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'],
+            function (Blueprint $table) {
             $table->unsignedInteger('user_id')->autoIncrement();
             $table->unsignedInteger('user_type_id')->index();
             $table->string('name')->unique()->index();
@@ -27,14 +29,18 @@ return new class extends Migration
             $table->boolean('is_active')->default(false);
             $table->dateTimeTz('last_login_at')->nullable();
             $table->timestamps();
-        });
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'], function (Blueprint $table) {
+        }
+        );
+        Schema::create(
+            AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'],
+            function (Blueprint $table) {
             $table->unsignedInteger('user_type_id')->autoIncrement();
             $table->string('name');
             $table->string('slug')->unique();
             $table->json('details')->nullable();
             $table->timestamps();
-        });
+        }
+        );
 
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'])->insert([
             [
@@ -283,71 +289,85 @@ return new class extends Migration
                 'field_id' => $this->insertKeys['users']['fields']['user_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
                 'value' => null,
+                'message' => 'User ID is required',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
                 'value' => AbstractMapper::TABLES['users'].',user_id',
+                'message' => 'User ID does not exists',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
                 'value' => null,
+                'message' => 'User type ID is required',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
                 'value' => AbstractMapper::TABLES['user_types'].',user_type_id',
+                'message' => 'User type ID does not exists',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
                 'value' => null,
+                'message' => 'Name is required',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
                 'value' => null,
+                'message' => 'Name already exists',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
                 'value' => 255,
+                'message' => 'Name is too long',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
                 'value' => null,
+                'message' => 'Email is required',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
                 'value' => null,
+                'message' => null,
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['email'],
                 'value' => null,
+                'message' => null,
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
                 'value' => 255,
+                'message' => null,
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['password'],
                 'validation_type' => AbstractMapper::VALIDATION_TYPES['min'],
                 'value' => '6',
+                'message' => null,
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['details'],
                 'validation_type' => AbstractMapper::VALIDATION_TYPES['array'],
                 'value' => 'name',
+                'message' => null,
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['settings'],
                 'validation_type' => AbstractMapper::VALIDATION_TYPES['array'],
                 'value' => 'timezone',
+                'message' => null,
             ],
         ]);
     }

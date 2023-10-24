@@ -6,20 +6,8 @@ use App\Mappers\AbstractMapper;
 
 trait MapperHelper
 {
-    public function getMapper(string $subject): string
+    public function getMapper(string $subject): AbstractMapper
     {
-        $mapper = new class($subject) extends AbstractMapper {};
-        $rules = $mapper->getValidationRules();
-
-print_R($rules);
-die("AAAA");
-
-        $errors = \Validator::make(
-            \request()->all(),
-            $mapper->getValidationRules(),
-            $mapper->getValidationMessages()
-        );
-print_r($errors);
-die("BBBB");
+        return new class($subject) extends AbstractMapper {};
     }
 }

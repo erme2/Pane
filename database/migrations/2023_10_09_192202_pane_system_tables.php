@@ -77,6 +77,7 @@ return new class extends Migration
             $table->unsignedBigInteger('field_id')->index();
             $table->unsignedSmallInteger('validation_type_id');
             $table->string('value', 255)->nullable();
+            $table->string('message', 255)->nullable();
         });
         Schema::create(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'],
             function (Blueprint $table) {

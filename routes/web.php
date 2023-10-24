@@ -18,4 +18,5 @@ use App\Http\Controllers\Controller;
 Route::get('/', [Controller::class, 'index']);
 
 // all stories (crud)
-Route::match(['get', 'post', 'put', 'delete'], '/{story}/{subject}', [Controller::class, 'runStory']);
+Route::match(['get', 'post'], '/{story}/{subject}', [Controller::class, 'runStory']);
+Route::match(['get', 'put', 'delete'], '/{story}/{subject}/{key}', [Controller::class, 'runStory']);

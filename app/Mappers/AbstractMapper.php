@@ -5,7 +5,6 @@ namespace App\Mappers;
 use App\Exceptions\PaneException;
 use App\Helpers\StringHelper;
 use App\Models\Field;
-use App\Models\Table;
 use Illuminate\Database\Eloquent\Collection;
 
 abstract class AbstractMapper
@@ -53,42 +52,55 @@ abstract class AbstractMapper
         $this->name = $name;
     }
 
-    public function getValidationMessages(): array
-    {
-        throw new PaneException("Validation messages not found for $this->name");
-    }
-
-    public function getValidationRules(): array
+    /**
+     * Get validation rules or messages for model
+     *
+     * @param string $what
+     * @param bool $withPrimary
+     * @return array
+     * @throws PaneException
+     */
+    public function getValidation(string $what = 'rules', bool $withPrimary = true): array
     {
         $array = [];
         $return = [];
         foreach ($this->getFields($this->name) as $field) {
-            $array[$field->name] = [];
+            if ($withPrimary === false && (bool) $field->primary === true) {
+                continue;
+            }
             foreach ($field->getValidationFields() as $validationField) {
                 $type = $validationField->getValidationType();
-                switch ($type->name) {
-                    case "exists":
-                    case "max":
-                    case "min":
-                        $array[$field->name][] = $type->name.':'.$validationField->value;
-                        break;
-                    case "required":
-                    case "unique":
-                        $array[$field->name][] = $type->name;
-                        break;
-                    default:
-                        throw new PaneException("Validation rule not found for {$type->name}");
+                if ($what === 'rules') {
+                    $array[$field->name][] = match ($type->name) {
+                        "exists", "max", "min" => $type->name . ':' . $validationField->value,
+                        "required", "unique" => $type->name,
+                        default => throw new PaneException("Validation rule not found for $type->name"),
+                    };
+                }
+                if ($what === 'messages' && $validationField->message) {
+                    $array["$field->name.$type->name"] = $validationField->message;
                 }
             }
         }
-        foreach ($array as $key => $value) {
-            if (!empty($array[$key])) {
-                $return[$key] = implode('|', $value);
+        if ($what === 'messages') {
+            return $array;
+        }
+        if ($what === 'rules') {
+            foreach ($array as $key => $value) {
+                if (!empty($value)) {
+                    $return[$key] = implode('|', $value);
+                }
             }
         }
         return $return;
     }
 
+    /**
+     * get the fields of a table
+     *
+     * @param string $tableName
+     * @return Collection
+     */
     public function getFields(string $tableName): Collection
     {
         return (new Field())->getFields($tableName);
