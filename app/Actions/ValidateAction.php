@@ -15,13 +15,13 @@ class ValidateAction extends AbstractAction
         $mapper = $this->getMapper($subject);
         switch (\request()->method()) {
             case Request::METHOD_POST: // create
-                $rules = $mapper->getValidation('rules', false);
-                $messages = $mapper->getValidation('messages', false);
+                $rules = $mapper->getValidationRules(false);
+                $messages = $mapper->getValidationMessages(false);
                 break;
             case Request::METHOD_PUT: // update
             default:
-                $rules = $mapper->getValidation();
-                $messages = $mapper->getValidation('messages');
+                $rules = $mapper->getValidationRules();
+                $messages = $mapper->getValidationMessages();
         }
 
 //        $errors = \Validator::make(

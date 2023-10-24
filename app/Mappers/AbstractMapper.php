@@ -55,12 +55,11 @@ abstract class AbstractMapper
     /**
      * Get validation rules or messages for model
      *
-     * @param string $what
      * @param bool $withPrimary
      * @return array
      * @throws PaneException
      */
-    public function getValidation(string $what = 'rules', bool $withPrimary = true): array
+    public function getValidationRules(bool $withPrimary = true): array
     {
         $array = [];
         $return = [];
@@ -70,25 +69,39 @@ abstract class AbstractMapper
             }
             foreach ($field->getValidationFields() as $validationField) {
                 $type = $validationField->getValidationType();
-                if ($what === 'rules') {
-                    $array[$field->name][] = match ($type->name) {
-                        "exists", "max", "min" => $type->name . ':' . $validationField->value,
-                        "required", "unique" => $type->name,
-                        default => throw new PaneException("Validation rule not found for $type->name"),
-                    };
-                }
-                if ($what === 'messages' && $validationField->message) {
-                    $array["$field->name.$type->name"] = $validationField->message;
-                }
+                $array[$field->name][] = match ($type->name) {
+                    "exists", "max", "min" => $type->name . ':' . $validationField->value,
+                    "required", "unique" => $type->name,
+                    default => throw new PaneException("Validation rule not found for $type->name"),
+                };
             }
         }
-        if ($what === 'messages') {
-            return $array;
+        foreach ($array as $key => $value) {
+            if (!empty($value)) {
+                $return[$key] = implode('|', $value);
+            }
         }
-        if ($what === 'rules') {
-            foreach ($array as $key => $value) {
-                if (!empty($value)) {
-                    $return[$key] = implode('|', $value);
+        return $return;
+    }
+
+    /**
+     * Get validation messages for model
+     *
+     * @param bool $withPrimary
+     * @return array
+     * @throws PaneException
+     */
+    public function getValidationMessages(bool $withPrimary = true): array
+    {
+        $return = [];
+        foreach ($this->getFields($this->name) as $field) {
+            if ($withPrimary === false && (bool) $field->primary === true) {
+                continue;
+            }
+            foreach ($field->getValidationFields() as $validationField) {
+                $type = $validationField->getValidationType();
+                if (!empty($validationField->message)) {
+                    $return["$field->name.$type->name"] = $validationField->message;
                 }
             }
         }
