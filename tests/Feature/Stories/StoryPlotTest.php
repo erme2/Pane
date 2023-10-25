@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Stories;
 
-use App\Exceptions\PaneException;
+use App\Exceptions\SystemException;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
 use PHPUnit\Framework\TestCase;
@@ -35,7 +35,7 @@ class StoryPlotTest extends TestCase
         $this->assertInstanceOf(StoryPlot::class, $plot);
 
         // explicit (xml)
-        $this->expectException(PaneException::class);
+        $this->expectException(SystemException::class);
         $this->expectExceptionMessage("Invalid content type: $this->wrongContentType");
         new StoryPlot($this->wrongContentType);
     }
@@ -49,7 +49,7 @@ class StoryPlotTest extends TestCase
         try {
             $plot->setContentType('application/xml');
         } catch (\Exception $e) {
-            $this->assertInstanceOf(PaneException::class, $e);
+            $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals("System Exception: Invalid content type: application/xml", $e->getMessage());
         }
 
@@ -74,7 +74,7 @@ class StoryPlotTest extends TestCase
             $plot = new StoryPlot();
             $plot->setStatus($this->lowInvalidStatusCode);
         } catch (\Exception $e) {
-            $this->assertInstanceOf(PaneException::class, $e);
+            $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals("System Exception: Invalid status code: {$this->lowInvalidStatusCode}", $e->getMessage());
         }
 
@@ -83,7 +83,7 @@ class StoryPlotTest extends TestCase
             $plot = new StoryPlot();
             $plot->setStatus($this->highInvalidStatusCode);
         } catch (\Exception $e) {
-            $this->assertInstanceOf(PaneException::class, $e);
+            $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals("System Exception: Invalid status code: {$this->highInvalidStatusCode}", $e->getMessage());
         }
 

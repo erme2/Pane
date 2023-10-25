@@ -24,17 +24,20 @@ class ValidateAction extends AbstractAction
                 $messages = $mapper->getValidationMessages();
         }
 
-//        $errors = \Validator::make(
-//                \request()->all(),
-//                $rules,
-//                $messages
-//            )
-//            ->errors()
-//        ;
-//print_R($errors);
-print_R($rules);
-print_r($messages);
-die("@ $subject");
+        $errors = \Validator::make(
+                \request()->all(),
+                $rules,
+                $messages
+            )
+            ->errors()
+        ;
 
-    }
+        if ($errors->any()) {
+            throw new \App\Exceptions\ValidationException(
+                $errors->toArray()
+            );
+        }
+
+        return $plot;
+     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Stories;
 
-use App\Exceptions\PaneException;
+use App\Exceptions\SystemException;
 use Illuminate\Http\Request;
 
 class CrudStory extends AbstractStory
@@ -11,7 +11,7 @@ class CrudStory extends AbstractStory
     /**
      * defines the actions to be executed in the story
      *
-     * @throws PaneException
+     * @throws SystemException
      */
     public function __construct()
     {
@@ -34,7 +34,7 @@ class CrudStory extends AbstractStory
                 ];
                 break;
             default:
-                throw new PaneException("Method not allowed (method: ".\request()->method().
+                throw new SystemException("Method not allowed (method: ".\request()->method().
                     " object: ".get_class($this).")", 405);
         }
     }

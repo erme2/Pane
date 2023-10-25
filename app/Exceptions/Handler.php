@@ -33,19 +33,26 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $e)
     {
         $content = [
-            'status' => Response::$statusTexts[Response::HTTP_INTERNAL_SERVER_ERROR] ?? '',
-            'data' => [
-                'message' => $e->getMessage(),
-            ],
+            'status' => Response::$statusTexts[$e->getCode()] ?? 'Error',
+            'data' => [],
         ];
-        if (env('APP_DEBUG')) {
-            $content['data']['file'] = $e->getFile();
-            $content['data']['line'] = $e->getLine();
-            $content['data']['trace'] = $e->getTrace();
+        switch ($e) {
+            case $e instanceof ValidationException:
+                $content['data']['errors'] = $e->getErrors();
+                break;
+            case $e instanceof SystemException:
+            default:
+                $content['data']['message'] = $e->getMessage();
+                if (env('APP_DEBUG')) {
+                    $content['data']['file'] = $e->getFile();
+                    $content['data']['line'] = $e->getLine();
+                    $content['data']['trace'] = $e->getTrace();
+                }
+                break;
         }
 
         $response = new Response();
-        $response->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR);
+        $response->setStatusCode($e->getCode());
         $response->setContent($content);
         return $response;
     }

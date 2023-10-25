@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use App\Exceptions\PaneException;
+use App\Exceptions\SystemException;
 use Illuminate\Support\Str;
 
 trait StoryHelper
@@ -14,7 +14,7 @@ trait StoryHelper
      *
      * @param string $name
      * @return object|mixed
-     * @throws PaneException
+     * @throws SystemException
      */
     public function loadAction(string $name): object
     {
@@ -26,7 +26,7 @@ trait StoryHelper
      *
      * @param string $name
      * @return object|mixed
-     * @throws PaneException
+     * @throws SystemException
      */
     public function loadStory(string $name): object
     {
@@ -39,7 +39,7 @@ trait StoryHelper
      * @param string $name
      * @param string $type
      * @return mixed
-     * @throws PaneException
+     * @throws SystemException
      */
     private function loadObject(string $name, string $type): object
     {
@@ -48,6 +48,6 @@ trait StoryHelper
             return new $class();
         }
         $objectName = Str::singular($type);
-        throw new PaneException("$objectName not found ($objectName: $name)", 404);
+        throw new SystemException("$objectName not found ($objectName: $name)", 404);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\PaneException;
+use App\Exceptions\SystemException;
 use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
 use App\Stories\StoryPlot;
@@ -17,7 +17,7 @@ class Controller extends BaseController
      * just returns a welcome message
      *
      * @return Response
-     * @throws PaneException
+     * @throws SystemException
      */
     public function index(): Response
     {
@@ -36,7 +36,7 @@ class Controller extends BaseController
      * @param string $subject
      * @param $key
      * @return Response
-     * @throws PaneException
+     * @throws SystemException
      */
     public function runStory(string $story, string $subject, $key = null): Response
     {

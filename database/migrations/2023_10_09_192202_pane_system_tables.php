@@ -423,7 +423,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['tables']['table_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['tables'].",table_id",
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].",table_id",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
@@ -433,7 +433,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => null,
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].",name",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
@@ -470,7 +470,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['fields']['table_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['tables'].",table_id",
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].",table_id",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['fields']['field_type_id'],
@@ -480,7 +480,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['fields']['field_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['field_types'].",field_type_id",
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].",field_type_id",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['fields']['name'],
@@ -512,7 +512,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['field_types']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => null,
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].",name",
             ]
         ]);
     }

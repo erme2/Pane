@@ -2,7 +2,7 @@
 
 namespace App\Mappers;
 
-use App\Exceptions\PaneException;
+use App\Exceptions\SystemException;
 use App\Helpers\StringHelper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
@@ -57,7 +57,7 @@ abstract class AbstractMapper
      *
      * @param bool $withPrimary
      * @return array
-     * @throws PaneException
+     * @throws SystemException
      */
     public function getValidationRules(bool $withPrimary = true): array
     {
@@ -70,9 +70,9 @@ abstract class AbstractMapper
             foreach ($field->getValidationFields() as $validationField) {
                 $type = $validationField->getValidationType();
                 $array[$field->name][] = match ($type->name) {
-                    "exists", "max", "min" => $type->name . ':' . $validationField->value,
-                    "required", "unique" => $type->name,
-                    default => throw new PaneException("Validation rule not found for $type->name"),
+                    "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
+                    "required" => $type->name,
+                    default => throw new SystemException("Validation rule not found for $type->name"),
                 };
             }
         }
@@ -89,7 +89,7 @@ abstract class AbstractMapper
      *
      * @param bool $withPrimary
      * @return array
-     * @throws PaneException
+     * @throws SystemException
      */
     public function getValidationMessages(bool $withPrimary = true): array
     {

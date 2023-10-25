@@ -294,7 +294,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['users'].',user_id',
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'].',user_id',
                 'message' => 'User ID does not exists',
             ],
             [
@@ -306,7 +306,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['user_types'].',user_type_id',
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'].',user_type_id',
                 'message' => 'User type ID does not exists',
             ],
             [
@@ -318,7 +318,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['users']['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => null,
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'].',name',
                 'message' => 'Name already exists',
             ],
             [
@@ -336,7 +336,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => null,
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'].',email',
                 'message' => null,
             ],
             [
@@ -383,7 +383,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['user_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['user_types'].',user_type_id',
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'].',user_type_id',
             ],
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['name'],
@@ -403,7 +403,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['slug'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => null,
+                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'].',slug'
             ],
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['slug'],
