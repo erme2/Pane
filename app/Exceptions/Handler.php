@@ -2,9 +2,9 @@
 
 namespace App\Exceptions;
 
+use App\Helpers\ResponseHelper;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\App;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -32,10 +32,13 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $e)
     {
+        $statusID = $e->getCode() >= Response::HTTP_BAD_REQUEST && $e->getCode() <= 600 ?
+            $e->getCode() : Response::HTTP_INTERNAL_SERVER_ERROR;
         $content = [
             'status' => Response::$statusTexts[$e->getCode()] ?? 'Error',
             'data' => [],
         ];
+
         switch ($e) {
             case $e instanceof ValidationException:
                 $content['data']['errors'] = $e->getErrors();
@@ -51,9 +54,6 @@ class Handler extends ExceptionHandler
                 break;
         }
 
-        $response = new Response();
-        $response->setStatusCode($e->getCode());
-        $response->setContent($content);
-        return $response;
+        return new Response($content, $statusID);
     }
 }

@@ -17,6 +17,12 @@ class CrudStory extends AbstractStory
     {
         switch (\request()->method()) {
             case Request::METHOD_POST: // create
+                $this->isCreate = true;
+                $this->actions = [
+                    'validate',
+                    'save',
+                ];
+                break;
             case Request::METHOD_PUT: // update
                 $this->actions = [
                     'validate',
