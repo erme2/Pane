@@ -11,6 +11,9 @@ class SaveAction extends AbstractAction
 
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
+print_R($plot);
+die("AZAZA");
+
 // check why I can't see the error
 
     }

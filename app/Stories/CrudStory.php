@@ -13,35 +13,42 @@ class CrudStory extends AbstractStory
      *
      * @throws SystemException
      */
-    public function __construct()
+    public function __construct(Request $request)
     {
-        switch (\request()->method()) {
-            case Request::METHOD_POST: // create
-                $this->isCreate = true;
+        parent::__construct($request);
+
+        switch ($this->plot->requestData['method']) {
+            // create
+            case Request::METHOD_POST:
+                $this->plot->options['is_new_record'] = true;
                 $this->actions = [
                     'validate',
                     'save',
                 ];
                 break;
-            case Request::METHOD_PUT: // update
+            // update
+            case Request::METHOD_PUT:
                 $this->actions = [
                     'validate',
                     'save',
                 ];
                 break;
-            case Request::METHOD_GET: // read
+            // read
+            case Request::METHOD_GET:
                 $this->actions = [
                     'read',
                 ];
                 break;
-            case Request::METHOD_DELETE: // delete
+            // delete
+            case Request::METHOD_DELETE:
                 $this->actions = [
                     'delete',
                 ];
                 break;
             default:
-                throw new SystemException("Method not allowed (method: ".\request()->method().
-                    " object: ".get_class($this).")", 405);
+                throw new SystemException(
+                    "Method not allowed (method: {$this->plot->requestData['method']} object: ".
+                    get_class($this).")", 405);
         }
     }
 }

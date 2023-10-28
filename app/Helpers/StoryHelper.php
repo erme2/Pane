@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Exceptions\SystemException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 trait StoryHelper
@@ -28,9 +29,9 @@ trait StoryHelper
      * @return object|mixed
      * @throws SystemException
      */
-    public function loadStory(string $name): object
+    public function loadStory(Request $request, string $name): object
     {
-        return $this->loadObject("{$name}Story", 'Stories');
+        return $this->loadObject("{$name}Story", 'Stories', $request);
     }
 
     /**
@@ -41,11 +42,11 @@ trait StoryHelper
      * @return mixed
      * @throws SystemException
      */
-    private function loadObject(string $name, string $type): object
+    private function loadObject(string $name, string $type, $argument = null): object
     {
         $class = "App\\$type\\".$this->capitalCase($name);
         if (class_exists($class)) {
-            return new $class();
+            return new $class($argument);
         }
         $objectName = Str::singular($type);
         throw new SystemException("$objectName not found ($objectName: $name)", 404);

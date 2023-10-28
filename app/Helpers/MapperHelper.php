@@ -3,11 +3,15 @@
 namespace App\Helpers;
 
 use App\Mappers\AbstractMapper;
+use Illuminate\Database\Eloquent\Model;
 
 trait MapperHelper
 {
-    public function getMapper(string $subject): AbstractMapper
+
+    public function map(string $subject, array $data): Model
     {
-        return new class($subject) extends AbstractMapper {};
+print_R($data);
+die("@ $subject");
+
     }
 }

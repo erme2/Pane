@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
 use App\Stories\StoryPlot;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller as BaseController;
 
@@ -32,15 +33,16 @@ class Controller extends BaseController
     /**
      * just runs the requested story
      *
+     * @param Request $request
      * @param string $story
      * @param string $subject
      * @param $key
      * @return Response
      * @throws SystemException
      */
-    public function runStory(string $story, string $subject, $key = null): Response
+    public function runStory(Request $request, string $story, string $subject, $key = null): Response
     {
-        $story = $this->loadStory($story);
+        $story = $this->loadStory($request, $story);
         return $this->success($story->run($subject, $key));
     }
 }

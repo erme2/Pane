@@ -2,41 +2,29 @@
 
 namespace App\Actions;
 
-use App\Helpers\MapperHelper;
+use App\Exceptions\ValidationException;
+use App\Helpers\ActionHelper;
 use App\Stories\StoryPlot;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class ValidateAction extends AbstractAction
 {
-    use MapperHelper;
+    use ActionHelper;
 
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
         $mapper = $this->getMapper($subject);
-        switch (\request()->method()) {
-            case Request::METHOD_POST: // create
-                $rules = $mapper->getValidationRules(false);
-                $messages = $mapper->getValidationMessages(false);
-                break;
-            case Request::METHOD_PUT: // update
-            default:
-                $rules = $mapper->getValidationRules();
-                $messages = $mapper->getValidationMessages();
-        }
 
-        $errors = \Validator::make(
-                \request()->all(),
-                $rules,
-                $messages
-            )
-            ->errors()
-        ;
+        $errors = Validator::make(
+            $plot->requestData['data'],
+            $mapper->getValidationRules(!$this->isCreate($plot)),
+            $mapper->getValidationMessages(!$this->isCreate($plot))
+        )->errors();
 
         if ($errors->any()) {
-            throw new \App\Exceptions\ValidationException(
-                $errors->toArray()
-            );
+            throw new ValidationException($errors->toArray());
         }
+        $plot->data[$subject][] = $plot->requestData['data'];
 
         return $plot;
      }

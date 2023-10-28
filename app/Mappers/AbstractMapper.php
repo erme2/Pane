@@ -3,13 +3,14 @@
 namespace App\Mappers;
 
 use App\Exceptions\SystemException;
+use App\Helpers\MapperHelper;
 use App\Helpers\StringHelper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
 
 abstract class AbstractMapper
 {
-    use StringHelper;
+    use MapperHelper, StringHelper;
 
     const MAP_TABLES_PREFIX = 'map_';
 
