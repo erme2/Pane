@@ -6,9 +6,12 @@ use App\Exceptions\SystemException;
 use PHPUnit\Framework\TestCase;
 use App\Helpers\StringHelper;
 use App\Helpers\StoryHelper;
+use Tests\TestsHelper;
 
 class StoryHelperTest extends TestCase
 {
+    use testsHelper;
+
     private object $testClass;
 
     public function __construct(string $name)
@@ -31,9 +34,11 @@ class StoryHelperTest extends TestCase
 
     public function test_load_story(): void
     {
-        $this->assertInstanceOf('App\Stories\AbstractStory', $this->testClass->loadStory('test'));
+        $mockRequest = $this->createMockRequest();
+        $this->assertInstanceOf('App\Stories\AbstractStory', $this->testClass->loadStory($mockRequest, 'test'));
         try {
-            $this->testClass->loadStory('No existing story');
+
+            $this->testClass->loadStory($mockRequest,'No existing story');
         } catch (SystemException $e) {
             $this->assertEquals('System Exception: Story not found (Story: No existing storyStory)', $e->getMessage());
         }

@@ -1,14 +1,17 @@
 <?php
 
-namespace Tests\Feature\Stories;
+namespace Tests\Unit\Stories;
 
 use App\Exceptions\SystemException;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
 use PHPUnit\Framework\TestCase;
+use Tests\TestsHelper;
 
 class StoryPlotTest extends TestCase
 {
+    use TestsHelper;
+
     const ERRORS = [
         'invalid_status_code' => 'App\Stories\StoryPlot::setStatus(): Argument #1 ($status) must be of type int, string given, called in',
     ];
@@ -26,6 +29,7 @@ class StoryPlotTest extends TestCase
      */
     public function test__construct()
     {
+
         // basic (json)
         $plot = new StoryPlot();
         $this->assertInstanceOf(StoryPlot::class, $plot);
