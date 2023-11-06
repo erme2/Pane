@@ -6,6 +6,12 @@ use App\Exceptions\SystemException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+/**
+ * Helper for App/Stories.
+ *
+ * @package App\Helpers
+ */
+
 trait StoryHelper
 {
     use StringHelper;

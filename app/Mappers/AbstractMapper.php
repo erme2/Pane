@@ -8,12 +8,18 @@ use App\Helpers\StringHelper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
 
+/**
+ * Class AbstractMapper
+ * this class will be extended by all mappers
+ *
+ * @package App\Mappers
+ */
+
 abstract class AbstractMapper
 {
     use MapperHelper, StringHelper;
 
     const MAP_TABLES_PREFIX = 'map_';
-
     const TABLES = [
         'tables' => 'tables',
         'fields' => 'fields',
@@ -23,7 +29,6 @@ abstract class AbstractMapper
         'users' => 'users',
         'user_types' => 'user_types',
     ];
-
     const FIELD_TYPES = [
         'integer' => 1,
         'string' => 2,
@@ -35,7 +40,6 @@ abstract class AbstractMapper
         'email' => 8,
         'json' => 9,
     ];
-
     const VALIDATION_TYPES = [
         'required' => 1,
         'unique' => 2,
@@ -45,9 +49,7 @@ abstract class AbstractMapper
         'email' => 6,
         'array' => 7,
     ];
-
     private string $name;
-
     public function __construct(string $name)
     {
         $this->name = $name;

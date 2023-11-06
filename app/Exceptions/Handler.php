@@ -30,6 +30,13 @@ class Handler extends ExceptionHandler
         });
     }
 
+    /**
+     * Returns an api response that will contain all the information about the error/s.
+     *
+     * @param $request
+     * @param Throwable $e
+     * @return Response
+     */
     public function render($request, Throwable $e)
     {
         $statusID = $e->getCode() >= Response::HTTP_BAD_REQUEST && $e->getCode() <= 600 ?

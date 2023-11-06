@@ -2,6 +2,13 @@
 
 namespace App\Helpers;
 
+/**
+ * Trait StringHelper
+ * just some more string functions
+ *
+ * @package App\Helpers
+ */
+
 trait StringHelper
 {
     /**
