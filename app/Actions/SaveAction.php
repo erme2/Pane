@@ -3,7 +3,7 @@
 namespace App\Actions;
 
 use App\Helpers\MapperHelper;
-use App\Stories\StoryPlot;
+use config\StoryPlot;
 
 /**
  * Class SaveAction

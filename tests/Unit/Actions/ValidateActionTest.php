@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Actions;
 
-use App\Exceptions\ValidationException;
-use App\Stories\StoryPlot;
 use App\Actions\ValidateAction;
+use App\Exceptions\ValidationException;
+use config\StoryPlot;
 use Tests\TestCase;
 
 class ValidateActionTest extends TestCase
@@ -34,11 +34,11 @@ class ValidateActionTest extends TestCase
         $action = new ValidateAction();
         $this->assertInstanceOf('App\Actions\AbstractAction', $action);
         $this->assertInstanceOf('App\Actions\ValidateAction', $action);
-        $this->assertInstanceOf('App\Stories\StoryPlot', $action->exec('user', $this->mockStoryPlot));
+        $this->assertInstanceOf('config\StoryPlot', $action->exec('user', $this->mockStoryPlot));
 
         $testStoryPlot = new StoryPlot();
-        $this->assertInstanceOf('App\Stories\StoryPlot', $testStoryPlot);
-        $this->assertInstanceOf('App\Stories\StoryPlot', $action->exec('test', $testStoryPlot));
+        $this->assertInstanceOf('config\StoryPlot', $testStoryPlot);
+        $this->assertInstanceOf('config\StoryPlot', $action->exec('test', $testStoryPlot));
 
         $this->markTestIncomplete();
     }

@@ -3,7 +3,7 @@
 namespace Tests\Unit\Stories;
 
 use App\Exceptions\SystemException;
-use App\Stories\StoryPlot;
+use config\StoryPlot;
 use Illuminate\Http\Response;
 use PHPUnit\Framework\TestCase;
 use Tests\TestsHelper;

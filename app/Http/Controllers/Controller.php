@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\SystemException;
 use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
-use App\Stories\StoryPlot;
+use config\StoryPlot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller as BaseController;

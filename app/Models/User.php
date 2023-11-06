@@ -8,6 +8,18 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * Class User
+ * This is the user model, it is here because it is the default model for the authentication
+ * system that comes with Laravel. I am not sure what we will do with it yet.
+ *
+ * @package App\Models
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ */
+
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;

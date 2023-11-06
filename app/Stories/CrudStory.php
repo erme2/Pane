@@ -5,6 +5,13 @@ namespace App\Stories;
 use App\Exceptions\SystemException;
 use Illuminate\Http\Request;
 
+/**
+ * Class CrudStory
+ * this is the base class for all CRUD stories, based on the request method it will
+ * execute the actions to create, read, update or delete a record
+ *
+ * @package App\Stories
+ */
 class CrudStory extends AbstractStory
 {
 
