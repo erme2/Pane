@@ -1,9 +1,10 @@
 <?php
 
-namespace config;
+namespace App\Stories;
 
 use App\Exceptions\SystemException;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\HeaderBag;
 
 /**
  * Class StoryPlot
@@ -20,7 +21,7 @@ class StoryPlot
 
     protected string $contentType;
     public array $data = [];
-    protected array $headers = [];
+    protected HeaderBag $headers;
     protected array $log = [
         'errors' => [],
         'warnings' => [],
@@ -30,7 +31,6 @@ class StoryPlot
     protected array $pagination = [];
     public array $requestData = [
         'data' => [],
-        'headers' => [],
         'method' => '',
     ];
     protected int $status;
@@ -58,6 +58,16 @@ class StoryPlot
     }
 
     /**
+     * Gets the headers object from the request
+     *
+     * @return HeaderBag
+     */
+    public function getHeaders(): HeaderBag
+    {
+        return $this->headers;
+    }
+
+    /**
      * Gets the status of the story plot
      *
      * @return int
@@ -68,7 +78,7 @@ class StoryPlot
     }
 
     /**
-     * Gets the data of the story plot
+     * Gets what we need from the request and save it in to the plot data
      *
      * @param Request $request
      * @return $this
@@ -76,8 +86,8 @@ class StoryPlot
     public function setRequestData(Request $request): StoryPlot
     {
         $this->requestData['data'] = $request->all();
-        $this->requestData['headers'] = $request->headers->all();
         $this->requestData['method'] = $request->method();
+        $this->headers = $request->headers;
         return $this;
     }
 

@@ -2,7 +2,7 @@
 
 namespace App\Actions;
 
-use config\StoryPlot;
+use App\Stories\StoryPlot;
 
 /**
  * Interface ActionInterface

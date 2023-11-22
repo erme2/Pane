@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use config\StoryPlot;
+use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
 
 /**

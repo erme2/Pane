@@ -59,7 +59,7 @@ class ResponseHelperTest extends \Tests\TestCase
         $testController = new class() extends Controller {
             use ResponseHelper;
         };
-        $storyPlot = new \config\StoryPlot();
+        $storyPlot = new \App\Stories\StoryPlot();
         $storyPlot->setStatus(Response::HTTP_OK);
         $storyPlot->data = $this->testData;
         $testResponse = $testController->success($storyPlot);

@@ -3,7 +3,7 @@
 namespace App\Helpers;
 
 use App\Mappers\AbstractMapper;
-use config\StoryPlot;
+use App\Stories\StoryPlot;
 
 /**
  * Helper for App/Actions.

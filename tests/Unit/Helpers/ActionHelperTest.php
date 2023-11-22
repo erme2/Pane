@@ -27,7 +27,7 @@ class ActionHelperTest extends \Tests\TestCase
      */
     public function test_is_create()
     {
-        $plot = new \config\StoryPlot();
+        $plot = new \App\Stories\StoryPlot();
         $this->assertFalse($this->isCreate($plot));
         $plot->options['is_new_record'] = true;
         $this->assertTrue($this->isCreate($plot));

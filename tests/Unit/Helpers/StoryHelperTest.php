@@ -37,7 +37,6 @@ class StoryHelperTest extends TestCase
         $mockRequest = $this->createMockRequest();
         $this->assertInstanceOf('App\Stories\AbstractStory', $this->testClass->loadStory($mockRequest, 'test'));
         try {
-
             $this->testClass->loadStory($mockRequest,'No existing story');
         } catch (SystemException $e) {
             $this->assertEquals('System Exception: Story not found (Story: No existing storyStory)', $e->getMessage());

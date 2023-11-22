@@ -5,7 +5,7 @@ namespace App\Actions;
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\ActionHelper;
-use config\StoryPlot;
+use App\Stories\StoryPlot;
 use Illuminate\Support\Facades\Validator;
 
 /**

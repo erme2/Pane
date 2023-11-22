@@ -5,7 +5,6 @@ namespace App\Stories;
 use App\Exceptions\SystemException;
 use App\Helpers\StoryHelper;
 use App\Helpers\StringHelper;
-use config\StoryPlot;
 use Illuminate\Http\Request;
 
 /**
@@ -47,8 +46,6 @@ abstract class AbstractStory
             $action = $this->loadAction($actionName);
             $this->plot = $action->exec($subject, $this->plot, $key);
         }
-
-print_R($this->actions);
-die('OK!');
+        return $this->plot;
     }
 }

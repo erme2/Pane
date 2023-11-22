@@ -3,7 +3,7 @@
 namespace App\Actions;
 
 use App\Exceptions\SystemException;
-use config\StoryPlot;
+use App\Stories\StoryPlot;
 
 /**
  * Class AbstractAction

@@ -2,12 +2,15 @@
 
 namespace Tests;
 
+use Symfony\Component\HttpFoundation\HeaderBag;
+
 trait TestsHelper
 {
     public function createMockRequest(
         string $uri = '/',
         string $method = 'GET',
         array $params = [],
+        array $headers = [],
         array $cookies = [],
         array $files = [],
         array $server = [
@@ -18,7 +21,7 @@ trait TestsHelper
     )
     {
         $return = new \Illuminate\Http\Request;
-        return $return->createFromBase(
+        $return = $return->createFromBase(
             \Symfony\Component\HttpFoundation\Request::create(
                 $uri,
                 $method,
@@ -29,7 +32,9 @@ trait TestsHelper
                 $content
             )
         );
-
+        $return->headers = new HeaderBag($headers);
+        $return->query->replace($params);
+        return $return;
     }
 
 }
