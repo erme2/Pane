@@ -38,7 +38,14 @@ class ValidateActionTest extends TestCase
 
         $testStoryPlot = new StoryPlot();
         $this->assertInstanceOf('App\Stories\StoryPlot', $testStoryPlot);
-        $this->assertInstanceOf('App\Stories\StoryPlot', $action->exec('test', $testStoryPlot));
+        $plot = $action->exec('test', $testStoryPlot);
+print_R($plot);
+die("AZA");
+
+        $this->assertInstanceOf('App\Stories\StoryPlot', $plot);
+
+
+
 
         $this->markTestIncomplete();
     }
