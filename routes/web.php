@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Controller;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,4 +15,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', [\App\Http\Controllers\Controller::class, 'index']);
+// index
+Route::get('/', [Controller::class, 'index']);
+
+// all stories (crud)
+Route::match(['get', 'post'], '/{story}/{subject}', [Controller::class, 'runStory']);
+Route::match(['get', 'put', 'delete'], '/{story}/{subject}/{key}', [Controller::class, 'runStory']);

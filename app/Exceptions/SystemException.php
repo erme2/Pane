@@ -4,7 +4,7 @@ namespace App\Exceptions;
 
 use Throwable;
 
-class PaneException extends \Exception
+class SystemException extends \Exception
 {
     public function __construct(string $message = "", int $code = 0, ?Throwable $previous = null)
     {

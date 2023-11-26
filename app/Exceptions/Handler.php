@@ -2,9 +2,9 @@
 
 namespace App\Exceptions;
 
+use App\Helpers\ResponseHelper;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\App;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -30,23 +30,37 @@ class Handler extends ExceptionHandler
         });
     }
 
+    /**
+     * Returns an api response that will contain all the information about the error/s.
+     *
+     * @param $request
+     * @param Throwable $e
+     * @return Response
+     */
     public function render($request, Throwable $e)
     {
+        $statusID = $e->getCode() >= Response::HTTP_BAD_REQUEST && $e->getCode() <= 600 ?
+            $e->getCode() : Response::HTTP_INTERNAL_SERVER_ERROR;
         $content = [
-            'status' => Response::$statusTexts[Response::HTTP_INTERNAL_SERVER_ERROR] ?? '',
-            'data' => [
-                'message' => $e->getMessage(),
-            ],
+            'status' => Response::$statusTexts[$e->getCode()] ?? 'Error',
+            'data' => [],
         ];
-        if (env('APP_DEBUG')) {
-            $content['data']['file'] = $e->getFile();
-            $content['data']['line'] = $e->getLine();
-            $content['data']['trace'] = $e->getTrace();
+
+        switch ($e) {
+            case $e instanceof ValidationException:
+                $content['data']['errors'] = $e->getErrors();
+                break;
+            case $e instanceof SystemException:
+            default:
+                $content['data']['message'] = $e->getMessage();
+                if (env('APP_DEBUG')) {
+                    $content['data']['file'] = $e->getFile();
+                    $content['data']['line'] = $e->getLine();
+                    $content['data']['trace'] = $e->getTrace();
+                }
+                break;
         }
 
-        $response = new Response();
-        $response->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR);
-        $response->setContent($content);
-        return $response;
+        return new Response($content, $statusID);
     }
 }
