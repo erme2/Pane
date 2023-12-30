@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    const CHECK_ERROR_MESSAGES = '(this is required to test error messages)';
     private array $insertKeys = [];
     private string $tableName = 'test_table';
 
@@ -141,7 +142,7 @@ return new class extends Migration
         $this->insertKeys['fields']['email'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables'][$this->tableName],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['email'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'email',
                 'sql_name' => null,
                 'description' => null,
@@ -170,73 +171,91 @@ return new class extends Migration
             'field_id' => $this->insertKeys['fields']['table_id'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
             'value' => null,
-            'message' => 'Table ID is required',
+            'message' => 'Table ID is required'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['table_id'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
             'value' => 'test_table,table_id',
-            'message' => 'Table ID must be unique',
+            'message' => 'Table ID must be unique'.self::CHECK_ERROR_MESSAGES,
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['name'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
+            'value' => null,
+            'message' => 'Name is required'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['name'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
             'value' => 'test_table,name',
-            'message' => 'Name must be unique',
+            'message' => 'Name must be unique'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['name'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
             'value' => 1,
-            'message' => 'Name must be at least 1 character long',
+            'message' => 'Name must be at least 1 character long'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['name'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
             'value' => 255,
-            'message' => 'Name must be at most 255 characters long',
+            'message' => 'Name must be at most 255 characters long'.self::CHECK_ERROR_MESSAGES,
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['test_array'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
+            'value' => null,
+            'message' => 'Test array is required'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['test_array'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['array'],
             'value' => null,
-            'message' => 'Test array must be an array',
+            'message' => 'Test array must be an array'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['password'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
             'value' => null,
-            'message' => 'Password is required',
+            'message' => 'Password is required'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['password'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
             'value' => 8,
-            'message' => 'Password must be at least 8 characters long',
+            'message' => 'Password must be at least 8 characters long'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['email'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
             'value' => null,
-            'message' => 'Email is required',
+            'message' => 'Email is required'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['email'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
             'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'].',field_id',
-            'message' => 'Email must be unique'
+            'message' => 'Email must be unique'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['email'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['email'],
+            'value' => 'rfc,dns',
+            'message' => 'Email must be a valid email address'.self::CHECK_ERROR_MESSAGES,
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['test_json'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
             'value' => null,
-            'message' => 'Email must be a valid email address',
+            'message' => 'Test JSON is required'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['test_json'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['json'],
             'value' => null,
-            'message' => 'Test JSON must be a valid JSON string',
+            'message' => 'Test JSON must be a valid JSON string'.self::CHECK_ERROR_MESSAGES,
         ]);
     }
 

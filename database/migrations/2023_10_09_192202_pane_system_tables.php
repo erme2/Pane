@@ -153,6 +153,10 @@ return new class extends Migration
                 'field_type_id' => AbstractMapper::FIELD_TYPES['password'] ,
                 'name' => 'password',
             ],
+            [
+                'field_type_id' => AbstractMapper::FIELD_TYPES['json'],
+                'name' => 'json',
+            ],
         ]);
     }
 

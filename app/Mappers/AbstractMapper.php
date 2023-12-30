@@ -7,6 +7,7 @@ use App\Helpers\MapperHelper;
 use App\Helpers\StringHelper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Class AbstractMapper
@@ -37,8 +38,7 @@ abstract class AbstractMapper
         'timestamp' => 5,
         'array' => 6,
         'password' => 7,
-        'email' => 8,
-        'json' => 9,
+        'json' => 8,
     ];
     const VALIDATION_TYPES = [
         'required' => 1,
@@ -67,24 +67,33 @@ abstract class AbstractMapper
     {
         $array = [];
         $return = [];
-        foreach ($this->getFields($this->name) as $field) {
+
+        /** @var $field Field */
+        foreach ($this->getFields(Str::snake($this->name)) as $field) {
+
+            // skipping primary fields when requested
             if ($withPrimary === false && (bool) $field->primary === true) {
                 continue;
             }
+
+            // walking through the validation fields
             foreach ($field->getValidationFields() as $validationField) {
                 $type = $validationField->getValidationType();
                 $array[$field->name][] = match ($type->name) {
                     "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
-                    "required" => $type->name,
+                    "email" => $validationField->value ? 'email:'.$validationField->value : 'email:rfc',
+                    "array", "json", "required" => $type->name,
                     default => throw new SystemException("Validation rule not found for $type->name"),
                 };
             }
         }
+
         foreach ($array as $key => $value) {
             if (!empty($value)) {
                 $return[$key] = implode('|', $value);
             }
         }
+
         return $return;
     }
 

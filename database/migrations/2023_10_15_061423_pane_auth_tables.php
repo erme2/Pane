@@ -129,7 +129,7 @@ return new class extends Migration
         $this->insertKeys['users']['fields']['email'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['email'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'email',
                 'primary' => false,
                 'index' => true,

@@ -30,20 +30,29 @@ class ValidateActionTest extends TestCase
      */
     public function test_exec(): void
     {
-        // @todo replace user with some test table/data
         $action = new ValidateAction();
         $this->assertInstanceOf('App\Actions\AbstractAction', $action);
         $this->assertInstanceOf('App\Actions\ValidateAction', $action);
 
-        // create
+        // using a `Create` story plot to test the validation
         $testStoryPlot = new StoryPlot();
         $testStoryPlot->options['is_new_record'] = true;
 
         $this->assertInstanceOf('App\Stories\StoryPlot', $testStoryPlot);
-        $plot = $action->exec('test', $testStoryPlot);
-        $this->assertInstanceOf('App\Stories\StoryPlot', $plot);
-print_R($plot);
+        try {
+            $plot = $action->exec('TestTable', $testStoryPlot);
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('App\Exceptions\ValidationException', $e);
+            $errors = $e->getErrors();
+print_R($errors);
+die("sss");
+        }
+
+
 die("AZA");
+
+
+        $this->assertInstanceOf('App\Stories\StoryPlot', $plot);
 
         $this->assertInstanceOf('App\Stories\StoryPlot', $plot);
 
