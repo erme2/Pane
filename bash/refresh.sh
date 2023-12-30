@@ -9,8 +9,8 @@ DELETE_DB=no
 while getopts ":c:d:" opt
    do
      case $opt in
-        c ) CLEAR_CACHE=$OPTARG;; # update in in vars
-        d ) DELETE_DB=$OPTARG;; # update in in vars
+        c ) CLEAR_CACHE=$OPTARG;;
+        d ) DELETE_DB=$OPTARG;;
      esac
 done
 

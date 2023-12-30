@@ -34,11 +34,14 @@ class ValidateActionTest extends TestCase
         $action = new ValidateAction();
         $this->assertInstanceOf('App\Actions\AbstractAction', $action);
         $this->assertInstanceOf('App\Actions\ValidateAction', $action);
-        $this->assertInstanceOf('App\Stories\StoryPlot', $action->exec('user', $this->mockStoryPlot));
 
+        // create
         $testStoryPlot = new StoryPlot();
+        $testStoryPlot->options['is_new_record'] = true;
+
         $this->assertInstanceOf('App\Stories\StoryPlot', $testStoryPlot);
         $plot = $action->exec('test', $testStoryPlot);
+        $this->assertInstanceOf('App\Stories\StoryPlot', $plot);
 print_R($plot);
 die("AZA");
 

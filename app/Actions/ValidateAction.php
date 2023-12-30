@@ -35,6 +35,12 @@ class ValidateAction extends AbstractAction
     {
         $mapper = $this->getMapper($subject);
 
+print_R($plot->requestData);
+var_dump($this->isCreate($plot));
+print_R($mapper->getValidationRules(!$this->isCreate($plot)));
+print_R($mapper);
+die("@ $subject ");
+
         $errors = Validator::make(
             $plot->requestData['data'],
             $mapper->getValidationRules(!$this->isCreate($plot)),
