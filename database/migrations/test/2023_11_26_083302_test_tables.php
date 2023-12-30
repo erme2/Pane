@@ -11,7 +11,6 @@ return new class extends Migration
 {
     private array $insertKeys = [];
     private string $tableName = 'test_table';
-//    private array $
 
     /**
      * Run the migrations.
@@ -31,6 +30,7 @@ return new class extends Migration
         });
         $this->addTableRecord();
         $this->addFieldsRecords();
+        $this->addFieldsValidationRecords();
     }
 
     /**
@@ -42,7 +42,7 @@ return new class extends Migration
         Schema::dropIfExists(AbstractMapper::MAP_TABLES_PREFIX.'test_table');
     }
 
-    private function addTableRecord()
+    private function addTableRecord(): void
     {
         $this->insertKeys['tables'][$this->tableName] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
@@ -52,7 +52,7 @@ return new class extends Migration
             ]);
     }
 
-    private function addFieldsRecords()
+    private function addFieldsRecords(): void
     {
         $this->insertKeys['fields']['table_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
@@ -164,14 +164,99 @@ return new class extends Migration
             ]);
     }
 
-    // todo add fields validators
-
-    private function removeRecords()
+    private function addFieldsValidationRecords(): void
     {
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['table_id'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
+            'value' => null,
+            'message' => 'Table ID is required',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['table_id'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
+            'value' => 'test_table,table_id',
+            'message' => 'Table ID must be unique',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['name'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
+            'value' => 'test_table,name',
+            'message' => 'Name must be unique',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['name'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+            'value' => 1,
+            'message' => 'Name must be at least 1 character long',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['name'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
+            'value' => 255,
+            'message' => 'Name must be at most 255 characters long',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['test_array'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['array'],
+            'value' => null,
+            'message' => 'Test array must be an array',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['password'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
+            'value' => null,
+            'message' => 'Password is required',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['password'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+            'value' => 8,
+            'message' => 'Password must be at least 8 characters long',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['email'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
+            'value' => null,
+            'message' => 'Email is required',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['email'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
+            'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'].',field_id',
+            'message' => 'Email must be unique'
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['email'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['email'],
+            'value' => null,
+            'message' => 'Email must be a valid email address',
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['test_json'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['json'],
+            'value' => null,
+            'message' => 'Test JSON must be a valid JSON string',
+        ]);
+    }
+
+    private function removeRecords(): void
+    {
+        // getting the tableID
         $tableID = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
             ->where('name', $this->tableName)
             ->first()
-            ->table_id;
+            ->{'table_id'};
+
+        // deleting field validations
+        foreach (DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])
+            ->where('table_id', $tableID)
+            ->get('field_id') as $field) {
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])
+                ->where('field_id', $field->field_id)
+                ->delete();
+        }
+        // deleting fields and table
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
             ->where(['table_id' => $tableID])->delete();
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])

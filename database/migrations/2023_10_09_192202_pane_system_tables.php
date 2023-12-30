@@ -408,6 +408,18 @@ return new class extends Migration
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
                 'name' => 'max',
             ],
+            [
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['email'],
+                'name' => 'email',
+            ],
+            [
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['array'],
+                'name' => 'array',
+            ],
+            [
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['json'],
+                'name' => 'json',
+            ],
         ]);
     }
 

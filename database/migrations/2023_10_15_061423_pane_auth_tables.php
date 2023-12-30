@@ -313,7 +313,7 @@ return new class extends Migration
                 'field_id' => $this->insertKeys['users']['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
                 'value' => null,
-                'message' => 'Name is required',
+                'message' => 'Name must be unique',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['name'],
@@ -343,7 +343,7 @@ return new class extends Migration
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['email'],
                 'value' => null,
-                'message' => null,
+                'message' => 'Email must be a valid email address',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],

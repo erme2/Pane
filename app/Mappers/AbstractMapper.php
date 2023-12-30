@@ -48,6 +48,7 @@ abstract class AbstractMapper
         'max' => 5,
         'email' => 6,
         'array' => 7,
+        'json' => 8,
     ];
     private string $name;
     public function __construct(string $name)
