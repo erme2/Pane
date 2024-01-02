@@ -31,24 +31,20 @@ abstract class AbstractMapper
         'user_types' => 'user_types',
     ];
     const FIELD_TYPES = [
-        'integer' => 1,
+        'number' => 1,
         'string' => 2,
         'text' => 3,
         'boolean' => 4,
-        'timestamp' => 5,
+        'date' => 5,
         'array' => 6,
         'password' => 7,
         'json' => 8,
     ];
     const VALIDATION_TYPES = [
-        'required' => 1,
-        'unique' => 2,
-        'exists' => 3,
+        'unique' => 1,
+        'exists' => 2,
+        'max' => 3,
         'min' => 4,
-        'max' => 5,
-        'email' => 6,
-        'array' => 7,
-        'json' => 8,
     ];
     private string $name;
     public function __construct(string $name)
@@ -65,6 +61,8 @@ abstract class AbstractMapper
      */
     public function getValidationRules(bool $withPrimary = true): array
     {
+echo "withPrimary: $withPrimary\n";
+
         $array = [];
         $return = [];
 
@@ -75,24 +73,24 @@ abstract class AbstractMapper
             if ($withPrimary === false && (bool) $field->primary === true) {
                 continue;
             }
+            // checking if the field is required (!nullable)
+            $array[$field->name] = $this->checkIfRequired($array[$field->name] ?? [], $field);
 
-            // walking through the validation fields
-            foreach ($field->getValidationFields() as $validationField) {
-                $type = $validationField->getValidationType();
-                $array[$field->name][] = match ($type->name) {
-                    "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
-                    "email" => $validationField->value ? 'email:'.$validationField->value : 'email:rfc',
-                    "array", "json", "required" => $type->name,
-                    default => throw new SystemException("Validation rule not found for $type->name"),
-                };
-            }
+            // checking for some more validation rules
+            $array[$field->name] = $this->getAdditionalValidationRules($array[$field->name] ?? [], $field);
+
+            // checking for the field type
+            $array[$field->name] = $this->getTypeRules($array[$field->name] ?? [], $field);
         }
 
+        // writing down the rules in laravel format
         foreach ($array as $key => $value) {
             if (!empty($value)) {
                 $return[$key] = implode('|', $value);
             }
         }
+print_R($return);
+die("AAA");
 
         return $return;
     }
@@ -107,10 +105,12 @@ abstract class AbstractMapper
     public function getValidationMessages(bool $withPrimary = true): array
     {
         $return = [];
-        foreach ($this->getFields($this->name) as $field) {
+        foreach ($this->getFields(Str::snake($this->name)) as $field) {
+            // skipping primary fields when requested
             if ($withPrimary === false && (bool) $field->primary === true) {
                 continue;
             }
+            // walking through the validation fields
             foreach ($field->getValidationFields() as $validationField) {
                 $type = $validationField->getValidationType();
                 if (!empty($validationField->message)) {
@@ -131,5 +131,4 @@ abstract class AbstractMapper
     {
         return (new Field())->getFields($tableName);
     }
-
 }

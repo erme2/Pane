@@ -31,14 +31,17 @@ class Field extends Model
     protected $table = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
     protected $primaryKey = 'field_id';
 
+
     /**
      * Returns a collection of field validations for the current field
      *
      * @return Collection
      */
-    public function getValidationFields(): Collection
+    public function getValidationFields(Field $field): Collection
     {
-        return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')->get();
+        return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')
+            ->where('field_id', $field->field_id)
+            ->get();
     }
 
     /**
