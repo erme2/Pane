@@ -169,13 +169,6 @@ return new class extends Migration
 
     private function addFieldsValidationRecords(): void
     {
-        // table_id
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
-            'field_id' => $this->insertKeys['fields']['table_id'],
-            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-            'value' => AbstractMapper::MAP_TABLES_PREFIX.'test_table,table_id',
-            'message' => 'Table Id must be unique'.self::CHECK_ERROR_MESSAGES,
-        ]);
         // name
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['name'],

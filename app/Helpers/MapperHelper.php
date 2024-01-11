@@ -3,7 +3,6 @@
 namespace App\Helpers;
 
 use App\Exceptions\SystemException;
-use App\Mappers\AbstractMapper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Model;
 
@@ -64,7 +63,7 @@ die("@ $subject");
                 $rules[] = match ($type->name) {
                     "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
                     "email" => $validationField->value ? 'email:'.$validationField->value : 'email:rfc',
-                    "array", "json", "string", "required" => $type->name,
+                    "array", "json", "string", => $type->name,
                     default => throw new SystemException("Validation rule not found for $type->name"),
                 };
             }

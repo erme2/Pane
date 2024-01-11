@@ -31,10 +31,10 @@ class Field extends Model
     protected $table = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
     protected $primaryKey = 'field_id';
 
-
     /**
      * Returns a collection of field validations for the current field
      *
+     * @param Field $field
      * @return Collection
      */
     public function getValidationFields(Field $field): Collection

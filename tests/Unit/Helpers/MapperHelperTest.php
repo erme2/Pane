@@ -42,8 +42,9 @@ class MapperHelperTest extends TestCase
             ->first()
             ->field_id
         ;
+        $this->assertEquals([], $mapper->getAdditionalValidationRules([], $field));
 
-        $this->assertEquals(['unique:map_test_table,table_id'], $mapper->getAdditionalValidationRules([], $field));
+        // getting the field_id for test_table.name
         $field->field_id = DB::table($fieldsTable)
             ->join($tablesTable,"$fieldsTable.table_id", '=', "$tablesTable.table_id")
             ->where("$fieldsTable.name", '=','name')
@@ -58,7 +59,6 @@ class MapperHelperTest extends TestCase
             ],
             $mapper->getAdditionalValidationRules([], $field)
         );
-
     }
 
     public function test_get_type_rules()

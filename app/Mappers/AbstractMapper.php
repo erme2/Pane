@@ -7,6 +7,7 @@ use App\Helpers\MapperHelper;
 use App\Helpers\StringHelper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -61,18 +62,25 @@ abstract class AbstractMapper
      */
     public function getValidationRules(bool $withPrimary = true): array
     {
-echo "withPrimary: $withPrimary\n";
-
         $array = [];
         $return = [];
 
         /** @var $field Field */
         foreach ($this->getFields(Str::snake($this->name)) as $field) {
 
-            // skipping primary fields when requested
-            if ($withPrimary === false && (bool) $field->primary === true) {
-                continue;
+            if ($field->primary) {
+                // skipping primary fields when requested
+                if ($withPrimary === false) {
+                    continue;
+                }
+                // primary fields are always required
+                $array[$field->name][] = 'required';
+
+                // primary fields are always unique
+                $array[$field->name][] = 'unique:' . $this->getTableName(Str::snake($this->name)) . ',' . $field->name;
+
             }
+
             // checking if the field is required (!nullable)
             $array[$field->name] = $this->checkIfRequired($array[$field->name] ?? [], $field);
 
@@ -86,11 +94,9 @@ echo "withPrimary: $withPrimary\n";
         // writing down the rules in laravel format
         foreach ($array as $key => $value) {
             if (!empty($value)) {
-                $return[$key] = implode('|', $value);
+                $return[$key] = implode('|', array_unique($value));
             }
         }
-print_R($return);
-die("AAA");
 
         return $return;
     }
@@ -111,7 +117,7 @@ die("AAA");
                 continue;
             }
             // walking through the validation fields
-            foreach ($field->getValidationFields() as $validationField) {
+            foreach ($field->getValidationFields($field) as $validationField) {
                 $type = $validationField->getValidationType();
                 if (!empty($validationField->message)) {
                     $return["$field->name.$type->name"] = $validationField->message;
@@ -130,5 +136,14 @@ die("AAA");
     public function getFields(string $tableName): Collection
     {
         return (new Field())->getFields($tableName);
+    }
+
+    public function getTableName(string $name): string
+    {
+        return DB::table(self::MAP_TABLES_PREFIX.self::TABLES['tables'])
+            ->where('name', $name)
+            ->first()
+            ->{'sql_name'}
+        ;
     }
 }

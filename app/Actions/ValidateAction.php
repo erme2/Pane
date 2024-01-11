@@ -34,7 +34,6 @@ class ValidateAction extends AbstractAction
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
         $mapper = $this->getMapper($subject);
-print_R($mapper->getValidationRules(!$this->isCreate($plot)));
 
         $errors = Validator::make(
             $plot->requestData['data'],

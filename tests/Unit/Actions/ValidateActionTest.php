@@ -5,7 +5,6 @@ namespace Tests\Unit\Actions;
 use App\Actions\ValidateAction;
 use App\Exceptions\ValidationException;
 use App\Stories\StoryPlot;
-use Illuminate\Http\Request;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -30,13 +29,13 @@ class ValidateActionTest extends TestCase
         } catch (ValidationException $e) {
             $errors = $e->getErrors();
             $this->assertIsArray($errors);
-            $this->assertCount(6, $errors);
+            $this->assertCount(4, $errors);
 
             foreach ($errors as $error) {
                 $this->assertIsArray($error);
                 $this->assertArrayHasKey('field_name', $error);
                 $this->assertArrayHasKey('message', $error);
-                $this->assertStringContainsString(ucwords(str_replace('_', ' ', $error['field_name'])), $error['message']);
+                $this->assertStringContainsString(str_replace('_', ' ', $error['field_name']), $error['message']);
                 $this->assertStringContainsString('required', $error['message']);
             }
         }
