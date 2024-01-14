@@ -46,6 +46,7 @@ abstract class AbstractMapper
         'exists' => 2,
         'max' => 3,
         'min' => 4,
+        'email' => 5,
     ];
     private string $name;
     public function __construct(string $name)
@@ -60,6 +61,8 @@ abstract class AbstractMapper
      * @return array
      * @throws SystemException
      */
+    // to do - move it in to the helper
+    // to do - add tests
     public function getValidationRules(bool $withPrimary = true): array
     {
         $array = [];
@@ -108,6 +111,8 @@ abstract class AbstractMapper
      * @return array
      * @throws SystemException
      */
+    // to do - move it in to the helper
+    // to do - add tests
     public function getValidationMessages(bool $withPrimary = true): array
     {
         $return = [];
@@ -133,11 +138,15 @@ abstract class AbstractMapper
      * @param string $tableName
      * @return Collection
      */
+    // to do - move it in to the helper
+    // to do - add tests
     public function getFields(string $tableName): Collection
     {
         return (new Field())->getFields($tableName);
     }
 
+    // to do - move it in to the helper
+    // to do - add tests
     public function getTableName(string $name): string
     {
         return DB::table(self::MAP_TABLES_PREFIX.self::TABLES['tables'])

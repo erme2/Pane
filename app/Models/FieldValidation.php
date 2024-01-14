@@ -15,8 +15,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $field_id
  * @property int $validation_type_id
  * @property string $validation_value
- * @property string $created_at
- * @property string $updated_at
  */
 
 class FieldValidation extends Model

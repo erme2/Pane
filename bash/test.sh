@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
+# TO DO - document this file
 
 ./bash/clear.sh
-
 ./bash/refresh.sh -d yes -c yes
-
 
 # creating the test tables to run tests
 php artisan migrate --path /database/migrations/test

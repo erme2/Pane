@@ -124,41 +124,12 @@ return new class extends Migration
 
     private function fieldTypesInserts(): void
     {
-        // fields types
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'])->insert([
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
-                'name' => 'number',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
-                'name' => 'string',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['text'],
-                'name' => 'text',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['boolean'],
-                'name' => 'boolean',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
-                'name' => 'date',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['array'],
-                'name' => 'array',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['password'] ,
-                'name' => 'password',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['json'],
-                'name' => 'json',
-            ],
-        ]);
+        foreach (AbstractMapper::FIELD_TYPES as $type => $id) {
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'])->insert([
+                'field_type_id' => $id,
+                'name' => $type,
+            ]);
+        }
     }
 
     private function fieldsInsertsTables(): void
@@ -392,24 +363,12 @@ return new class extends Migration
 
     private function fieldValidationTypesInserts(): void
     {
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'])->insert([
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'name' => 'unique',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'name' => 'exists',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
-                'name' => 'max',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
-                'name' => 'min',
-            ],
-        ]);
+        foreach (AbstractMapper::VALIDATION_TYPES as $type => $id) {
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'])->insert([
+                'validation_type_id' => $id,
+                'name' => $type,
+            ]);
+        }
     }
 
     private function fieldValidationTablesInserts(): void

@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Model;
  * @package App\Models
  * @property int $validation_type_id
  * @property string $validation_type_name
- * @property string $created_at
- * @property string $updated_at
  */
 
 class ValidationType extends Model

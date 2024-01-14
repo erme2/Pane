@@ -21,8 +21,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $index
  * @property bool $nullable
  * @property string $default
- * @property string $created_at
- * @property string $updated_at
  */
 class Field extends Model
 {

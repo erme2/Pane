@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description');
             $table->boolean('is_active');
-            $table->timestamp('created_at');
+            $table->timestamp('test_date');
             $table->json('test_array');
             $table->string('password');
             $table->string('email');
@@ -105,11 +105,11 @@ return new class extends Migration
                 'nullable' => true,
                 'default' => 'false',
             ]);
-        $this->insertKeys['fields']['created_at'] =
+        $this->insertKeys['fields']['test_date'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables'][$this->tableName],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
-                'name' => 'created_at',
+                'name' => 'test_date',
                 'sql_name' => null,
                 'description' => null,
                 'primary' => false,
@@ -202,6 +202,12 @@ return new class extends Migration
             'value' => AbstractMapper::MAP_TABLES_PREFIX.'test_table,field_id',
             'message' => 'Email must be unique'.self::CHECK_ERROR_MESSAGES,
         ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['email'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['email'],
+            'value' => null,
+            'message' => null,
+        ]);
     }
 
     private function seedTestTable(): void
@@ -210,7 +216,7 @@ return new class extends Migration
             'name' => 'Test Table',
             'description' => 'Just a table to run tests',
             'is_active' => true,
-            'created_at' => '2021-01-01 00:00:00',
+            'test_date' => '2021-01-01 00:00:00',
             'test_array' => json_encode(['test' => 'array']),
             'password' => 'password',
             'email' => 'test@email.com',
