@@ -10,16 +10,19 @@ use Tests\TestsHelper;
 
 return new class extends Migration
 {
+
+
     use TestsHelper;
     private array $insertKeys = [];
-    private string $tableName = 'test_table';
 
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create(AbstractMapper::MAP_TABLES_PREFIX.'test_table', function (Blueprint $table) {
+        Schema::create(
+            AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'],
+            function (Blueprint $table) {
             $table->unsignedInteger('table_id')->autoIncrement();
             $table->string('name');
             $table->text('description');
@@ -29,7 +32,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('email');
             $table->json('test_json');
-        });
+        }
+        );
         $this->addTableRecord();
         $this->addFieldsRecords();
         $this->addFieldsValidationRecords();
@@ -42,15 +46,15 @@ return new class extends Migration
     public function down(): void
     {
         $this->removeRecords();
-        Schema::dropIfExists(AbstractMapper::MAP_TABLES_PREFIX.'test_table');
+        Schema::dropIfExists(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table']);
     }
 
     private function addTableRecord(): void
     {
-        $this->insertKeys['tables'][$this->tableName] =
+        $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
-                'name' => $this->tableName,
-                'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.$this->tableName,
+                'name' => AbstractMapper::TABLES['test_table'],
+                'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'],
                 'description' => "Just a table to run tests",
             ]);
     }
@@ -59,7 +63,7 @@ return new class extends Migration
     {
         $this->insertKeys['fields']['table_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'table_id',
                 'sql_name' => null,
@@ -71,7 +75,7 @@ return new class extends Migration
         ]);
         $this->insertKeys['fields']['name'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'name',
                 'sql_name' => null,
@@ -83,7 +87,7 @@ return new class extends Migration
         ]);
         $this->insertKeys['fields']['description'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['text'],
                 'name' => 'description',
                 'sql_name' => null,
@@ -95,7 +99,7 @@ return new class extends Migration
             ]);
         $this->insertKeys['fields']['is_active'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['boolean'],
                 'name' => 'is_active',
                 'sql_name' => null,
@@ -107,7 +111,7 @@ return new class extends Migration
             ]);
         $this->insertKeys['fields']['test_date'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
                 'name' => 'test_date',
                 'sql_name' => null,
@@ -119,7 +123,7 @@ return new class extends Migration
             ]);
         $this->insertKeys['fields']['test_array'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['array'],
                 'name' => 'test_array',
                 'sql_name' => null,
@@ -131,7 +135,7 @@ return new class extends Migration
             ]);
         $this->insertKeys['fields']['password'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['password'],
                 'name' => 'password',
                 'sql_name' => null,
@@ -143,7 +147,7 @@ return new class extends Migration
             ]);
         $this->insertKeys['fields']['email'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'email',
                 'sql_name' => null,
@@ -155,7 +159,7 @@ return new class extends Migration
             ]);
         $this->insertKeys['fields']['test_json'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
-                'table_id' => $this->insertKeys['tables'][$this->tableName],
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['json'],
                 'name' => 'test_json',
                 'sql_name' => null,
@@ -212,7 +216,7 @@ return new class extends Migration
 
     private function seedTestTable(): void
     {
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.'test_table')->insert([
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'])->insert([
             'name' => 'Test Table',
             'description' => 'Just a table to run tests',
             'is_active' => true,
@@ -228,7 +232,7 @@ return new class extends Migration
     {
         // getting the tableID
         $tableID = DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
-            ->where('name', $this->tableName)
+            ->where('name', AbstractMapper::TABLES['test_table'])
             ->first()
             ->{'table_id'};
 

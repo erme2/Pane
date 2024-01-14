@@ -12,15 +12,6 @@ use Illuminate\Database\Eloquent\Model;
  * we will use this class to get fields for every table described in the database
  *
  * @package App\Models
- * @property int $field_id
- * @property string $name
- * @property string $sql_name
- * @property int $field_type_id
- * @property int $table_id
- * @property bool $primary
- * @property bool $index
- * @property bool $nullable
- * @property string $default
  */
 class Field extends Model
 {

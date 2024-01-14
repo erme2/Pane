@@ -79,7 +79,7 @@ class ValidateActionTest extends TestCase
             // password
             $this->assertEquals("Password must be at least 8 characters long (this is required to test error messages)", $errors[5]['message']);
             // email
-            $this->assertEquals("Email must be a valid email address (this is required to test error messages)", $errors[6]['message']);
+            $this->assertEquals("The email field must be a valid email address.", $errors[6]['message']);
             // test_json
             $this->assertEquals("The test json field must be a valid JSON string.", $errors[7]['message']);
         }

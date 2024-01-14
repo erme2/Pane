@@ -75,7 +75,7 @@ class StoryPlotTest extends TestCase
      * @return void
      * @throws SystemException
      */
-    public function testSetGetContentType_basic()
+    public function testSetGetContentType_basic(): void
     {
         $plot = new StoryPlot();
         $this->assertEquals('application/json', $plot->getContentType());
@@ -100,7 +100,7 @@ class StoryPlotTest extends TestCase
      * @return void
      * @throws SystemException
      */
-    public function testSetGetStatus_basic()
+    public function testSetGetStatus_basic(): void
     {
         // empty
         $plot = new StoryPlot();
@@ -146,7 +146,7 @@ class StoryPlotTest extends TestCase
      * @return void
      * @throws SystemException
      */
-    public function test_set_request_data()
+    public function test_set_request_data(): void
     {
         $fakeRequest = $this->createMockRequest(
             '/test',

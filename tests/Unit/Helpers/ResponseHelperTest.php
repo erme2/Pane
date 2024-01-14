@@ -25,7 +25,7 @@ class ResponseHelperTest extends \Tests\TestCase
      *
      * @return void
      */
-    public function test_construct()
+    public function test_construct(): void
     {
         $testController = new class() extends Controller {
             use ResponseHelper;
@@ -39,7 +39,7 @@ class ResponseHelperTest extends \Tests\TestCase
      *
      * @return void
      */
-    public function test_get_status_text()
+    public function test_get_status_text(): void
     {
         $testController = new class() extends Controller {
             use ResponseHelper;
@@ -54,7 +54,7 @@ class ResponseHelperTest extends \Tests\TestCase
      *
      * @return void
      */
-    public function test_success()
+    public function test_success(): void
     {
         $testController = new class() extends Controller {
             use ResponseHelper;
@@ -73,7 +73,7 @@ class ResponseHelperTest extends \Tests\TestCase
         $this->assertEquals($testController->getStatusText(Response::HTTP_OK), $data['status']);
     }
 
-    public function test_error()
+    public function test_error(): void
     {
         $testController = new class() extends Controller {
             use ResponseHelper;

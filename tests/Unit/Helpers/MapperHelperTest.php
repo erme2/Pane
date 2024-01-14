@@ -5,6 +5,7 @@ namespace Tests\Unit\Helpers;
 use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use App\Models\Field;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Tests\TestsHelper;
@@ -13,7 +14,7 @@ class MapperHelperTest extends TestCase
 {
     use TestsHelper;
 
-    public function test_check_if_required()
+    public function test_check_if_required(): void
     {
         $newField = new Field();
         $mapper = new class('test_table') extends AbstractMapper {};
@@ -24,7 +25,41 @@ class MapperHelperTest extends TestCase
 
     }
 
-    public function test_get_additional_validation_rules()
+    public function test_get_fields(): void
+    {
+        // Unknown table
+        $mapper = new class('InvalidName') extends AbstractMapper {};
+        $res = $mapper->getFields();
+        $this->assertInstanceOf(Collection::class, $res);
+        $this->assertEquals(0, $res->count());
+
+        // ok
+        $mapper = new class('TestTable') extends AbstractMapper {};
+        $res = $mapper->getFields();
+        $this->assertInstanceOf(Collection::class, $res);
+        $this->assertEquals(9, $res->count());
+        foreach ($res as $field) {
+            $this->assertInstanceOf(Field::class, $field);
+        }
+    }
+
+    public function test_get_table_name(): void
+    {
+        // Unknown table
+        $mapper = new class('InvalidName') extends AbstractMapper {};
+        try {
+            $res = $mapper->getTableName();
+        } catch (\Exception $e) {
+            $this->assertEquals(SystemException::class, get_class($e));
+            $this->assertEquals('System Exception: Table for InvalidName (invalid_name) not found', $e->getMessage());
+        }
+
+        // test table
+        $mapper = new class('TestTable') extends AbstractMapper {};
+        $this->assertEquals(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'], $mapper->getTableName());
+    }
+
+    public function test_get_additional_validation_rules(): void
     {
         $mapper = new class('test_table') extends AbstractMapper {};
         $field = new Field();
@@ -61,7 +96,7 @@ class MapperHelperTest extends TestCase
         );
     }
 
-    public function test_get_type_rules()
+    public function test_get_type_rules(): void
     {
         $field = new Field();
         $mapper = new class('test_table') extends AbstractMapper {};
@@ -84,5 +119,33 @@ class MapperHelperTest extends TestCase
             $field->type = $key;
             $this->assertEquals([$value], $mapper->getTypeRules([], $field));
         }
+    }
+
+    public function test_get_validation_messages(): void
+    {
+        // Unknown table
+        $mapper = new class('InvalidName') extends AbstractMapper {};
+        $res = $mapper->getValidationMessages();
+        $this->assertEquals([], $res);
+
+        // test table
+        $mapper = new class('TestTable') extends AbstractMapper {};
+        $res = $mapper->getValidationMessages();
+        $this->assertIsArray($res);
+        $this->assertEquals(5, count($res));
+    }
+
+    public function test_get_validation_rules(): void
+    {
+        // Unknown table
+        $mapper = new class('InvalidName') extends AbstractMapper {};
+        $res = $mapper->getValidationRules();
+        $this->assertEquals([], $res);
+
+        // test table
+        $mapper = new class('TestTable') extends AbstractMapper {};
+        $res = $mapper->getValidationRules();
+        $this->assertIsArray($res);
+        $this->assertEquals(9, count($res));
     }
 }

@@ -386,6 +386,16 @@ return new class extends Migration
                 'value' => '1',
             ],
             [
+                'field_id' => $this->insertKeys['fields']['tables']['name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
+                'value' => '255',
+            ],
+            [
+                'field_id' => $this->insertKeys['fields']['tables']['sql_name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+                'value' => '1',
+            ],
+            [
                 'field_id' => $this->insertKeys['fields']['tables']['sql_name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
                 'value' => '255',

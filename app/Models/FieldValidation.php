@@ -11,10 +11,6 @@ use Illuminate\Database\Eloquent\Model;
  * we will use this class to store the validation rules for the fields
  *
  * @package App\Models
- * @property int $field_validation_id
- * @property int $field_id
- * @property int $validation_type_id
- * @property string $validation_value
  */
 
 class FieldValidation extends Model

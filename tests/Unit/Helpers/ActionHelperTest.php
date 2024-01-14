@@ -13,7 +13,7 @@ class ActionHelperTest extends \Tests\TestCase
      *
      * @return void
      */
-    public function test_get_mapper()
+    public function test_get_mapper(): void
     {
         // @todo update test to use test mapper
         $mapper = $this->getMapper('Test');
@@ -25,7 +25,7 @@ class ActionHelperTest extends \Tests\TestCase
      *
      * @return void
      */
-    public function test_is_create()
+    public function test_is_create(): void
     {
         $plot = new \App\Stories\StoryPlot();
         $this->assertFalse($this->isCreate($plot));
