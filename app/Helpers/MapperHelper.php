@@ -66,7 +66,7 @@ die("@ $subject");
 
             $rules[] = match ($type->name) {
                 "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
-                "email" => $validationField->value ? 'email:'.$validationField->value : 'email:rfc',
+                "email" => $validationField->value ? 'email:'.$validationField->value : 'email:dns',
                 "array", "json", "string", => $type->name,
                 default => throw new SystemException("Validation rule not found for $type->name"),
             };
@@ -83,25 +83,6 @@ die("@ $subject");
     public function getFields(): Collection
     {
         return (new Field())->getFields(Str::snake($this->name));
-    }
-
-    /**
-     * gets the table name from the tables map
-     *
-     * @return string
-     * @throws SystemException
-     */
-    public function getTableName(): string
-    {
-        try {
-            return DB::table(self::MAP_TABLES_PREFIX.self::TABLES['tables'])
-                ->where('name', Str::snake($this->name))
-                ->first()
-                ->{'sql_name'}
-            ;
-        } catch (\Exception) {
-            throw new SystemException("Table for $this->name (".Str::snake($this->name).") not found");
-        }
     }
 
     /**
@@ -190,7 +171,7 @@ die("@ $subject");
                 $array[$field->name][] = 'required';
 
                 // primary fields are always unique
-                $array[$field->name][] = 'unique:' . $this->getTableName() . ',' . $field->name;
+                $array[$field->name][] = 'unique:' . $this->name . ',' . $field->name;
 
             }
 

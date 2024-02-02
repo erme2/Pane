@@ -2,8 +2,12 @@
 
 namespace App\Helpers;
 
+use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
+use App\Models\AbstractModel;
 use App\Stories\StoryPlot;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Helper for App/Actions.
@@ -22,6 +26,30 @@ trait ActionHelper
     public function getMapper(string $subject): AbstractMapper
     {
         return new class($subject) extends AbstractMapper {};
+    }
+
+    /**
+     * gets the table name from the tables map
+     *
+     * @return string
+     * @throws SystemException
+     */
+    public function getTableName(string $tableName): string
+    {
+        try {
+            return DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
+                ->where('name', Str::snake($tableName))
+                ->first()
+                ->{'sql_name'}
+                ;
+        } catch (\Exception) {
+            throw new SystemException("Table for $this->name (".Str::snake($this->name).") not found");
+        }
+    }
+
+    public function getModel(string $subject): AbstractModel
+    {
+        return new class($subject) extends AbstractModel {};
     }
 
     /**

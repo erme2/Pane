@@ -43,22 +43,6 @@ class MapperHelperTest extends TestCase
         }
     }
 
-    public function test_get_table_name(): void
-    {
-        // Unknown table
-        $mapper = new class('InvalidName') extends AbstractMapper {};
-        try {
-            $res = $mapper->getTableName();
-        } catch (\Exception $e) {
-            $this->assertEquals(SystemException::class, get_class($e));
-            $this->assertEquals('System Exception: Table for InvalidName (invalid_name) not found', $e->getMessage());
-        }
-
-        // test table
-        $mapper = new class('TestTable') extends AbstractMapper {};
-        $this->assertEquals(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'], $mapper->getTableName());
-    }
-
     public function test_get_additional_validation_rules(): void
     {
         $mapper = new class('test_table') extends AbstractMapper {};

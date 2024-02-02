@@ -3,6 +3,8 @@
 namespace App\Mappers;
 
 use App\Exceptions\SystemException;
+use App\Helpers\ActionHelper;
+use App\Helpers\CoreHelper;
 use App\Helpers\MapperHelper;
 use App\Helpers\StringHelper;
 use App\Models\Field;
@@ -19,7 +21,7 @@ use Illuminate\Support\Str;
 
 abstract class AbstractMapper
 {
-    use MapperHelper, StringHelper;
+    use CoreHelper, MapperHelper, StringHelper;
 
     const MAP_TABLES_PREFIX = 'map_';
     const TABLES = [
@@ -49,13 +51,10 @@ abstract class AbstractMapper
         'min' => 4,
         'email' => 5,
     ];
-    private string $name;
+    public string $name;
+
     public function __construct(string $name)
     {
         $this->name = $name;
     }
-
-
-
-
 }

@@ -5,7 +5,6 @@ namespace Tests\Unit\Actions;
 use App\Actions\ValidateAction;
 use App\Exceptions\ValidationException;
 use App\Stories\StoryPlot;
-use Illuminate\Http\Request;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -29,8 +28,10 @@ class ValidateActionTest extends TestCase
             $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
         } catch (ValidationException $e) {
             $errors = $e->getErrors();
+
             $this->assertIsArray($errors);
             $this->assertCount(4, $errors);
+
 
             foreach ($errors as $error) {
                 $this->assertIsArray($error);
@@ -51,7 +52,7 @@ class ValidateActionTest extends TestCase
         $this->mockStoryPlot->requestData['data']['test_date'] = 'not a date'; // test_date is not a valid date
         $this->mockStoryPlot->requestData['data']['test_array'] = 'not an array'; // test_array is not array
         $this->mockStoryPlot->requestData['data']['password'] = '123'; // short password
-        $this->mockStoryPlot->requestData['data']['email'] = 'not an email'; // email is not valid
+        $this->mockStoryPlot->requestData['data']['email'] = 'invalid@test.con'; // email is not valid
         $this->mockStoryPlot->requestData['data']['test_json'] = 'not json'; // test_array is not array
 
         try {

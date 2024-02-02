@@ -2,11 +2,14 @@
 
 namespace Tests\Unit\Helpers;
 
+use App\Exceptions\SystemException;
+use App\Helpers\ActionHelper;
 use App\Mappers\AbstractMapper;
+use Tests\TestCase;
 
-class ActionHelperTest extends \Tests\TestCase
+class ActionHelperTest extends TestCase
 {
-    use \App\Helpers\ActionHelper;
+    use ActionHelper;
 
     /**
      * @covers \App\Helpers\ActionHelper::getMapper
@@ -32,4 +35,5 @@ class ActionHelperTest extends \Tests\TestCase
         $plot->options['is_new_record'] = true;
         $this->assertTrue($this->isCreate($plot));
     }
+
 }

@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Helpers\ActionHelper;
 use App\Helpers\MapperHelper;
 use App\Stories\StoryPlot;
 
@@ -15,7 +16,7 @@ use App\Stories\StoryPlot;
 
 class SaveAction extends AbstractAction
 {
-    use MapperHelper;
+    use ActionHelper, MapperHelper;
 
     /**
      * This action will save every record in the plot->data array,
@@ -28,8 +29,11 @@ class SaveAction extends AbstractAction
      */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
+        $model = $this->getModel($subject);
+print_R($model);
+
 print_R($plot);
-die("AZAZA");
+die("dead in action");
 
 // check why I can't see the error
 
