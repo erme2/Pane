@@ -46,14 +46,7 @@ class ValidateActionTest extends TestCase
     public function test_exec_error_1(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
-        $this->mockStoryPlot->requestData['data']['name'] = ''; // empty name
-        $this->mockStoryPlot->requestData['data']['description'] = [1 => 2]; // description is not string
-        $this->mockStoryPlot->requestData['data']['is_active'] = (object) ['aa']; // not boolean is_active
-        $this->mockStoryPlot->requestData['data']['test_date'] = 'not a date'; // test_date is not a valid date
-        $this->mockStoryPlot->requestData['data']['test_array'] = 'not an array'; // test_array is not array
-        $this->mockStoryPlot->requestData['data']['password'] = '123'; // short password
-        $this->mockStoryPlot->requestData['data']['email'] = 'invalid@test.con'; // email is not valid
-        $this->mockStoryPlot->requestData['data']['test_json'] = 'not json'; // test_array is not array
+        $this->mockStoryPlot->requestData['data'] = self::INVALID_TEST_TABLE_RECORD;
 
         try {
             $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
@@ -66,7 +59,8 @@ class ValidateActionTest extends TestCase
                 $this->assertArrayHasKey('message', $error);
                 $this->assertNotEquals('table_id', $error['field_name']);
             }
-            $this->assertCount(8, $errors);
+
+            $this->assertCount(9, $errors);
             // name is empty
             $this->assertEquals("The name field is required.", $errors[0]['message']);
             // description is not string
@@ -83,21 +77,15 @@ class ValidateActionTest extends TestCase
             $this->assertEquals("The email field must be a valid email address.", $errors[6]['message']);
             // test_json
             $this->assertEquals("The test json field must be a valid JSON string.", $errors[7]['message']);
+            // numero
+            $this->assertEquals("The numero field must be at least 10.", $errors[8]['message']);
         }
     }
 
     public function test_exec_ok(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
-        $this->mockStoryPlot->requestData['data']['name'] = 'good name';
-        $this->mockStoryPlot->requestData['data']['description'] = 'a short but good description';
-        $this->mockStoryPlot->requestData['data']['is_active'] = true;
-        $this->mockStoryPlot->requestData['data']['test_date'] = date('Y-m-d H:i:s');
-        $this->mockStoryPlot->requestData['data']['test_array'] = ['test' => 'array'];
-        $this->mockStoryPlot->requestData['data']['password'] = '1234567890';
-        $this->mockStoryPlot->requestData['data']['email'] = 'test@email.com';
-        $this->mockStoryPlot->requestData['data']['test_json'] = '{"test":"json"}';
-
+        $this->mockStoryPlot->requestData['data'] = self::VALID_TEST_TABLE_RECORD;
 
         $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
         // no errors :) we are happy :)

@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -16,15 +17,16 @@ trait CoreHelper
      * @return string
      * @throws SystemException
      */
-    public function getTableName(string $tableName): string
+    public function getSqlTableName(string $tableName): string
     {
+        $tableName = Str::snake($tableName);
         try {
             return DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
                 ->where('name', Str::snake($tableName))
                 ->first()
                 ->{'sql_name'};
         } catch (\Exception) {
-            throw new SystemException("Table for $tableName (".Str::snake($tableName).") not found");
+            throw new SystemException("Table for $tableName (".Str::snake($tableName).") not found", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

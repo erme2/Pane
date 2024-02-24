@@ -23,6 +23,11 @@ class ActionHelperTest extends TestCase
         $this->assertInstanceOf(AbstractMapper::class, $mapper);
     }
 
+    public function test_get_model()
+    {
+        $this->markTestIncomplete();
+    }
+
     /**
      * @covers \App\Helpers\ActionHelper::isCreate
      *

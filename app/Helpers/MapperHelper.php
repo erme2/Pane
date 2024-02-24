@@ -19,22 +19,6 @@ trait MapperHelper
 {
 
     /**
-     * Builds and return a map of the given subject.
-     *
-     * @param string $subject
-     * @param array $data
-     * @return Model
-     */
-
-    // TODO: implement the map method
-    public function map(string $subject, array $data): Model
-    {
-print_R($data);
-die("@ $subject");
-
-    }
-
-    /**
      * checks if the field is required and updates the rules array
      *
      * @param array $rules
@@ -47,6 +31,55 @@ die("@ $subject");
             $rules[] = 'required';
         }
         return $rules;
+    }
+
+    /**
+     * fills the model with data
+     *
+     * @param Model $model
+     * @param array $data
+     * @param bool $isCreate
+     * @return Model
+     * @throws SystemException
+     */
+    public function prepare(Model $model, array $data): array|Model
+    {
+        foreach ($this->getFields() as $field) {
+            if (isset($data[$field->name]) && (!$field->primary)) {
+                switch ($field->type) {
+                    case "array":
+                    case "json":
+                        $return[$field->name] = (string) json_encode($data[$field->name]);
+                        $model->{$field->name} = (string) json_encode($data[$field->name]);
+                        break;
+                    case "boolean":
+                        $return[$field->name] = (bool) $data[$field->name];
+                        $model->{$field->name} = (bool) $data[$field->name];
+                        break;
+                    case "date":
+                        $return[$field->name] = date('Y-m-d H:i:s', strtotime($data[$field->name]));
+                        $model->{$field->name} = date('Y-m-d H:i:s', strtotime($data[$field->name]));
+                        break;
+                    case "number":
+                        $return[$field->name] = (float) $data[$field->name];
+                        $model->{$field->name} = (float) $data[$field->name];
+                        break;
+                    case "password":
+                        $return[$field->name] = bcrypt($data[$field->name]);
+                        $model->{$field->name} = bcrypt($data[$field->name]);
+                        break;
+                    case "string":
+                    case "text":
+                        $return[$field->name] = (string) $data[$field->name];
+                        $model->{$field->name} = (string) $data[$field->name];
+                        break;
+                    default:
+                        throw new SystemException("Unknown field type: $field->type");
+                }
+            }
+        }
+//        return $return;
+        return $model;
     }
 
     /**
@@ -172,7 +205,6 @@ die("@ $subject");
 
                 // primary fields are always unique
                 $array[$field->name][] = 'unique:' . $this->name . ',' . $field->name;
-
             }
 
             // checking if the field is required (!nullable)

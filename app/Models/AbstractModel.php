@@ -2,19 +2,36 @@
 
 namespace App\Models;
 
+use App\Helpers\CoreHelper;
+use App\Helpers\ModelHelper;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
-abstract class AbstractModel extends Model
+class AbstractModel extends Model
 {
+    use CoreHelper, ModelHelper;
 
-    public function __construct(string $tableName, string|array $primaryKey = 'id')
+    private string $mapName;
+    public $timestamps = false;
+
+    /**
+     * returns the table name from the tables map
+     *
+     * @return string
+     */
+    public function getMapName(): string
     {
-        $tableName = Str::snake($tableName);
+        return $this->mapName;
+    }
 
-die("@ $tableName");
-
-        parent::__construct();
-        $this->table = $tableName;
+    /**
+     * sets the table name from the tables map
+     *
+     * @param string $subject
+     * @return $this
+     */
+    public function setMapName(string $mapName): AbstractModel
+    {
+        $this->mapName = $mapName;
+        return $this;
     }
 }

@@ -32,8 +32,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('email');
             $table->json('test_json');
-        }
-        );
+            $table->integer('numero');
+        });
         $this->addTableRecord();
         $this->addFieldsRecords();
         $this->addFieldsValidationRecords();
@@ -169,6 +169,18 @@ return new class extends Migration
                 'nullable' => true,
                 'default' => null,
             ]);
+        $this->insertKeys['fields']['numero'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+                'table_id' => $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
+                'name' => 'numero',
+                'sql_name' => null,
+                'description' => null,
+                'primary' => false,
+                'index' => false,
+                'nullable' => true,
+                'default' => null,
+            ]);
     }
 
     private function addFieldsValidationRecords(): void
@@ -212,6 +224,18 @@ return new class extends Migration
             'value' => null,
             'message' => null,
         ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['numero'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+            'value' => 10,
+            'message' => null,
+        ]);
+        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+            'field_id' => $this->insertKeys['fields']['numero'],
+            'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
+            'value' => 100,
+            'message' => null,
+        ]);
     }
 
     private function seedTestTable(): void
@@ -225,6 +249,7 @@ return new class extends Migration
             'password' => 'password',
             'email' => 'test@email.com',
             'test_json' => json_encode(['test' => 'json']),
+            'numero' => 33,
         ]);
     }
 

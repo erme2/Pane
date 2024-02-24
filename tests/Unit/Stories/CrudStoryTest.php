@@ -38,8 +38,9 @@ class CrudStoryTest extends TestCase
         // other
         try {
             $testCrudStory = new class($this->createMockRequest('/crud/test', Request::METHOD_OPTIONS)) extends CrudStory {};
-        } catch (SystemException $e) {
-            $search = "System Exception: Method not allowed (method: OPTIONS object: App\Stories\CrudStory";
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(SystemException::class, $e);
+            $search = SystemException::ERROR_MESSAGE_PREFIX."Method not allowed (method: OPTIONS object: App\Stories\CrudStory";
             $this->assertStringContainsString($search, $e->getMessage(), 'test_create: OPTIONS');
         }
 

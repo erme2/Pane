@@ -6,5 +6,6 @@ Pane (Bread) is designed to be used with [Burro](https://github.com/erme2/Burro)
 
 Pane and Burro together should be like a "bread and butter".
 
-1. keep it easy and clean
-
+1. keep it simple and lightweight
+2. testable
+3. easy to use

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Helpers;
 
 use App\Exceptions\SystemException;
+use App\Helpers\ActionHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,12 +13,12 @@ use Tests\TestsHelper;
 
 class MapperHelperTest extends TestCase
 {
-    use TestsHelper;
+    use ActionHelper, TestsHelper;
 
     public function test_check_if_required(): void
     {
         $newField = new Field();
-        $mapper = new class('test_table') extends AbstractMapper {};
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
 
         $newField->nullable = true;
         $this->assertEquals([], $mapper->checkIfRequired([], $newField));
@@ -37,7 +38,7 @@ class MapperHelperTest extends TestCase
         $mapper = new class('TestTable') extends AbstractMapper {};
         $res = $mapper->getFields();
         $this->assertInstanceOf(Collection::class, $res);
-        $this->assertEquals(9, $res->count());
+        $this->assertEquals(10, $res->count());
         foreach ($res as $field) {
             $this->assertInstanceOf(Field::class, $field);
         }
@@ -45,7 +46,7 @@ class MapperHelperTest extends TestCase
 
     public function test_get_additional_validation_rules(): void
     {
-        $mapper = new class('test_table') extends AbstractMapper {};
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         $field = new Field();
         $fieldsTable = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
         $tablesTable = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'];
@@ -57,7 +58,7 @@ class MapperHelperTest extends TestCase
         $field->field_id = DB::table($fieldsTable)
             ->join($tablesTable,"$fieldsTable.table_id", '=', "$tablesTable.table_id")
             ->where("$fieldsTable.name", '=','table_id')
-            ->where("$tablesTable.name", '=','test_table')
+            ->where("$tablesTable.name", '=',self::TEST_TABLE_NAME)
             ->first()
             ->field_id
         ;
@@ -67,7 +68,7 @@ class MapperHelperTest extends TestCase
         $field->field_id = DB::table($fieldsTable)
             ->join($tablesTable,"$fieldsTable.table_id", '=', "$tablesTable.table_id")
             ->where("$fieldsTable.name", '=','name')
-            ->where("$tablesTable.name", '=','test_table')
+            ->where("$tablesTable.name", '=',self::TEST_TABLE_NAME)
             ->first()
             ->field_id
         ;
@@ -83,11 +84,12 @@ class MapperHelperTest extends TestCase
     public function test_get_type_rules(): void
     {
         $field = new Field();
-        $mapper = new class('test_table') extends AbstractMapper {};
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         try {
             $mapper->getTypeRules([], $field);
-        } catch (SystemException $e) {
-            $this->assertEquals('System Exception: Invalid field type', $e->getMessage());
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(SystemException::class, $e);
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Invalid field type', $e->getMessage());
         }
         foreach ([
             'array' => 'array',
@@ -130,6 +132,6 @@ class MapperHelperTest extends TestCase
         $mapper = new class('TestTable') extends AbstractMapper {};
         $res = $mapper->getValidationRules();
         $this->assertIsArray($res);
-        $this->assertEquals(9, count($res));
+        $this->assertEquals(10, count($res));
     }
 }

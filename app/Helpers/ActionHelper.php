@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
 use App\Stories\StoryPlot;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -17,6 +18,8 @@ use Illuminate\Support\Str;
 
 trait ActionHelper
 {
+    use CoreHelper, ModelHelper;
+
     /**
      * Builds a mapper for the given subject.
      *
@@ -29,27 +32,15 @@ trait ActionHelper
     }
 
     /**
-     * gets the table name from the tables map
-     *
-     * @return string
      * @throws SystemException
      */
-    public function getTableName(string $tableName): string
-    {
-        try {
-            return DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
-                ->where('name', Str::snake($tableName))
-                ->first()
-                ->{'sql_name'}
-                ;
-        } catch (\Exception) {
-            throw new SystemException("Table for $this->name (".Str::snake($this->name).") not found");
-        }
-    }
-
     public function getModel(string $subject): AbstractModel
     {
-        return new class($subject) extends AbstractModel {};
+        $class = new AbstractModel();
+        $class->setMapName($subject);
+        $class->setTable($class->getSqlTableName($subject));
+        $class->setKeyName($class->getPrimaryKey());
+        return $class;
     }
 
     /**

@@ -3,9 +3,9 @@
 namespace Tests\Unit\Helpers;
 
 use App\Exceptions\SystemException;
-use PHPUnit\Framework\TestCase;
 use App\Helpers\StringHelper;
 use App\Helpers\StoryHelper;
+use PHPUnit\Framework\TestCase;
 use Tests\TestsHelper;
 
 class StoryHelperTest extends TestCase
@@ -27,8 +27,9 @@ class StoryHelperTest extends TestCase
         $this->assertInstanceOf('App\Actions\AbstractAction', $this->testClass->loadAction('test'));
         try {
             $this->testClass->loadAction('No existing action');
-        } catch (SystemException $e) {
-            $this->assertEquals('System Exception: Action not found (Action: No existing actionAction)', $e->getMessage());
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(SystemException::class, $e);
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Action not found (Action: No existing actionAction)', $e->getMessage());
         }
     }
 
@@ -38,8 +39,9 @@ class StoryHelperTest extends TestCase
         $this->assertInstanceOf('App\Stories\AbstractStory', $this->testClass->loadStory($mockRequest, 'test'));
         try {
             $this->testClass->loadStory($mockRequest,'No existing story');
-        } catch (SystemException $e) {
-            $this->assertEquals('System Exception: Story not found (Story: No existing storyStory)', $e->getMessage());
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(SystemException::class, $e);
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Story not found (Story: No existing storyStory)', $e->getMessage());
         }
     }
 }
