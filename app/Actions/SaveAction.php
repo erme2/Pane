@@ -40,22 +40,20 @@ class SaveAction extends AbstractAction
 
         // is it create or update?
         if ($this->isCreate($plot)) {
-            $model = $model->newInstance();
+            $record = $model->newInstance();
         } else {
             $primaryKey = $model->getKeyName();
             $key = $key ?? $plot->requestData['data'][$primaryKey];
             if (empty($key)) {
                 throw new SystemException('No primary key to update', Response::HTTP_BAD_REQUEST);
             }
-            $model = $model->find($key);
-            // somehow after the find the primaryKey is reset to 'id'
-            $model->setKeyName($primaryKey);
+            $record = $model->find($key);
         }
+        $record = $mapper->fillModel($record, $plot->requestData['data']);
 
-        $model = $mapper->prepare($model, $plot->requestData['data']);
         try {
-            $model->save();
-            $plot->data = $model->toArray();
+            $record->save();
+            $plot->data[] = $mapper->extractFromModel($record);
         } catch (\Exception $e) {
             throw new SystemException($e->getMessage());
         }

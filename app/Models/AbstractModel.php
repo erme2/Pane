@@ -13,6 +13,13 @@ class AbstractModel extends Model
     private string $mapName;
     public $timestamps = false;
 
+    public function newInstance($attributes = [], $exists = false)
+    {
+        $return = parent::newInstance($attributes, $exists);
+        $return->setKeyName($this->getKeyName());
+        return $return;
+    }
+
     /**
      * returns the table name from the tables map
      *

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PhpParser\Node\Expr\AssignOp\Mod;
 
 /**
  * Helper for App/Mappers.
@@ -33,6 +34,40 @@ trait MapperHelper
         return $rules;
     }
 
+    public function extractFromModel(Model $model): object
+    {
+        $return = new \stdClass();
+        foreach ($this->getFields() as $field) {
+            switch ($field->type) {
+                case "array":
+                    $return->{$field->name} = json_decode($model->{$field->name}, true, 512, JSON_THROW_ON_ERROR);
+                    break;
+                case "json":
+                    $return->{$field->name} = json_decode($model->{$field->name}, false, 512, JSON_THROW_ON_ERROR);
+                    break;
+                case "boolean":
+                    $return->{$field->name} = (bool) $model->{$field->name};
+                    break;
+                case "date":
+                    $return->{$field->name} = new \DateTime($model->{$field->name});
+                    break;
+                case "number":
+                    $return->{$field->name} = (float) $model->{$field->name};
+                    break;
+                case "password":
+                    $return->{$field->name} = '***';
+                    break;
+                case "string":
+                case "text":
+                    $return->{$field->name} = (string) $model->{$field->name};
+                    break;
+                default:
+                    throw new SystemException("Unknown field type: $field->type");
+            }
+        }
+        return $return;
+    }
+
     /**
      * fills the model with data
      *
@@ -42,35 +77,29 @@ trait MapperHelper
      * @return Model
      * @throws SystemException
      */
-    public function prepare(Model $model, array $data): array|Model
+    public function fillModel(Model $model, array $data): Model
     {
         foreach ($this->getFields() as $field) {
             if (isset($data[$field->name]) && (!$field->primary)) {
                 switch ($field->type) {
                     case "array":
                     case "json":
-                        $return[$field->name] = (string) json_encode($data[$field->name]);
                         $model->{$field->name} = (string) json_encode($data[$field->name]);
                         break;
                     case "boolean":
-                        $return[$field->name] = (bool) $data[$field->name];
                         $model->{$field->name} = (bool) $data[$field->name];
                         break;
                     case "date":
-                        $return[$field->name] = date('Y-m-d H:i:s', strtotime($data[$field->name]));
                         $model->{$field->name} = date('Y-m-d H:i:s', strtotime($data[$field->name]));
                         break;
                     case "number":
-                        $return[$field->name] = (float) $data[$field->name];
                         $model->{$field->name} = (float) $data[$field->name];
                         break;
                     case "password":
-                        $return[$field->name] = bcrypt($data[$field->name]);
                         $model->{$field->name} = bcrypt($data[$field->name]);
                         break;
                     case "string":
                     case "text":
-                        $return[$field->name] = (string) $data[$field->name];
                         $model->{$field->name} = (string) $data[$field->name];
                         break;
                     default:
@@ -78,7 +107,6 @@ trait MapperHelper
                 }
             }
         }
-//        return $return;
         return $model;
     }
 

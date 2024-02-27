@@ -35,9 +35,20 @@ class SaveActionTest extends TestCase
 
     public function test_create(): void
     {
-        $this->mockStoryPlot->requestData['data'] = self::VALID_TEST_TABLE_RECORD;
+        $this->mockStoryPlot->requestData['data'] = self::getValidTestTableRecord();
         $this->mockStoryPlot->options['is_new_record'] = true;
         $plot = $this->action->exec(self::TEST_TABLE_NAME, $this->mockStoryPlot);
+
+        $this->assertInstanceOf(StoryPlot::class, $plot);
+        $this->assertIsArray($plot->data);
+        $this->assertIsObject($plot->data[0]);
+//        foreach (self::getValidTestTableRecord() as $key => $value) {
+//            $this->assertEquals($value, $plot->data[0]->$key);
+//        }
+
+print_R($plot->data[0]);
+print_R($this->mockStoryPlot->requestData['data']);
+die("ZAZA");
         print_R($plot);
         die("END TEST");
 
@@ -46,7 +57,7 @@ class SaveActionTest extends TestCase
 
     public function test_edit(): void
     {
-        $this->mockStoryPlot->requestData['data'] = self::UPDATED_VALID_TEST_TABLE_RECORD;
+        $this->mockStoryPlot->requestData['data'] = self::getUpdatedValidTestTableRecord();
         $this->mockStoryPlot->options['is_new_record'] = false;
         $plot = $this->action->exec(self::TEST_TABLE_NAME, $this->mockStoryPlot);
         print_R($plot);
