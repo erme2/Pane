@@ -46,7 +46,7 @@ class ValidateActionTest extends TestCase
     public function test_exec_error_1(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
-        $this->mockStoryPlot->requestData['data'] = self::getInvalidTestTableRecord();
+        $this->mockStoryPlot->requestData['data'] = self::INVALID_TEST_TABLE_RECORD;
 
         try {
             $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
@@ -85,8 +85,8 @@ class ValidateActionTest extends TestCase
     public function test_exec_ok(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
-        $this->mockStoryPlot->requestData['data'] = self::getValidTestTableRecord();
-
+        $this->mockStoryPlot->requestData['data'] = self::VALID_TEST_TABLE_RECORD;
+        $this->mockStoryPlot->requestData['data']['name'] = 'just another test name';
         $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
         // no errors :) we are happy :)
         $this->assertInstanceOf(StoryPlot::class, $plot);

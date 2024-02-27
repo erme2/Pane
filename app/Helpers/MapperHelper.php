@@ -83,8 +83,12 @@ trait MapperHelper
             if (isset($data[$field->name]) && (!$field->primary)) {
                 switch ($field->type) {
                     case "array":
-                    case "json":
                         $model->{$field->name} = (string) json_encode($data[$field->name]);
+                        break;
+                    case "json":
+                        $model->{$field->name} = (string) json_encode(
+                            json_decode($data[$field->name], false, 512, JSON_THROW_ON_ERROR)
+                        );
                         break;
                     case "boolean":
                         $model->{$field->name} = (bool) $data[$field->name];

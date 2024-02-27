@@ -35,7 +35,7 @@ class SaveActionTest extends TestCase
 
     public function test_create(): void
     {
-        $this->mockStoryPlot->requestData['data'] = self::getValidTestTableRecord();
+        $this->mockStoryPlot->requestData['data'] = self::VALID_TEST_TABLE_RECORD;
         $this->mockStoryPlot->options['is_new_record'] = true;
         $plot = $this->action->exec(self::TEST_TABLE_NAME, $this->mockStoryPlot);
 
@@ -43,13 +43,16 @@ class SaveActionTest extends TestCase
         $this->assertIsArray($plot->data);
         $this->assertIsObject($plot->data[0]);
 
-        foreach (self::getValidTestTableRecord() as $key => $value) {
+        foreach (self::VALID_TEST_TABLE_RECORD as $key => $value) {
             switch ($key) {
                 case 'test_date':
                     $this->assertEquals($value, $plot->data[0]->$key->format('d-m-Y'));
                     break;
                 case 'password': // password should not be returned
                     $this->assertEquals('***', $plot->data[0]->$key);
+                    break;
+                case 'test_json':
+                    $this->assertEquals(json_decode($value), $plot->data[0]->$key);
                     break;
                 default:
                     $this->assertEquals($value, $plot->data[0]->$key);
@@ -59,7 +62,7 @@ class SaveActionTest extends TestCase
 
     public function test_edit(): void
     {
-        $this->mockStoryPlot->requestData['data'] = self::getUpdatedValidTestTableRecord();
+        $this->mockStoryPlot->requestData['data'] = self::UPDATED_VALID_TEST_TABLE_RECORD;
         $this->mockStoryPlot->options['is_new_record'] = false;
         $plot = $this->action->exec(self::TEST_TABLE_NAME, $this->mockStoryPlot);
 
@@ -67,13 +70,16 @@ class SaveActionTest extends TestCase
         $this->assertIsArray($plot->data);
         $this->assertIsObject($plot->data[0]);
 
-        foreach (self::getUpdatedValidTestTableRecord() as $key => $value) {
+        foreach (self::UPDATED_VALID_TEST_TABLE_RECORD as $key => $value) {
             switch ($key) {
                 case 'test_date':
                     $this->assertEquals($value, $plot->data[0]->$key->format('d-m-Y'));
                     break;
                 case 'password': // password should not be returned
                     $this->assertEquals('***', $plot->data[0]->$key);
+                    break;
+                case 'test_json':
+                    $this->assertEquals(json_decode($value), $plot->data[0]->$key);
                     break;
                 default:
                     $this->assertEquals($value, $plot->data[0]->$key);

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Helpers;
 
 use App\Exceptions\SystemException;
+use App\Helpers\ActionHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
 use Illuminate\Http\Response;
@@ -12,13 +13,13 @@ use Tests\TestsHelper;
 
 class ModelHelperTest extends TestCase
 {
-    use TestsHelper;
+    use ActionHelper, TestsHelper;
 
     public function test_get_primary_key(): void
     {
         // empty table name
         try {
-            $model = new class('') extends AbstractModel {};
+            $model = $this->getModel('');
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for  () not found', $e->getMessage());
@@ -27,7 +28,7 @@ class ModelHelperTest extends TestCase
 
         try {
             $wrongName = 'not a table name';
-            $model = new class($wrongName) extends AbstractModel {};
+            $model = $this->getModel($wrongName);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for '.Str::snake($wrongName).' ('.Str::snake($wrongName).') not found', $e->getMessage());
@@ -35,11 +36,11 @@ class ModelHelperTest extends TestCase
         }
 
         // main test
-        $model = new class(self::TEST_TABLE_NAME) extends AbstractModel {};
+        $model = $this->getModel(self::TEST_TABLE_NAME);
         $this->assertEquals(self::TEST_TABLE_PRIMARY_KEY, $model->getPrimaryKey());
 
         // just a different table
-        $model = new class(AbstractMapper::TABLES['field_validations']) extends AbstractModel {};
+        $model = $this->getModel(AbstractMapper::TABLES['field_validations']);
         $this->assertEquals('field_validation_id', $model->getPrimaryKey());
     }
 }
