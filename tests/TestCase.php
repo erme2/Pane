@@ -17,7 +17,7 @@ abstract class TestCase extends BaseTestCase
             'name' => 'just a test name',
             'description' => 'a basic description',
             'is_active' => true,
-            'test_date' => '07/03/2017',
+            'test_date' => '07-03-2017',
             'test_array' => ['this', 'is', 'an', 'array'],
             'password' => 'Pa$$word123#',
             'email' => 'test@email.com',
@@ -26,7 +26,7 @@ abstract class TestCase extends BaseTestCase
         ];
     }
 
-    static function invalidTestTableRecord(): array
+    static function getInvalidTestTableRecord(): array
     {
         return [
             'name' => '',
@@ -48,7 +48,7 @@ abstract class TestCase extends BaseTestCase
             'name' => 'this name was updated',
             'description' => 'this description was updated',
             'is_active' => false,
-            'test_date' => '22/04/2021',
+            'test_date' => '22-04-2021',
             'test_array' => ['this', 'is', 'another', 'array'],
             'password' => 'Hacked?123#',
             'email' => 'another@email.com',

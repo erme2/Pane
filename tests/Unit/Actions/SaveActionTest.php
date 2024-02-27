@@ -42,17 +42,19 @@ class SaveActionTest extends TestCase
         $this->assertInstanceOf(StoryPlot::class, $plot);
         $this->assertIsArray($plot->data);
         $this->assertIsObject($plot->data[0]);
-//        foreach (self::getValidTestTableRecord() as $key => $value) {
-//            $this->assertEquals($value, $plot->data[0]->$key);
-//        }
 
-print_R($plot->data[0]);
-print_R($this->mockStoryPlot->requestData['data']);
-die("ZAZA");
-        print_R($plot);
-        die("END TEST");
-
-        $this->markTestIncomplete();
+        foreach (self::getValidTestTableRecord() as $key => $value) {
+            switch ($key) {
+                case 'test_date':
+                    $this->assertEquals($value, $plot->data[0]->$key->format('d-m-Y'));
+                    break;
+                case 'password': // password should not be returned
+                    $this->assertEquals('***', $plot->data[0]->$key);
+                    break;
+                default:
+                    $this->assertEquals($value, $plot->data[0]->$key);
+            }
+        }
     }
 
     public function test_edit(): void
@@ -60,9 +62,22 @@ die("ZAZA");
         $this->mockStoryPlot->requestData['data'] = self::getUpdatedValidTestTableRecord();
         $this->mockStoryPlot->options['is_new_record'] = false;
         $plot = $this->action->exec(self::TEST_TABLE_NAME, $this->mockStoryPlot);
-        print_R($plot);
-        die("END TEST");
 
-        $this->markTestIncomplete();
+        $this->assertInstanceOf(StoryPlot::class, $plot);
+        $this->assertIsArray($plot->data);
+        $this->assertIsObject($plot->data[0]);
+
+        foreach (self::getUpdatedValidTestTableRecord() as $key => $value) {
+            switch ($key) {
+                case 'test_date':
+                    $this->assertEquals($value, $plot->data[0]->$key->format('d-m-Y'));
+                    break;
+                case 'password': // password should not be returned
+                    $this->assertEquals('***', $plot->data[0]->$key);
+                    break;
+                default:
+                    $this->assertEquals($value, $plot->data[0]->$key);
+            }
+        }
     }
 }

@@ -46,7 +46,7 @@ class ValidateActionTest extends TestCase
     public function test_exec_error_1(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
-        $this->mockStoryPlot->requestData['data'] = self::getInvalidTestTableRecord1();
+        $this->mockStoryPlot->requestData['data'] = self::getInvalidTestTableRecord();
 
         try {
             $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
