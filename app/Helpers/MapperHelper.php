@@ -34,6 +34,14 @@ trait MapperHelper
         return $rules;
     }
 
+    /**
+     * Extract data from model to an object (entity)
+     *
+     * @param Model $model
+     * @return \stdClass
+     * @throws SystemException
+     * @throws \JsonException
+     */
     public function extractFromModel(Model $model): object
     {
         $return = new \stdClass();

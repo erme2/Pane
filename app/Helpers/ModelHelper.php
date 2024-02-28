@@ -11,10 +11,10 @@ trait ModelHelper
      *
      * @return string|array
      */
-    public function getPrimaryKey(): array|string|null
+    public function getPrimaryKey(string $tableName): array|string|null
     {
         $return = [];
-        foreach ((new Field())->getFields($this->getMapName()) as $field) {
+        foreach ((new Field())->getFields($tableName) as $field) {
             if ($field->primary) {
                 $return[] = $field->name;
             }

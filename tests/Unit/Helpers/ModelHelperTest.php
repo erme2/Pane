@@ -31,16 +31,16 @@ class ModelHelperTest extends TestCase
             $model = $this->getModel($wrongName);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
-            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for '.Str::snake($wrongName).' ('.Str::snake($wrongName).') not found', $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for '.$wrongName.' ('.Str::snake($wrongName).') not found', $e->getMessage());
             $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $e->getCode());
         }
 
         // main test
         $model = $this->getModel(self::TEST_TABLE_NAME);
-        $this->assertEquals(self::TEST_TABLE_PRIMARY_KEY, $model->getPrimaryKey());
+        $this->assertEquals(self::TEST_TABLE_PRIMARY_KEY, $model->getPrimaryKey(self::TEST_TABLE_NAME));
 
         // just a different table
         $model = $this->getModel(AbstractMapper::TABLES['field_validations']);
-        $this->assertEquals('field_validation_id', $model->getPrimaryKey());
+        $this->assertEquals('field_validation_id', $model->getPrimaryKey(AbstractMapper::TABLES['field_validations']));
     }
 }

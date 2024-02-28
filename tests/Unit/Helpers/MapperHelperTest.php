@@ -26,22 +26,14 @@ class MapperHelperTest extends TestCase
 
     }
 
-    public function test_get_fields(): void
+    public function test_extract_from_model()
     {
-        // Unknown table
-        $mapper = new class('InvalidName') extends AbstractMapper {};
-        $res = $mapper->getFields();
-        $this->assertInstanceOf(Collection::class, $res);
-        $this->assertEquals(0, $res->count());
+        $this->markTestIncomplete();
+    }
 
-        // ok
-        $mapper = new class('TestTable') extends AbstractMapper {};
-        $res = $mapper->getFields();
-        $this->assertInstanceOf(Collection::class, $res);
-        $this->assertEquals(10, $res->count());
-        foreach ($res as $field) {
-            $this->assertInstanceOf(Field::class, $field);
-        }
+    public function test_fill_model()
+    {
+        $this->markTestIncomplete();
     }
 
     public function test_get_additional_validation_rules(): void
@@ -73,12 +65,30 @@ class MapperHelperTest extends TestCase
             ->field_id
         ;
         $this->assertEquals([
-                'unique:map_test_table,name',
-                'min:1',
-                'max:255'
-            ],
+            'unique:map_test_table,name',
+            'min:1',
+            'max:255'
+        ],
             $mapper->getAdditionalValidationRules([], $field)
         );
+    }
+
+    public function test_get_fields(): void
+    {
+        // Unknown table
+        $mapper = new class('InvalidName') extends AbstractMapper {};
+        $res = $mapper->getFields();
+        $this->assertInstanceOf(Collection::class, $res);
+        $this->assertEquals(0, $res->count());
+
+        // ok
+        $mapper = new class('TestTable') extends AbstractMapper {};
+        $res = $mapper->getFields();
+        $this->assertInstanceOf(Collection::class, $res);
+        $this->assertEquals(10, $res->count());
+        foreach ($res as $field) {
+            $this->assertInstanceOf(Field::class, $field);
+        }
     }
 
     public function test_get_type_rules(): void

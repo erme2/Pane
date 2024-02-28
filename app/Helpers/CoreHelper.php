@@ -19,7 +19,6 @@ trait CoreHelper
      */
     public function getSqlTableName(string $tableName): string
     {
-        $tableName = Str::snake($tableName);
         try {
             return DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])
                 ->where('name', Str::snake($tableName))

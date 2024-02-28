@@ -46,7 +46,7 @@ trait ActionHelper
         $class = new AbstractModel();
         $class->setMapName($subject);
         $class->setTable($class->getSqlTableName($subject));
-        $class->setKeyName($class->getPrimaryKey());
+        $class->setKeyName($class->getPrimaryKey($subject));
         return $class;
     }
 

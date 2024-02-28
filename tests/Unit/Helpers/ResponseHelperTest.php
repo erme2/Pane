@@ -34,6 +34,11 @@ class ResponseHelperTest extends \Tests\TestCase
         $this->assertInstanceOf(\Illuminate\Http\Response::class, $testController->getResponse());
     }
 
+    public function test_get_response()
+    {
+        $this->markTestIncomplete();
+    }
+
     /**
      * @covers \App\Helpers\ResponseHelper::getStatusText
      *
