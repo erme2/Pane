@@ -11,7 +11,7 @@ class AbstractStoryTest extends TestCase
 {
     use TestsHelper;
 
-    public function test_create(): void
+    public function test_construct(): void
     {
         $testStory = new class($this->createMockRequest()) extends AbstractStory {
             public array $actions = ['Test'];
@@ -27,6 +27,5 @@ class AbstractStoryTest extends TestCase
         };
         $storyPlot = $testStory->run('test');
         $this->assertInstanceOf('App\Stories\StoryPlot', $storyPlot);
-        $this->markTestIncomplete();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Models;
 
+use App\Models\AbstractModel;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -11,16 +12,18 @@ class AbstractModelTest extends TestCase
 
     public function test_new_instance(): void
     {
-        $this->markTestIncomplete();
+        $keyName = 'not_id';
+        $model = new AbstractModel();
+        $model->setKeyName($keyName);
+        $newModel = $model->newInstance();
+        $this->assertEquals($model->getKeyName(), $newModel->getKeyName());
     }
 
-    public function test_get_map_name(): void
+    public function test_get_set_map_name(): void
     {
-        $this->markTestIncomplete();
-    }
-
-    public function test_set_map_name(): void
-    {
-        $this->markTestIncomplete();
+        $mapName = 'map_name';
+        $model = new AbstractModel();
+        $this->assertInstanceOf(AbstractModel::class, $model->setMapName($mapName));
+        $this->assertEquals($mapName, $model->getMapName());
     }
 }

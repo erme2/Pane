@@ -13,6 +13,13 @@ class AbstractModel extends Model
     private string $mapName;
     public $timestamps = false;
 
+    /**
+     * overriding a laravel function to fix a problem with the key name
+     *
+     * @param $attributes
+     * @param $exists
+     * @return AbstractModel
+     */
     public function newInstance($attributes = [], $exists = false)
     {
         $return = parent::newInstance($attributes, $exists);

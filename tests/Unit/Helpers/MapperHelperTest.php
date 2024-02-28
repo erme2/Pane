@@ -76,18 +76,17 @@ class MapperHelperTest extends TestCase
     public function test_get_fields(): void
     {
         // Unknown table
-        $mapper = new class('InvalidName') extends AbstractMapper {};
-        $res = $mapper->getFields();
-        $this->assertInstanceOf(Collection::class, $res);
-        $this->assertEquals(0, $res->count());
+        $tables = [
+            'InvalidName' => 0,
+            self::TEST_TABLE_NAME => 10,
+            'users' => 12,
+        ];
 
-        // ok
-        $mapper = new class('TestTable') extends AbstractMapper {};
-        $res = $mapper->getFields();
-        $this->assertInstanceOf(Collection::class, $res);
-        $this->assertEquals(10, $res->count());
-        foreach ($res as $field) {
-            $this->assertInstanceOf(Field::class, $field);
+        foreach ($tables as $table => $expected) {
+            $mapper = new class($table) extends AbstractMapper {};
+            $res = $mapper->getFields($table);
+            $this->assertInstanceOf(Collection::class, $res);
+            $this->assertEquals($expected, $res->count());
         }
     }
 

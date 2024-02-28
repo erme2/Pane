@@ -45,7 +45,7 @@ trait MapperHelper
     public function extractFromModel(Model $model): object
     {
         $return = new \stdClass();
-        foreach ($this->getFields() as $field) {
+        foreach ($this->getFields($this->name) as $field) {
             switch ($field->type) {
                 case "array":
                     $return->{$field->name} = json_decode($model->{$field->name}, true, 512, JSON_THROW_ON_ERROR);
@@ -87,7 +87,7 @@ trait MapperHelper
      */
     public function fillModel(Model $model, array $data): Model
     {
-        foreach ($this->getFields() as $field) {
+        foreach ($this->getFields($this->name) as $field) {
             if (isset($data[$field->name]) && (!$field->primary)) {
                 switch ($field->type) {
                     case "array":
@@ -153,9 +153,9 @@ trait MapperHelper
      *
      * @return Collection
      */
-    public function getFields(): Collection
+    public function getFields(string $name): Collection
     {
-        return (new Field())->getFields(Str::snake($this->name));
+        return (new Field())->getFields(Str::snake($name));
     }
 
     /**
@@ -204,7 +204,7 @@ trait MapperHelper
     public function getValidationMessages(bool $withPrimary = true): array
     {
         $return = [];
-        foreach ($this->getFields() as $field) {
+        foreach ($this->getFields($this->name) as $field) {
             // skipping primary fields when requested
             if ($withPrimary === false && (bool) $field->primary === true) {
                 continue;
@@ -233,7 +233,7 @@ trait MapperHelper
         $return = [];
 
         /** @var $field Field */
-        foreach ($this->getFields() as $field) {
+        foreach ($this->getFields($this->name) as $field) {
 
             if ($field->primary) {
                 // skipping primary fields when requested
