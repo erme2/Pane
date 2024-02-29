@@ -14,7 +14,7 @@ class CoreHelper extends TestCase
         $mapper = new class('InvalidName') extends AbstractMapper {};
 
         try {
-            $res = $mapper->getSqlTableName($mapper->name);
+            $mapper->getSqlTableName($mapper->name);
         } catch (\Exception $e) {
             $this->assertEquals(SystemException::class, get_class($e));
             $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for InvalidName (invalid_name) not found', $e->getMessage());

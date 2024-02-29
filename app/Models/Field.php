@@ -28,7 +28,6 @@ class Field extends Model
      */
     public function getValidationFields(Field $field): Collection
     {
-echo "@ $field->field_id \n";
         return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')
             ->where('field_id', $field->field_id)
             ->get();

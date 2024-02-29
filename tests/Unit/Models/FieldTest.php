@@ -3,6 +3,7 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Field;
+use Illuminate\Database\Eloquent\Collection;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -12,7 +13,7 @@ class FieldTest extends TestCase
 
     public function test_get_validation_fields()
     {
-        $this->markTestIncomplete();
+        $this->assertInstanceOf(Collection::class, (new Field())->getValidationFields((new Field())->first()));
     }
 
     public function test_get_fields()
