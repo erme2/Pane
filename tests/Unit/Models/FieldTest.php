@@ -31,19 +31,4 @@ class FieldTest extends TestCase
             $this->assertEquals($expected, $fields->count());
         }
     }
-
-    public function test_get_type_rules()
-    {
-        $this->markTestIncomplete();
-    }
-
-    public function test_validation_messages()
-    {
-        $this->markTestIncomplete();
-    }
-
-    public function test_validation_rules()
-    {
-        $this->markTestIncomplete();
-    }
 }

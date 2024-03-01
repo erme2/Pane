@@ -5,6 +5,7 @@ namespace Tests\Unit\Helpers;
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
 use App\Mappers\AbstractMapper;
+use App\Models\AbstractModel;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,43 @@ class MapperHelperTest extends TestCase
 
     public function test_fill_model()
     {
-        $this->markTestIncomplete();
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {
+            use \App\Helpers\MapperHelper;
+        };
+        $model = $this->getModel(AbstractMapper::TABLES['test_table']);
+        $res = $mapper->fillModel($model, self::VALID_TEST_TABLE_RECORD);
+        $this->assertInstanceOf(AbstractModel::class, $res);
+        foreach ($res->toArray() as $field => $value) {
+            switch ($field) {
+                case 'password':
+                    $this->assertIsString($value);
+                    $this->assertEquals(60, strlen($value));
+                    $this->assertEquals('$', substr($value, 0, 1));
+                    break;
+                case 'test_json':
+                    $this->assertEquals(
+                        str_replace(' ', '', self::VALID_TEST_TABLE_RECORD[$field]),
+                        $value
+                    );
+                    break;
+                case 'test_date':
+                    $testDate = new \DateTime(self::VALID_TEST_TABLE_RECORD[$field]);
+                    $this->assertEquals(
+                        $testDate->format('Y-m-d H:i:s'),
+                        $value
+                    );
+                    break;
+                case 'test_array':
+                    $this->assertEquals(
+                        '["'.implode('","', self::VALID_TEST_TABLE_RECORD[$field]).'"]',
+                        $value
+                    );
+                    break;
+                default:
+                    $this->assertEquals(self::VALID_TEST_TABLE_RECORD[$field], $value);
+            }
+
+       }
     }
 
     public function test_get_additional_validation_rules(): void

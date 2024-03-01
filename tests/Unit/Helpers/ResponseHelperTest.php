@@ -25,18 +25,13 @@ class ResponseHelperTest extends \Tests\TestCase
      *
      * @return void
      */
-    public function test_construct(): void
+    public function test_construct_and_get_response(): void
     {
         $testController = new class() extends Controller {
             use ResponseHelper;
         };
         $this->assertInstanceOf(Controller::class, $testController);
         $this->assertInstanceOf(\Illuminate\Http\Response::class, $testController->getResponse());
-    }
-
-    public function test_get_response()
-    {
-        $this->markTestIncomplete();
     }
 
     /**
