@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Exceptions\SystemException;
+use App\Mappers\AbstractMapper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -63,7 +64,7 @@ trait MapperHelper
                     $return->{$field->name} = (float) $model->{$field->name};
                     break;
                 case "password":
-                    $return->{$field->name} = '***';
+                    $return->{$field->name} = AbstractMapper::PASSWORD_REPLACEMENT;
                     break;
                 case "string":
                 case "text":

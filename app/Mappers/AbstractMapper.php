@@ -51,6 +51,7 @@ abstract class AbstractMapper
         'min' => 4,
         'email' => 5,
     ];
+    const PASSWORD_REPLACEMENT = '********';
     public string $name;
 
     public function __construct(string $name)

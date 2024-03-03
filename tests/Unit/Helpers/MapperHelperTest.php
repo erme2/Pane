@@ -29,7 +29,32 @@ class MapperHelperTest extends TestCase
 
     public function test_extract_from_model()
     {
-        $this->markTestIncomplete();
+        $model = $this->getModel(AbstractMapper::TABLES['test_table'])->find(2);
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {
+            use \App\Helpers\MapperHelper;
+        };
+        foreach ($mapper->extractFromModel($model) as $key => $value) {
+            switch ($key) {
+                case "test_json":
+                    $this->assertEquals(
+                        json_decode(self::UPDATED_VALID_TEST_TABLE_RECORD[$key], false, 512, JSON_THROW_ON_ERROR),
+                        $value
+                    );
+                    break;
+                case "password":
+                    $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $value);
+                    break;
+                case "test_date":
+                    $this->assertInstanceOf(\DateTime::class, $value);
+                    $this->assertEquals(
+                        $model->test_date,
+                        $value->format('Y-m-d H:i:s')
+                    );
+                    break;
+                default:
+                    $this->assertEquals(self::UPDATED_VALID_TEST_TABLE_RECORD[$key], $value);
+            }
+        }
     }
 
     public function test_fill_model()

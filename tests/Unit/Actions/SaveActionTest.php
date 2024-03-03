@@ -4,6 +4,7 @@ namespace Tests\Unit\Actions;
 
 use App\Actions\SaveAction;
 use App\Exceptions\SystemException;
+use App\Mappers\AbstractMapper;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
 use Tests\TestCase;
@@ -49,7 +50,7 @@ class SaveActionTest extends TestCase
                     $this->assertEquals($value, $plot->data[0]->$key->format('d-m-Y'));
                     break;
                 case 'password': // password should not be returned
-                    $this->assertEquals('***', $plot->data[0]->$key);
+                    $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $plot->data[0]->$key);
                     break;
                 case 'test_json':
                     $this->assertEquals(json_decode($value), $plot->data[0]->$key);
@@ -76,7 +77,7 @@ class SaveActionTest extends TestCase
                     $this->assertEquals($value, $plot->data[0]->$key->format('d-m-Y'));
                     break;
                 case 'password': // password should not be returned
-                    $this->assertEquals('***', $plot->data[0]->$key);
+                    $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $plot->data[0]->$key);
                     break;
                 case 'test_json':
                     $this->assertEquals(json_decode($value), $plot->data[0]->$key);
