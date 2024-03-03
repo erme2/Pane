@@ -61,6 +61,7 @@ return new class extends Migration
             $table->string('name', 255);
             $table->string('sql_name', 255)->nullable();
             $table->text('description')->nullable();
+            $table->string('format')->nullable();
             $table->boolean('primary')->default(false);
             $table->boolean('index')->default(false);
             $table->boolean('nullable')->default(false);
@@ -90,31 +91,31 @@ return new class extends Migration
     {
         // tables
         $this->insertKeys['tables']['tables'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
             'name' => AbstractMapper::TABLES['tables'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'],
             'description' => "pane system table for storing tables",
         ]);
         $this->insertKeys['tables']['fields'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
             'name' => AbstractMapper::TABLES['fields'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'],
             'description' => "pane system table for storing fields",
         ]);
         $this->insertKeys['tables']['field_types'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
             'name' => AbstractMapper::TABLES['field_types'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'],
             'description' => "pane system table for storing field types",
         ]);
         $this->insertKeys['tables']['field_validations'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
             'name' => AbstractMapper::TABLES['field_validations'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'],
             'description' => "pane system table for storing field validations rules",
         ]);
         $this->insertKeys['tables']['validation_types'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insert([
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
             'name' => AbstractMapper::TABLES['validation_types'],
             'sql_name' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'],
             'description' => "pane system table for storing validations rule types",
@@ -123,37 +124,12 @@ return new class extends Migration
 
     private function fieldTypesInserts(): void
     {
-        // fields types
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'])->insert([
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
-                'name' => 'integer',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
-                'name' => 'string',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['text'],
-                'name' => 'text',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['boolean'],
-                'name' => 'boolean',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['timestamp'],
-                'name' => 'timestamp',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['array'],
-                'name' => 'array',
-            ],
-            [
-                'field_type_id' => AbstractMapper::FIELD_TYPES['password'] ,
-                'name' => 'password',
-            ],
-        ]);
+        foreach (AbstractMapper::FIELD_TYPES as $type => $id) {
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'])->insert([
+                'field_type_id' => $id,
+                'name' => $type,
+            ]);
+        }
     }
 
     private function fieldsInsertsTables(): void
@@ -162,7 +138,7 @@ return new class extends Migration
         $this->insertKeys['fields']['tables']['table_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['tables'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'table_id',
                 'primary' => true,
                 'index' => true,
@@ -203,7 +179,7 @@ return new class extends Migration
         $this->insertKeys['fields']['fields']['field_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['fields'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'field_id',
                 'primary' => true,
                 'index' => true,
@@ -213,7 +189,7 @@ return new class extends Migration
         $this->insertKeys['fields']['fields']['table_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['fields'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'table_id',
                 'primary' => false,
                 'index' => true,
@@ -223,7 +199,7 @@ return new class extends Migration
         $this->insertKeys['fields']['fields']['field_type_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['fields'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'field_type_id',
                 'primary' => false,
                 'index' => true,
@@ -308,7 +284,7 @@ return new class extends Migration
         $this->insertKeys['fields']['field_types']['field_type_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['field_types'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'field_type_id',
                 'primary' => true,
                 'index' => true,
@@ -329,7 +305,7 @@ return new class extends Migration
         $this->insertKeys['fields']['field_validations']['field_validation_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['field_validations'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'field_validation_id',
                 'primary' => true,
                 'index' => true,
@@ -338,7 +314,7 @@ return new class extends Migration
         $this->insertKeys['fields']['field_validations']['field_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['field_validations'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'field_id',
                 'primary' => false,
                 'index' => true,
@@ -347,7 +323,7 @@ return new class extends Migration
         $this->insertKeys['fields']['field_validations']['validation_type_id'] =
             DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['field_validations'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'validation_type_id',
                 'primary' => false,
                 'index' => false,
@@ -370,7 +346,7 @@ return new class extends Migration
         $this->insertKeys['fields']['validation_types']['validation_type_id'] =
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
                 'table_id' => $this->insertKeys['tables']['validation_types'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['integer'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'validation_type_id',
                 'primary' => true,
                 'index' => true,
@@ -387,28 +363,12 @@ return new class extends Migration
 
     private function fieldValidationTypesInserts(): void
     {
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'])->insert([
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'name' => 'required',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'name' => 'unique',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'name' => 'exists',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
-                'name' => 'min',
-            ],
-            [
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
-                'name' => 'max',
-            ],
-        ]);
+        foreach (AbstractMapper::VALIDATION_TYPES as $type => $id) {
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'])->insert([
+                'validation_type_id' => $id,
+                'name' => $type,
+            ]);
+        }
     }
 
     private function fieldValidationTablesInserts(): void
@@ -416,29 +376,24 @@ return new class extends Migration
         // field validations
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             [
-                'field_id' => $this->insertKeys['fields']['tables']['table_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['tables']['table_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].",table_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['tables']['name'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
                 'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].",name",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+                'value' => '1',
+            ],
+            [
+                'field_id' => $this->insertKeys['fields']['tables']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
                 'value' => '255',
+            ],
+            [
+                'field_id' => $this->insertKeys['fields']['tables']['sql_name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+                'value' => '1',
             ],
             [
                 'field_id' => $this->insertKeys['fields']['tables']['sql_name'],
@@ -453,39 +408,14 @@ return new class extends Migration
         // field validations
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             [
-                'field_id' => $this->insertKeys['fields']['fields']['field_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['fields']['field_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['fields'].",field_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['fields']['table_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
                 'field_id' => $this->insertKeys['fields']['fields']['table_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
                 'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].",table_id",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['fields']['field_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['fields']['field_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
                 'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].",field_type_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['fields']['name'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
             ],
         ]);
     }
@@ -495,24 +425,19 @@ return new class extends Migration
         // field validations
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             [
-                'field_id' => $this->insertKeys['fields']['field_types']['field_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['field_types']['field_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['field_types'].",field_type_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['field_types']['name'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
                 'field_id' => $this->insertKeys['fields']['field_types']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
                 'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].",name",
+            ],
+            [
+                'field_id' => $this->insertKeys['fields']['field_types']['name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+                'value' => '1',
+            ],
+            [
+                'field_id' => $this->insertKeys['fields']['field_types']['name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
+                'value' => '255',
             ]
         ]);
     }
@@ -522,39 +447,14 @@ return new class extends Migration
         // field validations
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             [
-                'field_id' => $this->insertKeys['fields']['field_validations']['field_validation_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['field_validations']['field_validation_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['field_validations'].",field_validation_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['field_validations']['field_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
                 'field_id' => $this->insertKeys['fields']['field_validations']['field_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
                 'value' => AbstractMapper::TABLES['fields'].",field_id",
             ],
             [
                 'field_id' => $this->insertKeys['fields']['field_validations']['validation_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['field_validations']['validation_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
                 'value' => AbstractMapper::TABLES['validation_types'].",validation_type_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['field_validations']['validation_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
-                'value' => '255',
             ],
         ]);
     }
@@ -564,24 +464,14 @@ return new class extends Migration
         // validation types
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             [
-                'field_id' => $this->insertKeys['fields']['validation_types']['validation_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['validation_types']['validation_type_id'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['validation_types'].",validation_type_id",
-            ],
-            [
-                'field_id' => $this->insertKeys['fields']['validation_types']['name'],
-                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['required'],
-                'value' => null,
-            ],
-            [
                 'field_id' => $this->insertKeys['fields']['validation_types']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
                 'value' => null,
+            ],
+            [
+                'field_id' => $this->insertKeys['fields']['validation_types']['name'],
+                'validation_type_id' => AbstractMapper::VALIDATION_TYPES['min'],
+                'value' => '1',
             ],
             [
                 'field_id' => $this->insertKeys['fields']['validation_types']['name'],

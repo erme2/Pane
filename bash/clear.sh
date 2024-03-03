@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# TO DO - document this file
+
 # cleaning laravel
 php artisan clear-compiled          # Remove the compiled class file
 #php artisan auth:clear-resets       # Flush expired password reset tokens @todo reactivate as soon as we have tokens working

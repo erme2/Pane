@@ -3,10 +3,14 @@
 namespace App\Mappers;
 
 use App\Exceptions\SystemException;
+use App\Helpers\ActionHelper;
+use App\Helpers\CoreHelper;
 use App\Helpers\MapperHelper;
 use App\Helpers\StringHelper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Class AbstractMapper
@@ -17,7 +21,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 abstract class AbstractMapper
 {
-    use MapperHelper, StringHelper;
+    use CoreHelper, MapperHelper, StringHelper;
 
     const MAP_TABLES_PREFIX = 'map_';
     const TABLES = [
@@ -28,98 +32,30 @@ abstract class AbstractMapper
         'validation_types' => 'validation_types',
         'users' => 'users',
         'user_types' => 'user_types',
+        'test_table' => 'test_table',
     ];
     const FIELD_TYPES = [
-        'integer' => 1,
+        'number' => 1,
         'string' => 2,
         'text' => 3,
         'boolean' => 4,
-        'timestamp' => 5,
+        'date' => 5,
         'array' => 6,
         'password' => 7,
-        'email' => 8,
-        'json' => 9,
+        'json' => 8,
     ];
     const VALIDATION_TYPES = [
-        'required' => 1,
-        'unique' => 2,
-        'exists' => 3,
+        'unique' => 1,
+        'exists' => 2,
+        'max' => 3,
         'min' => 4,
-        'max' => 5,
-        'email' => 6,
-        'array' => 7,
+        'email' => 5,
     ];
-    private string $name;
+    const PASSWORD_REPLACEMENT = '********';
+    public string $name;
+
     public function __construct(string $name)
     {
         $this->name = $name;
     }
-
-    /**
-     * Get validation rules or messages for model
-     *
-     * @param bool $withPrimary
-     * @return array
-     * @throws SystemException
-     */
-    public function getValidationRules(bool $withPrimary = true): array
-    {
-        $array = [];
-        $return = [];
-        foreach ($this->getFields($this->name) as $field) {
-            if ($withPrimary === false && (bool) $field->primary === true) {
-                continue;
-            }
-            foreach ($field->getValidationFields() as $validationField) {
-                $type = $validationField->getValidationType();
-                $array[$field->name][] = match ($type->name) {
-                    "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
-                    "required" => $type->name,
-                    default => throw new SystemException("Validation rule not found for $type->name"),
-                };
-            }
-        }
-        foreach ($array as $key => $value) {
-            if (!empty($value)) {
-                $return[$key] = implode('|', $value);
-            }
-        }
-        return $return;
-    }
-
-    /**
-     * Get validation messages for model
-     *
-     * @param bool $withPrimary
-     * @return array
-     * @throws SystemException
-     */
-    public function getValidationMessages(bool $withPrimary = true): array
-    {
-        $return = [];
-        foreach ($this->getFields($this->name) as $field) {
-            if ($withPrimary === false && (bool) $field->primary === true) {
-                continue;
-            }
-            foreach ($field->getValidationFields() as $validationField) {
-                $type = $validationField->getValidationType();
-                if (!empty($validationField->message)) {
-                    $return["$field->name.$type->name"] = $validationField->message;
-                }
-            }
-        }
-        return $return;
-    }
-
-    /**
-     * get the fields of a table
-     *
-     * @param string $tableName
-     * @return Collection
-     */
-    public function getFields(string $tableName): Collection
-    {
-        return (new Field())->getFields($tableName);
-    }
-
 }

@@ -11,10 +11,6 @@ use Illuminate\Database\Eloquent\Model;
  * This class will be used to store the validation types for the fields
  *
  * @package App\Models
- * @property int $validation_type_id
- * @property string $validation_type_name
- * @property string $created_at
- * @property string $updated_at
  */
 
 class ValidationType extends Model

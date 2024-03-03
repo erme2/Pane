@@ -6,6 +6,8 @@ use Symfony\Component\HttpFoundation\HeaderBag;
 
 trait TestsHelper
 {
+    const CHECK_ERROR_MESSAGES = ' (this is required to test error messages)';
+
     public function createMockRequest(
         string $uri = '/',
         string $method = 'GET',

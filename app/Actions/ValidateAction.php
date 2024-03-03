@@ -45,7 +45,6 @@ class ValidateAction extends AbstractAction
             throw new ValidationException($errors->toArray());
         }
         $plot->data[$subject][] = $plot->requestData['data'];
-
         return $plot;
      }
 }

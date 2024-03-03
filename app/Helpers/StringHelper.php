@@ -19,10 +19,6 @@ trait StringHelper
      */
     public function capitalCase(string $string): string
     {
-        $a = str_replace(['-', '_'], [' ', ' '], $string);
-        $b = ucwords($a);
-        $c = str_replace([' '], [''], $b);
-
         return str_replace([' '], [''], ucwords(str_replace(['-', '_'], [' ', ' '], $string)));
     }
 

@@ -12,17 +12,6 @@ use Illuminate\Database\Eloquent\Model;
  * we will use this class to get fields for every table described in the database
  *
  * @package App\Models
- * @property int $field_id
- * @property string $name
- * @property string $sql_name
- * @property int $field_type_id
- * @property int $table_id
- * @property bool $primary
- * @property bool $index
- * @property bool $nullable
- * @property string $default
- * @property string $created_at
- * @property string $updated_at
  */
 class Field extends Model
 {
@@ -34,11 +23,14 @@ class Field extends Model
     /**
      * Returns a collection of field validations for the current field
      *
+     * @param Field $field
      * @return Collection
      */
-    public function getValidationFields(): Collection
+    public function getValidationFields(Field $field): Collection
     {
-        return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')->get();
+        return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')
+            ->where('field_id', $field->field_id)
+            ->get();
     }
 
     /**

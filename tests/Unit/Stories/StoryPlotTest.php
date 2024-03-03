@@ -75,7 +75,7 @@ class StoryPlotTest extends TestCase
      * @return void
      * @throws SystemException
      */
-    public function testSetGetContentType_basic()
+    public function testSetGetContentType_basic(): void
     {
         $plot = new StoryPlot();
         $this->assertEquals('application/json', $plot->getContentType());
@@ -85,7 +85,7 @@ class StoryPlotTest extends TestCase
             $plot->setContentType('application/xml');
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
-            $this->assertEquals("System Exception: Invalid content type: application/xml", $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX."Invalid content type: application/xml", $e->getMessage());
         }
 
         // valid content type
@@ -100,7 +100,7 @@ class StoryPlotTest extends TestCase
      * @return void
      * @throws SystemException
      */
-    public function testSetGetStatus_basic()
+    public function testSetGetStatus_basic(): void
     {
         // empty
         $plot = new StoryPlot();
@@ -117,7 +117,7 @@ class StoryPlotTest extends TestCase
             $plot->setStatus($this->lowInvalidStatusCode);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
-            $this->assertEquals("System Exception: Invalid status code: {$this->lowInvalidStatusCode}", $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX."Invalid status code: {$this->lowInvalidStatusCode}", $e->getMessage());
         }
 
         // wrong status code (too high)
@@ -126,7 +126,7 @@ class StoryPlotTest extends TestCase
             $plot->setStatus($this->highInvalidStatusCode);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
-            $this->assertEquals("System Exception: Invalid status code: {$this->highInvalidStatusCode}", $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX."Invalid status code: {$this->highInvalidStatusCode}", $e->getMessage());
         }
 
         // wrong status code (string)
@@ -146,7 +146,7 @@ class StoryPlotTest extends TestCase
      * @return void
      * @throws SystemException
      */
-    public function test_set_request_data()
+    public function test_set_request_data(): void
     {
         $fakeRequest = $this->createMockRequest(
             '/test',
