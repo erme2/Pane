@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 class ReadTest extends TestCase
 {
-    public function main_test()
+    public function test_read()
     {
         $this->markTestIncomplete('This test has not been implemented yet.');
     }

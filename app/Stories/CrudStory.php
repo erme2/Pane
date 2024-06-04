@@ -4,6 +4,7 @@ namespace App\Stories;
 
 use App\Exceptions\SystemException;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /**
  * Class CrudStory
@@ -28,6 +29,7 @@ class CrudStory extends AbstractStory
             // create
             case Request::METHOD_POST:
                 $this->plot->options['is_new_record'] = true;
+                $this->plot->setStatus(Response::HTTP_CREATED);
                 $this->actions = [
                     'validate',
                     'save',

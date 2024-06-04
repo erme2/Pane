@@ -63,7 +63,7 @@ trait ResponseHelper
     public function success(StoryPlot $storyPlot): Response
     {
         $this->response
-            ->setStatusCode($storyPlot->getStatus())
+            ->setStatusCode($storyPlot->getStatus() ?: Response::HTTP_OK)
             ->header('Content-Type', $storyPlot->getContentType())
             ->setContent([
                 'status' => $this->getStatusText($storyPlot->getStatus()),

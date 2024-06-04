@@ -5,7 +5,7 @@
 #touch ./database/database.sqlite
 
 CLEAR_CACHE=no
-DELETE_DB=no
+DELETE_DB=yes
 TEST_MIGRATIONS=no
 
 while getopts ":c:d:t:" opt

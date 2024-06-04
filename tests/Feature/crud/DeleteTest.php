@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 class DeleteTest extends TestCase
 {
-    public function main_test()
+    public function test_delete()
     {
         $this->markTestIncomplete('This test has not been implemented yet.');
     }

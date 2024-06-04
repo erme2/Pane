@@ -3,7 +3,7 @@
 # TODO - document this file
 
 # refreshing database and cache (laravel)
-./bash/refresh.sh -d yes -c yes
+./bash/refresh.sh -c yes -t yes
 
 UNDO_MIGRATIONS=yes
 
