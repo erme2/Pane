@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 class UpdateTest extends TestCase
 {
-    public function main_test()
+    public function test_update()
     {
         $this->markTestIncomplete('This test has not been implemented yet.');
     }
