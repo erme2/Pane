@@ -7,9 +7,7 @@ use App\Mappers\AbstractMapper;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use PhpParser\Node\Expr\AssignOp\Mod;
 
 /**
  * Helper for App/Mappers.
@@ -19,6 +17,7 @@ use PhpParser\Node\Expr\AssignOp\Mod;
 
 trait MapperHelper
 {
+    use CoreHelper;
 
     /**
      * checks if the field is required and updates the rules array
@@ -224,14 +223,18 @@ trait MapperHelper
     /**
      * Get validation rules or messages for model
      *
-     * @param bool $withPrimary
+     * @param bool $withPrimary // if true, primary fields will be included
+     * @param bool $justPrimary // if true, only primary fields will be included
      * @return array
      * @throws SystemException
      */
-    public function getValidationRules(bool $withPrimary = true): array
+    public function getValidationRules(bool $withPrimary = true, bool $justPrimary = false): array
     {
         $array = [];
         $return = [];
+
+        // if justPrimary is true, withPrimary must be true
+        $withPrimary = $justPrimary ? true : $withPrimary;
 
         /** @var $field Field */
         foreach ($this->getFields($this->name) as $field) {
@@ -244,8 +247,15 @@ trait MapperHelper
                 // primary fields are always required
                 $array[$field->name][] = 'required';
 
-                // primary fields are always unique
-                $array[$field->name][] = 'unique:' . $this->name . ',' . $field->name;
+                // primary fields are always unique (or exists of justPrimary is true)
+                $array[$field->name][] = $justPrimary ?
+                    'exists:' . $this->getSqlTableName($this->name) . ',' . $field->name:
+                    'unique:' . $this->getSqlTableName($this->name) . ',' . $field->name;
+            }
+
+            // if justPrimary is true, only primary fields will be included
+            if ($justPrimary) {
+                continue;
             }
 
             // checking if the field is required (!nullable)
