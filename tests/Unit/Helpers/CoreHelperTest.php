@@ -6,7 +6,7 @@ use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use Tests\TestCase;
 
-class CoreHelper extends TestCase
+class CoreHelperTest extends TestCase
 {
     public function test_get_sql_table_name(): void
     {

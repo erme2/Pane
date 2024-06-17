@@ -277,4 +277,16 @@ trait MapperHelper
 
         return $return;
     }
+
+    public function getIndexableFields(): array
+    {
+        $return = [];
+        //* @var $field Field */
+        foreach ($this->getFields($this->name) as $field) {
+            if ($field->index || $field->primary || $field->sortable || $field->hasValidation('unique')) {
+                $return[] = $field->name;
+            }
+        }
+        return $return;
+    }
 }

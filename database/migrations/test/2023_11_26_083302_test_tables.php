@@ -82,6 +82,7 @@ return new class extends Migration
                 'description' => null,
                 'primary' => false,
                 'index' => false,
+                'sortable' => true,
                 'nullable' => false,
                 'default' => null,
         ]);
@@ -154,6 +155,7 @@ return new class extends Migration
                 'description' => null,
                 'primary' => false,
                 'index' => false,
+                'sortable' => true,
                 'nullable' => false,
                 'default' => null,
             ]);
@@ -178,6 +180,7 @@ return new class extends Migration
                 'description' => null,
                 'primary' => false,
                 'index' => false,
+                'sortable' => true,
                 'nullable' => true,
                 'default' => null,
             ]);

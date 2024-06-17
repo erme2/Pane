@@ -21,6 +21,10 @@ class FieldValidation extends Model
 
     protected $primaryKey = 'field_validation_id';
 
+    /**
+     * Setups the relationship with the field
+     * @return ValidationType|null
+     */
     public function getValidationType(): ?ValidationType
     {
         return $this->hasOne(ValidationType::class, 'validation_type_id', 'validation_type_id')->first();
