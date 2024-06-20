@@ -78,6 +78,15 @@ class StoryPlot
     }
 
     /**
+     * Gets the pagination data
+     * @return array
+     */
+    public function getPatination(): array
+    {
+        return $this->pagination;
+    }
+
+    /**
      * Gets what we need from the request and save it in to the plot data
      *
      * @param Request $request
@@ -124,4 +133,15 @@ class StoryPlot
         return $this;
     }
 
+    /**
+     * Set the pagination data
+     *
+     * @param array $pagination
+     * @return $this
+     */
+    public function setPagination(array $pagination): StoryPlot
+    {
+        $this->pagination = $pagination;
+        return $this;
+    }
 }

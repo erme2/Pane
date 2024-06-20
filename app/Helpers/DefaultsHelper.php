@@ -14,8 +14,8 @@ trait DefaultsHelper
         // todo replace with dynamic values from table
         return match ($key) {
             'PAGINATION_LIMIT' => self::PAGINATION_LIMIT,
-            'PAGINATION_MAX' => self::PAGINATION_OFFSET,
-            'PAGINATION_OFFSET' => self::PAGINATION_MAX,
+            'PAGINATION_MAX' => self::PAGINATION_MAX,
+            'PAGINATION_OFFSET' => self::PAGINATION_OFFSET,
             'PAGINATION_ORDER' => self::PAGINATION_ORDER,
             default => null,
         };

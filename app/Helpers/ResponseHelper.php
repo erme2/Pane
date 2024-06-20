@@ -62,13 +62,17 @@ trait ResponseHelper
      */
     public function success(StoryPlot $storyPlot): Response
     {
+        $content = [
+            'status' => $this->getStatusText($storyPlot->getStatus()),
+            'data' => $storyPlot->data,
+        ];
+        if ($storyPlot->getPatination()) {
+            $content['pagination'] = $storyPlot->getPatination();
+        }
         $this->response
             ->setStatusCode($storyPlot->getStatus() ?: Response::HTTP_OK)
             ->header('Content-Type', $storyPlot->getContentType())
-            ->setContent([
-                'status' => $this->getStatusText($storyPlot->getStatus()),
-                'data' => $storyPlot->data,
-            ]);
+            ->setContent($content);
 
         return $this->response;
     }

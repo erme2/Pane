@@ -21,6 +21,10 @@ class ReadAction extends AbstractAction
 {
     use ActionHelper, DefaultsHelper;
 
+    /**
+     * @throws ValidationException
+     * @throws SystemException
+     */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
         $mapper = $this->getMapper($subject);
@@ -44,25 +48,33 @@ class ReadAction extends AbstractAction
             }
         } else {
             $pagination = [
-                'limit' => $plot->requestData['data']['limit'] ?? $this->default('PAGINATION_LIMIT'),
+                'limit' => (int) $plot->requestData['data']['limit'] ?? $this->default('PAGINATION_LIMIT'),
                 'order' => $plot->requestData['data']['order'] ?? $this->default('PAGINATION_ORDER'),
                 'sort' => $plot->requestData['data']['sort'] ?? $keyName,
                 'page' => $plot->requestData['data']['page'] ?? 1,
             ];
             // validating the pagination data
-            $rules = [
+            $paginationRules = [
                 'limit' => 'integer|min:1|max:'.$this->default('PAGINATION_MAX'),
                 'order' => 'in:asc,desc',
                 'sort' => 'in:'.implode(',', $mapper->getIndexableFields()),
                 'page' => 'integer|min:1',
             ];
-print_R($pagination);
-print_R($plot->requestData);
-die("AZAZA");
+            $errors = Validator::make($pagination, $paginationRules)->errors();
+            if ($errors->any()) {
+                throw new ValidationException($errors->toArray());
+            }
+            $pagination['offset'] = ($pagination['page'] - 1) * $pagination['limit'];
 
-
-            // todo write the pagination logic
-            $plot->data = [];
+            $query = $model
+                ->limit($pagination['limit'])
+                ->offset($pagination['offset'])
+                ->orderBy($pagination['sort'], $pagination['order']);
+            foreach ($query->get() as $record) {
+                $plot->data[] = $mapper->extractFromModel($record);
+            }
+            $pagination['total'] = $model->count();
+            $plot->setPagination($pagination);
         }
 
         return $plot;
