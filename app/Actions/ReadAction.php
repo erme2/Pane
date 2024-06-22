@@ -34,9 +34,10 @@ class ReadAction extends AbstractAction
         // if we have a key, we are looking for a specific record
         if ($key) {
             // and we want to validate the key
-            $data = [$keyName => $key];
-            $rules = $mapper->getValidationRules(true, true);
-            $errors = Validator::make($data, $rules)->errors();
+            $errors = Validator::make(
+                [$keyName => $key],
+                $mapper->getValidationRules(true, true)
+            )->errors();
             if ($errors->any()) {
                 throw new ValidationException($errors->toArray());
             } else {
@@ -48,7 +49,7 @@ class ReadAction extends AbstractAction
             }
         } else {
             $pagination = [
-                'limit' => (int) $plot->requestData['data']['limit'] ?? $this->default('PAGINATION_LIMIT'),
+                'limit' => $plot->requestData['data']['limit'] ?? $this->default('PAGINATION_LIMIT'),
                 'order' => $plot->requestData['data']['order'] ?? $this->default('PAGINATION_ORDER'),
                 'sort' => $plot->requestData['data']['sort'] ?? $keyName,
                 'page' => $plot->requestData['data']['page'] ?? 1,
@@ -62,6 +63,10 @@ class ReadAction extends AbstractAction
             ];
             $errors = Validator::make($pagination, $paginationRules)->errors();
             if ($errors->any()) {
+print_R($errors);
+print_R($pagination);
+die("@ $keyName");
+
                 throw new ValidationException($errors->toArray());
             }
             $pagination['offset'] = ($pagination['page'] - 1) * $pagination['limit'];

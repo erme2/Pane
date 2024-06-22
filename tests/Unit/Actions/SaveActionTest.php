@@ -26,7 +26,7 @@ class SaveActionTest extends TestCase
     public function test_empty_data_exec(): void
     {
         try {
-            $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
+            $this->action->exec('TestTable', $this->mockStoryPlot);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'No data to save', $e->getMessage());

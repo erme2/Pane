@@ -162,4 +162,56 @@ class StoryPlotTest extends TestCase
         $this->assertInstanceOf(HeaderBag::class, $testPlot->getHeaders());
         $this->assertEquals('fake', $testPlot->getHeaders()->get('test'));
     }
+
+    public function test_error(): void
+    {
+        $message = 'this is an error';
+        $plot = new StoryPlot();
+        $plot->error($message);
+        $logs = $plot->getLogs();
+        $this->assertIsArray($logs);
+        $this->assertIsArray($logs['errors']);
+        $this->assertEquals($message, $logs['errors'][0]);
+    }
+
+    public function test_info(): void
+    {
+        $message = 'this is a info message';
+        $plot = new StoryPlot();
+        $plot->info($message);
+        $logs = $plot->getLogs();
+        $this->assertIsArray($logs);
+        $this->assertIsArray($logs['info']);
+        $this->assertEquals($message, $logs['info'][0]);
+    }
+
+    public function test_warnings(): void
+    {
+        $message = 'this is a warning message';
+        $plot = new StoryPlot();
+        $plot->warning($message);
+        $logs = $plot->getLogs();
+        $this->assertIsArray($logs);
+        $this->assertIsArray($logs['warnings']);
+        $this->assertEquals($message, $logs['warnings'][0]);
+    }
+
+   public function test_getLogs(): void
+    {
+        $error = 'this is a error message';
+        $warning = 'this is a warning message';
+        $info = 'this is a info message';
+        $plot = new StoryPlot();
+        $plot->error($error);
+        $plot->warning($warning);
+        $plot->info($info);
+        $logs = $plot->getLogs();
+        $this->assertIsArray($logs);
+        $this->assertIsArray($logs['errors']);
+        $this->assertIsArray($logs['warnings']);
+        $this->assertIsArray($logs['info']);
+        $this->assertEquals($error, $logs['errors'][0]);
+        $this->assertEquals($warning, $logs['warnings'][0]);
+        $this->assertEquals($info, $logs['info'][0]);
+    }
 }

@@ -66,8 +66,8 @@ trait ResponseHelper
             'status' => $this->getStatusText($storyPlot->getStatus()),
             'data' => $storyPlot->data,
         ];
-        if ($storyPlot->getPatination()) {
-            $content['pagination'] = $storyPlot->getPatination();
+        if ($storyPlot->getPagination()) {
+            $content['pagination'] = $storyPlot->getPagination();
         }
         $this->response
             ->setStatusCode($storyPlot->getStatus() ?: Response::HTTP_OK)

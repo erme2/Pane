@@ -42,8 +42,20 @@ class StoryPlot
      * @throws SystemException
      * @test StoryPlotTest::test__construct
      */
-    public function __construct(string $contentType = 'application/json') {
+    public function __construct(string $contentType = 'application/json')
+    {
         $this->setContentType($contentType);
+    }
+
+    /**
+     * Saves a warning message to logs
+     *
+     * @param string $message
+     * @return void
+     */
+    public function error(string $message): void
+    {
+        $this->log['errors'][] = $message;
     }
 
     /**
@@ -68,6 +80,20 @@ class StoryPlot
     }
 
     /**
+     * Returns the log data
+     *
+     * @param string|null $what (errors|warnings|info)
+     * @return array|array[]
+     */
+    public function getLogs(string $what = null): array
+    {
+        if ($what && isset($this->log[$what])) {
+            return $this->log[$what];
+        }
+        return $this->log;
+    }
+
+    /**
      * Gets the status of the story plot
      *
      * @return int
@@ -81,9 +107,20 @@ class StoryPlot
      * Gets the pagination data
      * @return array
      */
-    public function getPatination(): array
+    public function getPagination(): array
     {
         return $this->pagination;
+    }
+
+    /**
+     * Saves an info message to logs
+     *
+     * @param string $message
+     * @return void
+     */
+    public function info(string $message): void
+    {
+        $this->log['info'][] = $message;
     }
 
     /**
@@ -143,5 +180,16 @@ class StoryPlot
     {
         $this->pagination = $pagination;
         return $this;
+    }
+
+    /**
+     * Saves a warning message to logs
+     *
+     * @param string $message
+     * @return void
+     */
+    public function warning(string $message): void
+    {
+        $this->log['warnings'][] = $message;
     }
 }
