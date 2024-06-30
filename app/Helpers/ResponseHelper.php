@@ -62,6 +62,10 @@ trait ResponseHelper
      */
     public function success(StoryPlot $storyPlot): Response
     {
+        // if the status is not set, set it to 200 OK
+        if (!$storyPlot->getStatus()) {
+            $storyPlot->setStatus(Response::HTTP_OK);
+        }
         $content = [
             'status' => $this->getStatusText($storyPlot->getStatus()),
             'data' => $storyPlot->data,
@@ -70,7 +74,7 @@ trait ResponseHelper
             $content['pagination'] = $storyPlot->getPagination();
         }
         $this->response
-            ->setStatusCode($storyPlot->getStatus() ?: Response::HTTP_OK)
+            ->setStatusCode($storyPlot->getStatus())
             ->header('Content-Type', $storyPlot->getContentType())
             ->setContent($content);
 
