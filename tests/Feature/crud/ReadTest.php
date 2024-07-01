@@ -168,9 +168,6 @@ class ReadTest extends TestCase
         $params = [
             'page' => 1,
             'limit' => 10,
-            'filter' => [
-                'email' => 'email_1',
-            ]
         ];
 echo ("@ ".$this->endpoint.'test_table?'.http_build_query($params)."\n");
         $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));

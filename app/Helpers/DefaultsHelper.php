@@ -11,7 +11,7 @@ trait DefaultsHelper
 
     public function default(string $key)
     {
-        // todo replace with dynamic values from table
+        // todo replace with dynamic values from settings table
         return match ($key) {
             'PAGINATION_LIMIT' => self::PAGINATION_LIMIT,
             'PAGINATION_MAX' => self::PAGINATION_MAX,

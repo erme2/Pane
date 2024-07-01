@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\DefaultsHelper;
+use App\Helpers\PaginationHelper;
 use App\Mappers\AbstractMapper;
 use App\Stories\StoryPlot;
 use App\Helpers\ActionHelper;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ReadAction extends AbstractAction
 {
-    use ActionHelper, DefaultsHelper;
+    use ActionHelper, PaginationHelper;
 
     /**
      * @throws ValidationException
@@ -49,7 +50,8 @@ class ReadAction extends AbstractAction
                 }
             }
         } else {
-            $pagination = $this->getPaginationDone($plot, $keyName, $mapper);
+
+            $pagination = $this->getPaginationData($plot, $subject);
 //            $filter = $this->getFilterDone($plot, $mapper);
             $query = $model
                 ->limit($pagination['limit'])
@@ -66,34 +68,13 @@ class ReadAction extends AbstractAction
         return $plot;
     }
 
-    private function getPaginationDone(StoryPlot $plot, string $keyName, AbstractMapper $mapper): array
-    {
-        $pagination = [
-            'limit' => isset($plot->requestData['data']['limit']) ?
-                (int) $plot->requestData['data']['limit'] : $this->default('PAGINATION_LIMIT'),
-            'order' => $plot->requestData['data']['order'] ?? $this->default('PAGINATION_ORDER'),
-            'sort' => $plot->requestData['data']['sort'] ?? $keyName,
-            'page' => isset($plot->requestData['data']['page']) ? (int) $plot->requestData['data']['page'] : 1,
-        ];
-        // validating the pagination data
-        $paginationRules = [
-            'limit' => 'integer|min:1|max:'.$this->default('PAGINATION_MAX'),
-            'order' => 'in:asc,desc',
-            'sort' => 'in:'.implode(',', $mapper->getIndexableFields()),
-            'page' => 'integer|min:1',
-        ];
-        $errors = Validator::make($pagination, $paginationRules)->errors();
-        if ($errors->any()) {
-            throw new ValidationException($errors->toArray());
-        }
-        $pagination['offset'] = ($pagination['page'] - 1) * $pagination['limit'];
-        return $pagination;
-    }
-
-    private function getFilterDone(StoryPlot $plot, AbstractMapper $mapper): array
-    {
-        $filter = [];
-        return $filter;
-    }
+//    private function getFilterDone(StoryPlot $plot, AbstractMapper $mapper): array
+//    {
+//        $filter = [];
+//        foreach ($mapper->getFields() as $field) {
+//
+//        }
+//        return $filter;
+//    }
 
 }

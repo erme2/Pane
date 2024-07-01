@@ -151,10 +151,12 @@ trait MapperHelper
     /**
      * get the fields of a table
      *
+     * @param string $name
      * @return Collection
      */
-    public function getFields(string $name): Collection
+    public function getFields(string $name = null): Collection
     {
+        $name = $name ?: $this->name;
         return (new Field())->getFields(Str::snake($name));
     }
 

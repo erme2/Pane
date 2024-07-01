@@ -63,6 +63,5 @@ class TestTableSeeder extends Seeder
                 'email' => "test$i@email.com",
             ]));
         }
-        // some more test data
     }
 }
