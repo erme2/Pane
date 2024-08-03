@@ -58,12 +58,13 @@ return new class extends Migration
             $table->unsignedBigInteger('field_id')->autoIncrement();
             $table->unsignedInteger('table_id')->index();
             $table->unsignedSmallInteger('field_type_id')->index();
-            $table->string('name', 255);
+            $table->string('name', 255)->index();
             $table->string('sql_name', 255)->nullable();
             $table->text('description')->nullable();
             $table->string('format')->nullable();
             $table->boolean('primary')->default(false);
             $table->boolean('index')->default(false);
+            $table->boolean('sortable')->default(false);
             $table->boolean('nullable')->default(false);
             $table->string('default')->nullable();
         });
@@ -212,7 +213,7 @@ return new class extends Migration
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'name',
                 'primary' => false,
-                'index' => false,
+                'index' => true,
                 'nullable' => false,
                 'default' => null,
             ]);
@@ -254,6 +255,16 @@ return new class extends Migration
                 'primary' => false,
                 'index' => false,
                 'nullable' => false,
+                'default' => 'false',
+            ]);
+        $this->insertKeys['fields']['fields']['sortable'] =
+            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+                'table_id' => $this->insertKeys['tables']['fields'],
+                'field_type_id' => AbstractMapper::FIELD_TYPES['boolean'],
+                'name' => 'sortable',
+                'primary' => false,
+                'index' => false,
+                'nullable' => true,
                 'default' => 'false',
             ]);
         $this->insertKeys['fields']['fields']['nullable'] =

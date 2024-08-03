@@ -10,8 +10,6 @@ use Tests\TestsHelper;
 
 return new class extends Migration
 {
-
-
     use TestsHelper;
     private array $insertKeys = [];
 
@@ -37,7 +35,6 @@ return new class extends Migration
         $this->addTableRecord();
         $this->addFieldsRecords();
         $this->addFieldsValidationRecords();
-        $this->seedTestTable();
     }
 
     /**
@@ -82,6 +79,7 @@ return new class extends Migration
                 'description' => null,
                 'primary' => false,
                 'index' => false,
+                'sortable' => true,
                 'nullable' => false,
                 'default' => null,
         ]);
@@ -154,6 +152,7 @@ return new class extends Migration
                 'description' => null,
                 'primary' => false,
                 'index' => false,
+                'sortable' => true,
                 'nullable' => false,
                 'default' => null,
             ]);
@@ -178,6 +177,7 @@ return new class extends Migration
                 'description' => null,
                 'primary' => false,
                 'index' => false,
+                'sortable' => true,
                 'nullable' => true,
                 'default' => null,
             ]);
@@ -235,21 +235,6 @@ return new class extends Migration
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
             'value' => 100,
             'message' => null,
-        ]);
-    }
-
-    private function seedTestTable(): void
-    {
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'])->insert([
-            'name' => 'Test Table',
-            'description' => 'Just a table to run tests',
-            'is_active' => true,
-            'test_date' => '2021-01-01 00:00:00',
-            'test_array' => json_encode(['test' => 'array']),
-            'password' => 'password',
-            'email' => 'test@email.com',
-            'test_json' => json_encode(['test' => 'json']),
-            'numero' => 33,
         ]);
     }
 

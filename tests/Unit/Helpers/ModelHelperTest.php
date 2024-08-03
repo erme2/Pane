@@ -5,7 +5,6 @@ namespace Tests\Unit\Helpers;
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
 use App\Mappers\AbstractMapper;
-use App\Models\AbstractModel;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Tests\TestCase;

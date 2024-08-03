@@ -26,10 +26,10 @@ class Field extends Model
      * @param Field $field
      * @return Collection
      */
-    public function getValidationFields(Field $field): Collection
+    public function getValidationFields(): Collection
     {
         return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')
-            ->where('field_id', $field->field_id)
+            ->where('field_id', $this->field_id)
             ->get();
     }
 
@@ -49,6 +49,7 @@ class Field extends Model
                 AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".sql_name",
                 AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".primary",
                 AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".index",
+                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".sortable",
                 AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".nullable",
                 AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".default",
                 AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].".name as type",
@@ -64,5 +65,22 @@ class Field extends Model
             ->where(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].'.name', $table)
         ;
         return $query->get();
+    }
+
+    /**
+     * checks if a field has a specific validation
+     *
+     * @param array $what
+     * @return bool
+     */
+    public function hasValidation(string $what): bool
+    {
+        $validationRules = $this->getValidationFields();
+        foreach ($validationRules as $validationRule) {
+            if ($validationRule->validation_type_id === AbstractMapper::VALIDATION_TYPES[$what]) {
+                return true;
+            }
+        }
+        return false;
     }
 }

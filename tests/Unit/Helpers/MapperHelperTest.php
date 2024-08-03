@@ -186,7 +186,7 @@ class MapperHelperTest extends TestCase
         $this->assertEquals([], $res);
 
         // test table
-        $mapper = new class('TestTable') extends AbstractMapper {};
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         $res = $mapper->getValidationMessages();
         $this->assertIsArray($res);
         $this->assertEquals(5, count($res));
@@ -199,10 +199,37 @@ class MapperHelperTest extends TestCase
         $res = $mapper->getValidationRules();
         $this->assertEquals([], $res);
 
-        // test table
-        $mapper = new class('TestTable') extends AbstractMapper {};
+        // test table with primary key
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         $res = $mapper->getValidationRules();
         $this->assertIsArray($res);
         $this->assertEquals(10, count($res));
+
+        // test table without primary key
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
+        $res = $mapper->getValidationRules(false);
+        $this->assertIsArray($res);
+        $this->assertEquals(9, count($res));
+
+        // test table with just primary key
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
+        $res = $mapper->getValidationRules(true, true);
+        $this->assertIsArray($res);
+        $this->assertEquals(1, count($res));
+
+        // test table with just primary key (and wrong withPrimary value)
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
+        $res = $mapper->getValidationRules(false, true);
+        $this->assertIsArray($res);
+        $this->assertEquals(1, count($res));
+    }
+
+    public function test_get_indexable_fields(): void
+    {
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
+        $res = $mapper->getIndexableFields();
+        $this->assertIsArray($res);
+        $this->assertEquals(4, count($res));
+
     }
 }
