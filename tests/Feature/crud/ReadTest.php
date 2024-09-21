@@ -3,6 +3,7 @@
 namespace Tests\Feature\crud;
 
 use App\Exceptions\SystemException;
+use App\Helpers\DefaultsHelper;
 use App\Mappers\AbstractMapper;
 use Database\Seeders\TestTableSeeder;
 use Illuminate\Http\Response;
@@ -10,6 +11,7 @@ use Tests\TestCase;
 
 class ReadTest extends TestCase
 {
+    use DefaultsHelper;
     public string $endpoint = '/crud/';
 
     public function test_empty()
@@ -163,16 +165,86 @@ class ReadTest extends TestCase
         $this->assertEquals($content->pagination->limit, $params['limit']);
     }
 
-    public function tes_pagination_filter()
+    public function test_pagination_filter()
     {
+        // default limit and pagination
+        $params = [];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(self::PAGINATION_LIMIT, count($content->data));
+        $this->assertEquals(1, $content->data[0]->table_id);
+        $this->assertEquals(1, $content->pagination->page);
+        $this->assertEquals(self::PAGINATION_LIMIT, $content->pagination->limit);
+        $this->assertEquals(self::PAGINATION_OFFSET, $content->pagination->offset);
+        $this->assertEquals(1003, $content->pagination->total);
+        $this->assertEquals(41, $content->pagination->pages);
+
+        // basic limit and pagination
         $params = [
             'page' => 1,
             'limit' => 10,
         ];
-echo ("@ ".$this->endpoint.'test_table?'.http_build_query($params)."\n");
         $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $content = json_decode($response->getContent(), false);
-print_R($content);
+        $this->assertEquals($params['limit'], count($content->data));
+        $this->assertEquals(1, $content->data[0]->table_id);
+        $this->assertEquals($params['page'], $content->pagination->page);
+        $this->assertEquals($params['limit'], $content->pagination->limit);
+        $this->assertEquals(1003, $content->pagination->total);
+        $this->assertEquals(101, $content->pagination->pages);
+
+        // a random page 101 on a 10 rows limit
+        $params = [
+            'page' => 101,
+            'limit' => 10,
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(3, count($content->data));
+        $this->assertEquals(1001, $content->data[0]->table_id);
+        $this->assertEquals($params['page'], $content->pagination->page);
+        $this->assertEquals($params['limit'], $content->pagination->limit);
+        $this->assertEquals(1003, $content->pagination->total);
+        $this->assertEquals(101, $content->pagination->pages);
+
+        // page 1 on a 25 rows limit
+        $params = [
+            'page' => 1,
+            'limit' => 25,
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals($params['limit'], count($content->data));
+        $this->assertEquals(1, $content->data[0]->table_id);
+        $this->assertEquals($params['page'], $content->pagination->page);
+        $this->assertEquals($params['limit'], $content->pagination->limit);
+        $this->assertEquals(1003, $content->pagination->total);
+        $this->assertEquals(41, $content->pagination->pages);
+
+
+        // page reverting the order
+        $params = [
+            'page' => 1,
+            'limit' => 10,
+            'order' => 'desc'
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals($params['limit'], count($content->data));
+        $this->assertEquals(1003, $content->data[0]->table_id);
+        $this->assertEquals($params['page'], $content->pagination->page);
+        $this->assertEquals($params['limit'], $content->pagination->limit);
+        $this->assertEquals(1003, $content->pagination->total);
+        $this->assertEquals(101, $content->pagination->pages);
+
+        // test max limit error
+        // test wrong sort field
+        // test wrong sort order
 
         $this->markTestIncomplete();
     }
