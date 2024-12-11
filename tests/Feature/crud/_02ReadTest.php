@@ -9,7 +9,7 @@ use Database\Seeders\TestTableSeeder;
 use Illuminate\Http\Response;
 use Tests\TestCase;
 
-class ReadTest extends TestCase
+class _02ReadTest extends TestCase
 {
     use DefaultsHelper;
     public string $endpoint = '/crud/';
@@ -242,9 +242,10 @@ class ReadTest extends TestCase
         $this->assertEquals(1003, $content->pagination->total);
         $this->assertEquals(101, $content->pagination->pages);
 
-        // test max limit error
-        // test wrong sort field
-        // test wrong sort order
+        // todo add test wrong sort field
+        // todo add test wrong sort order
+        // todo add test wrong page
+        // todo add test wrong limit
 
         $this->markTestIncomplete();
     }
