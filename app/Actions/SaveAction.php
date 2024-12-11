@@ -28,6 +28,7 @@ class SaveAction extends AbstractAction
      * @param StoryPlot $plot
      * @param mixed|null $key
      * @return StoryPlot
+     * @throws SystemException
      */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {

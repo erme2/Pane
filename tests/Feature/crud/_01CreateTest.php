@@ -7,7 +7,7 @@ use App\Mappers\AbstractMapper;
 use Illuminate\Http\Response;
 use Tests\TestCase;
 
-class CreateTest extends TestCase
+class _01CreateTest extends TestCase
 {
 
     public function test_wrong_table(): void

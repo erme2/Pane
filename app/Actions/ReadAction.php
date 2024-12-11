@@ -38,7 +38,7 @@ class ReadAction extends AbstractAction
             // and we want to validate the key
             $errors = Validator::make(
                 [$keyName => $key],
-                $mapper->getValidationRules(true, true)
+                $mapper->getValidationRules(false, true)
             )->errors();
             if ($errors->any()) {
                 throw new ValidationException($errors->toArray());
@@ -50,9 +50,7 @@ class ReadAction extends AbstractAction
                 }
             }
         } else {
-
             $pagination = $this->getPaginationData($plot, $subject);
-//            $filter = $this->getFilterDone($plot, $mapper);
             $query = $model
                 ->limit($pagination['limit'])
                 ->offset($pagination['offset'])
@@ -67,14 +65,4 @@ class ReadAction extends AbstractAction
 
         return $plot;
     }
-
-//    private function getFilterDone(StoryPlot $plot, AbstractMapper $mapper): array
-//    {
-//        $filter = [];
-//        foreach ($mapper->getFields() as $field) {
-//
-//        }
-//        return $filter;
-//    }
-
 }
