@@ -2,31 +2,52 @@
 
 # TODO - document this file
 
-# refreshing database and cache (laravel)
-./bash/refresh.sh -c yes -t yes
-
+SWOW_OPTIONS=no
 TEST_SEEDER=yes
 UNDO_MIGRATIONS=yes
+VERBOSE=yes
+REFRESH_DB=yes
 
-echo "Running tests with seeder: ${TEST_SEEDER} (-s) and undo migrations: ${UNDO_MIGRATIONS} (-u)"
-
-while getopts ":s:u:" opt
+while getopts ":o:s:u:v:" opt
    do
-     # shellcheck disable=SC2220
      case $opt in
+        o ) SHOW_OPTIONS=$OPTARG;;
+        r ) REFRESH_DB=$OPTARG;;
         s ) TEST_SEEDER=$OPTARG;;
         u ) UNDO_MIGRATIONS=$OPTARG;;
+        v ) VERBOSE=$OPTARG;;
      esac
 done
 
+if [ ${SHOW_OPTIONS} = 'yes' ]
+then
+    echo "Running tests with seeder:"
+    echo -e "\t show options: ${SHOW_OPTIONS} (-o)"
+    echo -e "\t refresh DB: ${REFRESH_DB} (-r)"
+    echo -e "\t run Seeder: ${TEST_SEEDER} (-s)"
+    echo -e "\t verbose: ${VERBOSE} (-v)"
+    echo -e "\t undo (remove) test migrations: ${UNDO_MIGRATIONS} (-u) "
+    exit 0
+fi
 
+if [ ${REFRESH_DB} = 'yes' ]
+then
+    if [ ${VERBOSE} = 'yes' ]
+    then
+        echo "Refreshing the database (-r yes default)"
+    fi
+    ./bash/refresh.sh -c yes -t yes -v no
+fi
 
 # creating the test tables to run tests
 php artisan migrate --path /database/migrations/test
 
 if [ ${TEST_SEEDER} = 'yes' ]
 then
-    echo "Seeding the test database (-s yes default)"
+    if [ ${VERBOSE} = 'yes' ]
+    then
+        echo "Seeding the test database (-s yes default)"
+    fi
     php artisan db:seed --class=TestTableSeeder
 else
     echo "Test seeder NOT run (-s no)"
