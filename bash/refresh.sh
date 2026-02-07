@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+git #!/usr/bin/env bash
 
 # TODO - document this file
 #rm -f ./database/database.sqlite
