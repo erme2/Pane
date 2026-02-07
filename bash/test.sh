@@ -2,7 +2,7 @@
 
 # TODO - document this file
 
-SWOW_OPTIONS=no
+SHOW_OPTIONS=yes
 TEST_SEEDER=yes
 UNDO_MIGRATIONS=yes
 VERBOSE=yes
@@ -21,7 +21,7 @@ while getopts ":f:o:s:u:v:" opt
      esac
 done
 
-if [ "${SHOW_OPTIONS}" = 'yes' ]
+if [ ${SHOW_OPTIONS} = 'yes' ]
 then
     echo "Running tests with seeder:"
     echo -e "\t show options: ${SHOW_OPTIONS} (-o)"
@@ -29,7 +29,12 @@ then
     echo -e "\t run Seeder: ${TEST_SEEDER} (-s)"
     echo -e "\t verbose: ${VERBOSE} (-v)"
     echo -e "\t undo (remove) test migrations: ${UNDO_MIGRATIONS} (-u) "
-    exit 0
+
+    read -p "Do you want to run this script? (y/n): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Exiting without running the script."
+        exit 0
+    fi
 fi
 
 if [ ${REFRESH_DB} = 'yes' ]
@@ -38,7 +43,7 @@ then
     then
         echo "Refreshing the database (-r yes default)"
     fi
-    ./bash/refresh.sh -c yes -t yes -v no
+    ./bash/refresh.sh -c yes -t yes -v no -o yes
 fi
 
 # creating the test tables to run tests

@@ -1,4 +1,4 @@
-git #!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # TODO - document this file
 #rm -f ./database/database.sqlite
@@ -9,7 +9,7 @@ DELETE_DB=yes
 SEEDING=no
 TEST_MIGRATIONS=no
 VERBOSE=yes
-SHOW_OPTIONS=no
+SHOW_OPTIONS=yes
 
 while getopts ":c:d:o:s:t:v:" opt
    do
@@ -17,7 +17,7 @@ while getopts ":c:d:o:s:t:v:" opt
      case $opt in
         c ) CLEAR_CACHE=$OPTARG;;
         d ) DELETE_DB=$OPTARG;;
-        o ) SHOW_OPTIONS='yes';;
+        o ) SHOW_OPTIONS=$$OPTARG;;
         s ) SEEDING=$OPTARG;;
         t ) TEST_MIGRATIONS=$OPTARG;;
         v ) VERBOSE=$OPTARG;;
@@ -27,11 +27,16 @@ done
 if [ ${SHOW_OPTIONS} = 'yes' ]
 then
     echo "@ Running refresh.sh with options:"
-    echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c),"
-    echo -e "\t DELETE_DB=${DELETE_DB} (-d),"
-    echo -e "\t SEEDING=${SEEDING} (-s),"
+    echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
+    echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
+    echo -e "\t SEEDING=${SEEDING} (-s)"
     echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
-    exit 0
+
+    read -p "Do you want to run this script? (y/n): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Exiting without running the script."
+        exit 0
+    fi
 fi
 
 # clearing cache?
