@@ -38,12 +38,15 @@ class ReadAction extends AbstractAction
             // and we want to validate the key
             $errors = Validator::make(
                 [$keyName => $key],
-                $mapper->getValidationRules(false, true)
+                $mapper->getValidationRules(true, true)
             )->errors();
+
             if ($errors->any()) {
                 throw new ValidationException($errors->toArray());
             } else {
                 try {
+
+
                     $plot->data[] = $mapper->extractFromModel($model->find($key));
                 } catch (\Exception $e) {
                     throw new SystemException($e->getMessage());

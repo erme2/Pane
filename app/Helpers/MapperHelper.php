@@ -154,10 +154,10 @@ trait MapperHelper
      * @param string $name
      * @return Collection
      */
-    public function getFields(string $name = null): Collection
+    public function getFields(?string $name = null): Collection
     {
         $name = $name ?: $this->name;
-        return (new Field())->getFields(Str::snake($name));
+        return new Field()->getFields(Str::snake($name));
     }
 
     /**
@@ -237,7 +237,6 @@ trait MapperHelper
         $array = [];
         $return = [];
 
-
         /** @var $field Field */
         foreach ($this->getFields($this->name) as $field) {
             if ($field->primary) {
@@ -247,6 +246,14 @@ trait MapperHelper
                 }
                 // primary fields are always required
                 $array[$field->name][] = 'required';
+
+                // primary field type
+                // TODO - add more types
+                switch ($field->type) {
+                    case 'number':
+                        $array[$field->name][] = 'numeric';
+                        break;
+                }
 
                 // primary fields are always unique or exists if we are validating the primary key ($primaryExists)
                 $array[$field->name][] = $primaryExists ?

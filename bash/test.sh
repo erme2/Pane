@@ -7,10 +7,12 @@ TEST_SEEDER=yes
 UNDO_MIGRATIONS=yes
 VERBOSE=yes
 REFRESH_DB=yes
+STOP_ON_FAILURE=''
 
-while getopts ":o:s:u:v:" opt
+while getopts ":f:o:s:u:v:" opt
    do
      case $opt in
+        f ) STOP_ON_FAILURE='--stop-on-failure';;
         o ) SHOW_OPTIONS=$OPTARG;;
         r ) REFRESH_DB=$OPTARG;;
         s ) TEST_SEEDER=$OPTARG;;
@@ -19,7 +21,7 @@ while getopts ":o:s:u:v:" opt
      esac
 done
 
-if [ ${SHOW_OPTIONS} = 'yes' ]
+if [ "${SHOW_OPTIONS}" = 'yes' ]
 then
     echo "Running tests with seeder:"
     echo -e "\t show options: ${SHOW_OPTIONS} (-o)"
@@ -54,7 +56,7 @@ else
 fi
 
 # running the tests
-php artisan test
+php artisan test ${STOP_ON_FAILURE}
 
 if [ ${UNDO_MIGRATIONS} = 'no' ]
 then

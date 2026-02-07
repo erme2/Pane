@@ -19,7 +19,7 @@ trait TestsHelper
             'SERVER_NAME' => 'localhost',
             'SERVER_PORT' => 80,
         ],
-        string $content = null
+        ?string $content = null
     )
     {
         $return = new \Illuminate\Http\Request;

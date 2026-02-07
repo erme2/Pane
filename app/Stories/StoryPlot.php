@@ -85,7 +85,7 @@ class StoryPlot
      * @param string|null $what (errors|warnings|info)
      * @return array|array[]
      */
-    public function getLogs(string $what = null): array
+    public function getLogs(?string $what = null): array
     {
         if ($what && isset($this->log[$what])) {
             return $this->log[$what];
