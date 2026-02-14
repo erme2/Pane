@@ -29,7 +29,7 @@ then
     echo -e "\t refresh DB: ${REFRESH_DB} (-r)"
     echo -e "\t run Seeder: ${TEST_SEEDER} (-s)"
     echo -e "\t verbose: ${VERBOSE} (-v)"
-    echo -e "\t undo (remove) test migrations: ${UNDO_MIGRATIONS} (-u) "
+    echo -e "\t undo (remove) test seeder: ${UNDO_MIGRATIONS} (-u) "
 
     read -p "Do you want to run this script? (y/n): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
@@ -62,15 +62,23 @@ else
 fi
 
 # running the tests
-
 if [ ${STOP_ON_FAILURE} = 'no' ]
 then
     echo "Tests will NOT stop on failure (-f no default)"
-    php artisan test
+    SOF=""
 else
     echo "Tests will stop on failure (-f yes)"
-    php artisan test --stop-on-failure
+    SOF=" --stop-on-failure"
 fi
+
+php artisan test ${SOF}
+TEST_EXIT_CODE=$?
+
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo "Tests failed with exit code $TEST_EXIT_CODE (Test migrations NOT rolled back)"
+    exit $TEST_EXIT_CODE
+fi
+
 
 if [ ${UNDO_MIGRATIONS} = 'no' ]
 then

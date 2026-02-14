@@ -35,6 +35,9 @@ class ValidateAction extends AbstractAction
     {
         $mapper = $this->getMapper($subject);
         $validateData = $plot->requestData['data'];
+print_R($validateData);
+die("OKZA");
+
         // if it's an update we need to add the primary key to the data array
         if (!$this->isCreate($plot)) {
             $validateData[$this->getModel($subject)->getKeyName()] = $key;
