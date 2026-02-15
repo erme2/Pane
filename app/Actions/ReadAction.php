@@ -45,8 +45,6 @@ class ReadAction extends AbstractAction
                 throw new ValidationException($errors->toArray());
             } else {
                 try {
-
-
                     $plot->data[] = $mapper->extractFromModel($model->find($key));
                 } catch (\Exception $e) {
                     throw new SystemException($e->getMessage());

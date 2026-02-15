@@ -34,14 +34,13 @@ class ValidateAction extends AbstractAction
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
         $mapper = $this->getMapper($subject);
-        $data = $plot->requestData['data'];
 
         // if it's an update we need to add the primary key to the data array
         if (!$this->isCreate($plot)) {
-            $data[$this->getModel($subject)->getKeyName()] = $key;
+            $plot->requestData['data'][$this->getModel($subject)->getKeyName()] = $key;
         }
         $errors = Validator::make(
-            $data,
+            $plot->requestData['data'],
             $mapper->getValidationRules($this->isCreate($plot)),
             $mapper->getValidationMessages($this->isCreate($plot))
         )->errors();
