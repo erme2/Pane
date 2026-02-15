@@ -31,7 +31,7 @@ class _03UpdateTest extends TestCase
         $this->assertEquals(Response::$statusTexts[$response->getStatusCode()], $result->status);
         $this->assertIsObject($result->data);
         $this->assertIsArray($result->data->errors);
-        $this->assertCount(4, $result->data->errors);
+        $this->assertCount(3, $result->data->errors);
         foreach ($result->data->errors as $error) {
             $this->assertEquals($error->message, "The ".str_replace('_', ' ', $error->field_name)." field is required.");
         }
@@ -39,7 +39,7 @@ class _03UpdateTest extends TestCase
 
     public function test_validating_wrong_data()
     {
-        $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'].'/1';
+        $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'].'/A'; // invalid primary key, it should be an integer
         $response = $this->put($endpoint, self::INVALID_TEST_TABLE_RECORD);
         $result = json_decode($response->getContent(), false);
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
@@ -47,6 +47,14 @@ class _03UpdateTest extends TestCase
         $this->assertIsObject($result->data);
         $this->assertIsArray($result->data->errors);
         $this->assertCount(9, $result->data->errors);
+        $this->assertEquals($result->data->errors[0]->message, "The table id field must be a number.");
+        $this->assertEquals($result->data->errors[1]->message, "The name field is required.");
+        $this->assertEquals($result->data->errors[2]->message, "The description field must be a string.");
+        $this->assertEquals($result->data->errors[3]->message, "The is active field must be true or false.");
+        $this->assertEquals($result->data->errors[4]->message, "The test date field must be a valid date.");
+        $this->assertEquals($result->data->errors[5]->message, "The test array field must be an array.");
+        $this->assertEquals($result->data->errors[6]->message, "The email field must be a valid email address.");
+        $this->assertEquals($result->data->errors[7]->message, "The test json field must be a valid JSON string.");
     }
 
     public function test_update()

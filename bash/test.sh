@@ -25,7 +25,7 @@ if [ ${SHOW_OPTIONS} = 'yes' ]
 then
     echo "Running tests with seeder:"
     echo -e "\t show options: ${SHOW_OPTIONS} (-o)"
-    echo -e "\t stop on failure: ${REFRESH_DB} (-r)"
+    echo -e "\t stop on failure: ${REFRESH_DB} (-f)"
     echo -e "\t refresh DB: ${REFRESH_DB} (-r)"
     echo -e "\t run Seeder: ${TEST_SEEDER} (-s)"
     echo -e "\t verbose: ${VERBOSE} (-v)"
@@ -71,7 +71,7 @@ else
     SOF=" --stop-on-failure"
 fi
 
-php artisan test ${SOF}
+vendor/bin/phpunit --testdox${SOF}
 TEST_EXIT_CODE=$?
 
 if [ $TEST_EXIT_CODE -ne 0 ]; then

@@ -182,38 +182,38 @@ class MapperHelperTest extends TestCase
     {
         // Unknown table
         $mapper = new class('InvalidName') extends AbstractMapper {};
-        $res = $mapper->getValidationMessages();
+        $res = $mapper->getValidationMessages(false);
         $this->assertEquals([], $res);
 
         // test table
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
-        $res = $mapper->getValidationMessages();
+        $res = $mapper->getValidationMessages(false);
         $this->assertIsArray($res);
-        $this->assertEquals(5, count($res));
+        $this->assertEquals(4, count($res));
     }
 
     public function test_get_validation_rules(): void
     {
         // Unknown table
         $mapper = new class('InvalidName') extends AbstractMapper {};
-        $res = $mapper->getValidationRules();
+        $res = $mapper->getValidationRules(true);
         $this->assertEquals([], $res);
 
         // test table with primary key
-        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
-        $res = $mapper->getValidationRules();
-        $this->assertIsArray($res);
-        $this->assertEquals(10, count($res));
-
-        // test table without primary key
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         $res = $mapper->getValidationRules(false);
         $this->assertIsArray($res);
         $this->assertEquals(9, count($res));
 
+        // test table without primary key
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
+        $res = $mapper->getValidationRules(true);
+        $this->assertIsArray($res);
+        $this->assertEquals(9, count($res));
+
         // test table with just primary key
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
-        $res = $mapper->getValidationRules(true, true);
+        $res = $mapper->getValidationRules(false, true);
         $this->assertIsArray($res);
         $this->assertEquals(1, count($res));
 

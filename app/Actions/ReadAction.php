@@ -38,7 +38,7 @@ class ReadAction extends AbstractAction
             // and we want to validate the key
             $errors = Validator::make(
                 [$keyName => $key],
-                $mapper->getValidationRules(true, true)
+                $mapper->getValidationRules(false, true)
             )->errors();
 
             if ($errors->any()) {

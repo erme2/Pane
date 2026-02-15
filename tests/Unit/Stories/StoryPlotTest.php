@@ -159,8 +159,8 @@ class StoryPlotTest extends TestCase
 
         $this->assertEquals($this->testRequest['method'], $testPlot->requestData['method']);
         $this->assertEquals($this->testRequest['data'], $testPlot->requestData['data']);
-        $this->assertInstanceOf(HeaderBag::class, $testPlot->getHeaders());
-        $this->assertEquals('fake', $testPlot->getHeaders()->get('test'));
+        $this->assertInstanceOf(HeaderBag::class, $testPlot->headers);
+        $this->assertEquals('fake', $testPlot->headers->get('test'));
     }
 
     public function test_error(): void

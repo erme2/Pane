@@ -202,15 +202,16 @@ trait MapperHelper
      * @return array
      * @throws SystemException
      */
-    public function getValidationMessages(bool $withPrimary = true): array
+    public function getValidationMessages(bool $isCreate): array
     {
         $return = [];
         foreach ($this->getFields($this->name) as $field) {
-            // skipping primary fields when requested
-            if ($withPrimary === false && (bool) $field->primary === true) {
+            // skipping primary on create calls
+            if ($isCreate && (bool) $field->primary === true) {
                 continue;
             }
-            if ($field->type === 'password') {
+            // we will not update passwords, so we will not validate them on update calls
+            if ($field->type === 'password' && !$isCreate) {
                 continue;
             }
             // walking through the validation fields
@@ -227,12 +228,12 @@ trait MapperHelper
     /**
      * Get validation rules or messages for model
      *
-     * @param bool $withPrimary // if true, primary fields will be included
-     * @param bool $primaryExists // if true, only primary fields will be included
+     * @param bool $isCreate
+     * @param bool $onlyPrimary
      * @return array
      * @throws SystemException
      */
-    public function getValidationRules(bool $withPrimary = true, bool $primaryExists = false): array
+    public function getValidationRules(bool $isCreate, bool $onlyPrimary = false): array
     {
         $array = [];
         $return = [];
@@ -240,34 +241,29 @@ trait MapperHelper
         /** @var $field Field */
         foreach ($this->getFields($this->name) as $field) {
             if ($field->primary) {
-                // skipping primary fields when requested
-                if ($withPrimary === false) {
+                // skipping primary fields on create calls
+                if ($isCreate) {
                     continue;
                 }
                 // primary fields are always required
                 $array[$field->name][] = 'required';
 
                 // primary field type
-                // TODO - add more types
-                switch ($field->type) {
-                    case 'number':
-                        $array[$field->name][] = 'numeric';
-                        break;
+                if ($field->type === 'number') {
+                     $array[$field->name][] = 'numeric';
                 }
 
-                // primary fields are always unique or exists if we are validating the primary key ($primaryExists)
-                $array[$field->name][] = $primaryExists ?
-                    'exists:' . $this->getSqlTableName($this->name) . ',' . $field->name:
-                    'unique:' . $this->getSqlTableName($this->name) . ',' . $field->name;
+                // primary fields are always unique or exists if we are validating the primary key
+                $array[$field->name][] = 'exists:' . $this->getSqlTableName($this->name) . ',' . $field->name;
             }
 
-            // if justPrimary is true, only primary fields will be included
-            if ($primaryExists) {
+            // if $onlyPrimary is true, only primary fields will be included
+            if ($onlyPrimary) {
                 continue;
             }
 
             // passwords will not be updated so we will not validate them on update calls
-            if ($withPrimary && $field->type === 'password') {
+            if (!$isCreate && $field->type === 'password') {
                 continue;
             }
 
