@@ -28,10 +28,8 @@ class ValidateActionTest extends TestCase
             $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
         } catch (ValidationException $e) {
             $errors = $e->getErrors();
-
             $this->assertIsArray($errors);
             $this->assertCount(4, $errors);
-
 
             foreach ($errors as $error) {
                 $this->assertIsArray($error);

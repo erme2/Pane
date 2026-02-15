@@ -15,13 +15,17 @@ use Symfony\Component\HttpFoundation\HeaderBag;
 
 class StoryPlot
 {
-    const VALID_CONTENT_TYPES = [
+    const array VALID_CONTENT_TYPES = [
         'json' => 'application/json',
     ];
 
     protected string $contentType;
     public array $data = [];
-    protected HeaderBag $headers;
+    public HeaderBag $headers {
+        get {
+            return $this->headers;
+        }
+    }
     protected array $log = [
         'errors' => [],
         'warnings' => [],
@@ -70,22 +74,12 @@ class StoryPlot
     }
 
     /**
-     * Gets the headers object from the request
-     *
-     * @return HeaderBag
-     */
-    public function getHeaders(): HeaderBag
-    {
-        return $this->headers;
-    }
-
-    /**
      * Returns the log data
      *
      * @param string|null $what (errors|warnings|info)
      * @return array|array[]
      */
-    public function getLogs(string $what = null): array
+    public function getLogs(?string $what = null): array
     {
         if ($what && isset($this->log[$what])) {
             return $this->log[$what];

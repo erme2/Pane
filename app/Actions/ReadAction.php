@@ -40,6 +40,7 @@ class ReadAction extends AbstractAction
                 [$keyName => $key],
                 $mapper->getValidationRules(false, true)
             )->errors();
+
             if ($errors->any()) {
                 throw new ValidationException($errors->toArray());
             } else {

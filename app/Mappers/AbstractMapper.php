@@ -23,8 +23,8 @@ abstract class AbstractMapper
 {
     use CoreHelper, MapperHelper, StringHelper;
 
-    const MAP_TABLES_PREFIX = 'map_';
-    const TABLES = [
+    const string MAP_TABLES_PREFIX = 'map_';
+    const array TABLES = [
         'tables' => 'tables',
         'fields' => 'fields',
         'field_types' => 'field_types',
@@ -34,7 +34,7 @@ abstract class AbstractMapper
         'user_types' => 'user_types',
         'test_table' => 'test_table',
     ];
-    const FIELD_TYPES = [
+    const array FIELD_TYPES = [
         'number' => 1,
         'string' => 2,
         'text' => 3,
@@ -44,14 +44,14 @@ abstract class AbstractMapper
         'password' => 7,
         'json' => 8,
     ];
-    const VALIDATION_TYPES = [
+    const array VALIDATION_TYPES = [
         'unique' => 1,
         'exists' => 2,
         'max' => 3,
         'min' => 4,
         'email' => 5,
     ];
-    const PASSWORD_REPLACEMENT = '********';
+    const string PASSWORD_REPLACEMENT = '********';
     public string $name;
 
     public function __construct(string $name)
