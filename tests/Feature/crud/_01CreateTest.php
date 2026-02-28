@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use Illuminate\Http\Response;
 use Tests\TestCase;
+use Illuminate\Support\Str;
 
 class _01CreateTest extends TestCase
 {
@@ -55,9 +56,9 @@ class _01CreateTest extends TestCase
         // valid create call
         $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'];
         $data = self::VALID_TEST_TABLE_RECORD;
-        $time = time();
-        $data['name'] = "unique test_name $time";
-        $data['email'] = "test$time@email.com";
+        $suffix = (string) Str::uuid();
+        $data['name'] = "unique test_name $suffix";
+        $data['email'] = "test.$suffix@email.com";
         $response = $this->post($endpoint, $data);
         $result = json_decode($response->getContent(), false);
         $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());

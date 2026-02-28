@@ -141,7 +141,7 @@ class _02ReadTest extends TestCase
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
         $this->assertEquals( $params['limit'], count($content->data));
-        $this->assertEquals($content->data[0]->table_id, 1003);
+        $this->assertEquals($content->data[0]->table_id, 179);
         $this->assertEquals($content->data[1]->table_id, 180);
         $this->assertEquals($content->pagination->page, $params['page']);
         $this->assertEquals($content->pagination->limit, $params['limit']);

@@ -1,6 +1,3 @@
-# CodeRabbit configuration for PHP/Laravel project
-language: php
-
 # File patterns to include in reviews
 reviews:
   # Include PHP files
@@ -9,14 +6,6 @@ reviews:
     - "composer.json"
     - "composer.lock"
     - "phpunit.xml"
-
-  # Exclude certain paths from reviews
-  path_ignore_filters:
-    - "vendor/**"
-    - "bootstrap/cache/**"
-    - "storage/**"
-    - "node_modules/**"
-    - "public/storage/**"
 
 # Code quality checks
 checks:

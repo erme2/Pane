@@ -11,6 +11,10 @@ TEST_MIGRATIONS=no
 VERBOSE=yes
 SHOW_OPTIONS=yes
 
+if [ ! -f .env ]; then
+    echo "Error: .env file not found."
+    exit 1
+fi
 source .env
 
 while getopts ":c:d:o:s:t:v:" opt
@@ -75,7 +79,13 @@ else
             rm -f ./database/database.sqlite
             touch ./database/database.sqlite
     elif [ "$DB_CONNECTION" = "mysql" ]; then
-        echo "DROP DATABASE $DB_DATABASE; CREATE DATABASE $DB_DATABASE;" | mysql --skip-ssl -u "$DB_USERNAME" --password="$DB_PASSWORD" -h "$DB_HOST"
+        safe_db_name="${DB_DATABASE//\`/\`\`}"
+        mysql --skip-ssl \
+          -u "$DB_USERNAME" \
+          --password="$DB_PASSWORD" \
+          -h "$DB_HOST" \
+          -P "${DB_PORT:-3306}" \
+          -e "DROP DATABASE IF EXISTS \`$safe_db_name\`; CREATE DATABASE \`$safe_db_name\`;"
     else
         echo "Unsupported database connection: $DB_CONNECTION - Database will not be deleted and recreated."
         exit 1
