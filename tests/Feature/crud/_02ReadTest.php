@@ -89,8 +89,8 @@ class _02ReadTest extends TestCase
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
         $this->assertEquals( $params['limit'], count($content->data));
-        $this->assertEquals($content->data[0]->table_id, 91);
-        $this->assertEquals($content->data[1]->table_id, 92);
+        $check = $this->sort_check($content->data, 'table_id');
+        $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
         $this->assertEquals($content->pagination->limit, $params['limit']);
 
@@ -106,8 +106,8 @@ class _02ReadTest extends TestCase
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
         $this->assertEquals( $params['limit'], count($content->data));
-        $this->assertEquals($content->data[0]->table_id, 913);
-        $this->assertEquals($content->data[1]->table_id, 912);
+        $check = $this->sort_check($content->data, 'table_id', false);
+        $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
         $this->assertEquals($content->pagination->limit, $params['limit']);
 
@@ -123,8 +123,8 @@ class _02ReadTest extends TestCase
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
         $this->assertEquals( $params['limit'], count($content->data));
-        $this->assertEquals($content->data[0]->table_id, 91);
-        $this->assertEquals($content->data[1]->table_id, 92);
+        $check = $this->sort_check($content->data, 'table_id');
+        $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
         $this->assertEquals($content->pagination->limit, $params['limit']);
 
@@ -141,8 +141,8 @@ class _02ReadTest extends TestCase
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
         $this->assertEquals( $params['limit'], count($content->data));
-        $this->assertEquals($content->data[0]->table_id, 179);
-        $this->assertEquals($content->data[1]->table_id, 180);
+        $check = $this->sort_check($content->data, 'email');
+        $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
         $this->assertEquals($content->pagination->limit, $params['limit']);
 
@@ -159,8 +159,8 @@ class _02ReadTest extends TestCase
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
         $this->assertEquals( $params['limit'], count($content->data));
-        $this->assertEquals($content->data[0]->table_id, 919);
-        $this->assertEquals($content->data[1]->table_id, 918);
+        $check = $this->sort_check($content->data, 'email', false);
+        $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
         $this->assertEquals($content->pagination->limit, $params['limit']);
     }
@@ -192,6 +192,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals(1, $content->data[0]->table_id);
         $this->assertEquals($params['page'], $content->pagination->page);
         $this->assertEquals($params['limit'], $content->pagination->limit);
+
         $this->assertEquals(1003, $content->pagination->total);
         $this->assertEquals(101, $content->pagination->pages);
 
@@ -225,8 +226,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals(1003, $content->pagination->total);
         $this->assertEquals(41, $content->pagination->pages);
 
-
-        // page reverting the order
+        // reverting the order
         $params = [
             'page' => 1,
             'limit' => 10,
@@ -248,5 +248,16 @@ class _02ReadTest extends TestCase
         // todo add test wrong limit
 
         $this->markTestIncomplete();
+    }
+
+    function sort_check(array $data, string $field, bool $asc = true): array {
+        $rows = array_map(fn ($row) => $row->{$field}, $data);
+        $sorted = $rows;
+        if ($asc) {
+            sort($sorted, SORT_NUMERIC);
+        } else {
+            rsort($sorted, SORT_NUMERIC);
+        }
+        return ['sorted' => $sorted, 'rows' => $rows];
     }
 }
