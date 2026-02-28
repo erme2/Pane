@@ -1,0 +1,49 @@
+# Production Dockerfile for Laravel (PHP 8.5 FPM, Alpine)
+FROM php:8.5-fpm-alpine as base
+
+# Install system dependencies
+RUN apk add --no-cache \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    libwebp-dev \
+    libxpm-dev \
+    freetype-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    oniguruma-dev \
+    icu-dev \
+    libxml2-dev \
+    mariadb-client
+
+# Install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-xpm \
+    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd intl xml opcache
+
+# Install Composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www
+
+# Copy only composer files and install dependencies (no dev)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Copy application code
+COPY . .
+
+# Set permissions for Laravel
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
+
+# Expose port 9000
+EXPOSE 9000
+
+# Set entrypoint
+CMD ["php-fpm"]
+
+# Production PHP settings
+COPY ./docker/php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
+
