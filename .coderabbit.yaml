@@ -1,0 +1,150 @@
+# CodeRabbit configuration for PHP/Laravel project
+language: php
+
+# File patterns to include in reviews
+reviews:
+  # Include PHP files
+  path_filters:
+    - "**/*.php"
+    - "composer.json"
+    - "composer.lock"
+    - "phpunit.xml"
+
+  # Exclude certain paths from reviews
+  path_ignore_filters:
+    - "vendor/**"
+    - "bootstrap/cache/**"
+    - "storage/**"
+    - "node_modules/**"
+    - "public/storage/**"
+
+# Code quality checks
+checks:
+  # PHP specific checks
+  php:
+    # Check for PHP syntax errors
+    syntax: true
+
+    # Check for potential security issues
+    security: true
+
+    # Check for code style issues (PSR-12)
+    style: true
+
+    # Check for potential bugs
+    bugs: true
+
+    # Check for performance issues
+    performance: true
+
+    # Check for maintainability issues
+    maintainability: true
+
+    # Check for complexity issues
+    complexity: true
+
+    # Check for documentation issues
+    documentation: true
+
+  # General checks
+  general:
+    # Check for TODO/FIXME comments
+    todo_comments: false
+
+    # Check for large files
+    large_files: true
+
+    # Check for long lines
+    long_lines:
+      enabled: true
+      max_length: 120
+
+    # Check for duplicate code
+    duplication: true
+
+# Test-related checks
+testing:
+  # Require tests for new features
+  require_tests: true
+
+  # Check test coverage
+  coverage:
+    enabled: true
+    threshold: 70
+
+  # PHPUnit specific settings
+  phpunit:
+    config_file: "phpunit.xml"
+
+# Review settings
+review_settings:
+  # Auto-approve minor style fixes
+  auto_approve_minor: false
+
+  # Request changes for security issues
+  request_changes_security: true
+
+  # Maximum number of comments per review
+  max_comments: 25
+
+  # Review thoroughness (light, normal, thorough)
+  thoroughness: normal
+
+# Ignore certain types of changes
+ignore:
+  # Ignore whitespace-only changes
+  whitespace_changes: false
+
+  # Ignore formatting-only changes
+  formatting_only: false
+
+#  # Ignore changes in specific files
+#  files:
+#    - "**.md"
+#    - "**.txt"
+#    - ".env.example"
+
+# Custom rules for Laravel
+custom_rules:
+  laravel:
+    # Check for proper use of Eloquent
+    eloquent_best_practices: true
+
+    # Check for proper route definitions
+    route_conventions: true
+
+    # Check for proper controller structure
+    controller_conventions: true
+
+    # Check for proper middleware usage
+    middleware_conventions: true
+
+    # Check for proper validation usage
+    validation_conventions: true
+
+    # Check for proper exception handling
+    exception_handling: true
+
+# Comment settings
+comments:
+  # Enable inline comments
+  inline: true
+
+  # Enable summary comments
+  summary: true
+
+  # Comment on potential improvements
+  suggestions: true
+
+  # Comment on security issues
+  security_alerts: true
+
+# Integration settings
+integrations:
+  # Enable GitHub integration
+  github:
+    enabled: true
+
+  # Enable Slack notifications (if configured)
+  slack:
+    enabled: false
