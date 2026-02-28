@@ -75,10 +75,7 @@ else
             rm -f ./database/database.sqlite
             touch ./database/database.sqlite
     elif [ "$DB_CONNECTION" = "mysql" ]; then
-
-
-        echo 'mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_DATABASE; CREATE DATABASE $DB_DATABASE;"'
-        mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_DATABASE; CREATE DATABASE $DB_DATABASE;"
+        echo "DROP DATABASE $DB_DATABASE; CREATE DATABASE $DB_DATABASE;" | mysql --skip-ssl -u "$DB_USERNAME" --password="$DB_PASSWORD" -h "$DB_HOST"
     else
         echo "Unsupported database connection: $DB_CONNECTION - Database will not be deleted and recreated."
         exit 1
