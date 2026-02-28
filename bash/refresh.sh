@@ -76,8 +76,10 @@ else
     fi
 
     if [ "$DB_CONNECTION" = "sqlite" ]; then
-            rm -f ./database/database.sqlite
-            touch ./database/database.sqlite
+        db_file="${DB_DATABASE:-./database/database.sqlite}"
+        mkdir -p "$(dirname "$db_file")"
+        rm -f "$db_file"
+        touch "$db_file"
     elif [ "$DB_CONNECTION" = "mysql" ]; then
         safe_db_name="${DB_DATABASE//\`/\`\`}"
         mysql --skip-ssl \
