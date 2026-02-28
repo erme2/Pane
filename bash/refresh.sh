@@ -11,6 +11,12 @@ TEST_MIGRATIONS=no
 VERBOSE=yes
 SHOW_OPTIONS=yes
 
+if [ ! -f .env ]; then
+    echo "Error: .env file not found."
+    exit 1
+fi
+source .env
+
 while getopts ":c:d:o:s:t:v:" opt
    do
      # shellcheck disable=SC2220
@@ -24,14 +30,14 @@ while getopts ":c:d:o:s:t:v:" opt
      esac
 done
 
+echo "@ Running refresh.sh with options:"
+echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
+echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
+echo -e "\t SEEDING=${SEEDING} (-s)"
+echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
+
 if [ ${SHOW_OPTIONS} = 'yes' ]
 then
-    echo "@ Running refresh.sh with options:"
-    echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
-    echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
-    echo -e "\t SEEDING=${SEEDING} (-s)"
-    echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
-
     read -p "Do you want to run this script? (y/n): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Exiting without running the script."
@@ -68,8 +74,24 @@ else
     then
         echo "Deleting database (-d yes default)"
     fi
-    rm -f ./database/database.sqlite
-    touch ./database/database.sqlite
+
+    if [ "$DB_CONNECTION" = "sqlite" ]; then
+        db_file="${DB_DATABASE:-./database/database.sqlite}"
+        mkdir -p "$(dirname "$db_file")"
+        rm -f "$db_file"
+        touch "$db_file"
+    elif [ "$DB_CONNECTION" = "mysql" ]; then
+        safe_db_name="${DB_DATABASE//\`/\`\`}"
+        mysql --skip-ssl \
+          -u "$DB_USERNAME" \
+          --password="$DB_PASSWORD" \
+          -h "$DB_HOST" \
+          -P "${DB_PORT:-3306}" \
+          -e "DROP DATABASE IF EXISTS \`$safe_db_name\`; CREATE DATABASE \`$safe_db_name\`;"
+    else
+        echo "Unsupported database connection: $DB_CONNECTION - Database will not be deleted and recreated."
+        exit 1
+    fi
 fi
 
 # running migrations

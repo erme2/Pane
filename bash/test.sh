@@ -71,6 +71,8 @@ else
     SOF=" --stop-on-failure"
 fi
 
+
+
 vendor/bin/phpunit --testdox${SOF}
 TEST_EXIT_CODE=$?
 

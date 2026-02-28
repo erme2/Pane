@@ -5,6 +5,7 @@ namespace Tests\Unit\Actions;
 use App\Actions\ValidateAction;
 use App\Exceptions\ValidationException;
 use App\Stories\StoryPlot;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -85,6 +86,9 @@ class ValidateActionTest extends TestCase
         $this->mockStoryPlot->options['is_new_record'] = true;
         $this->mockStoryPlot->requestData['data'] = self::VALID_TEST_TABLE_RECORD;
         $this->mockStoryPlot->requestData['data']['name'] = 'just another test name';
+        $suffix = (string) Str::uuid();
+        $this->mockStoryPlot->requestData['data']['email'] = "unique$suffix@email.com";
+
         $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
         // no errors :) we are happy :)
         $this->assertInstanceOf(StoryPlot::class, $plot);

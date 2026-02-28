@@ -215,7 +215,7 @@ return new class extends Migration
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
             'field_id' => $this->insertKeys['fields']['email'],
             'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-            'value' => AbstractMapper::MAP_TABLES_PREFIX.'test_table,field_id',
+            'value' => AbstractMapper::MAP_TABLES_PREFIX.'test_table,email',
             'message' => 'Email must be unique'.self::CHECK_ERROR_MESSAGES,
         ]);
         DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([

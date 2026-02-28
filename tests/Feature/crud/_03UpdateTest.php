@@ -61,10 +61,12 @@ class _03UpdateTest extends TestCase
     {
         $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'].'/1';
         $data = self::VALID_TEST_TABLE_RECORD;
-        $data['name'] = 'updated test_name '.time();
+        $time = time();
+        $data['name'] = "updated test_name $time";
+        $data['email'] = "updated$time@email.com";
         $response = $this->put($endpoint, $data);
-        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $result = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $this->assertEquals(Response::$statusTexts[$response->getStatusCode()], $result->status);
         $this->assertIsArray($result->data);
         $this->assertCount(1, $result->data);

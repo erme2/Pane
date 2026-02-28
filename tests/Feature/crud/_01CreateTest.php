@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use Illuminate\Http\Response;
 use Tests\TestCase;
+use Illuminate\Support\Str;
 
 class _01CreateTest extends TestCase
 {
@@ -50,15 +51,17 @@ class _01CreateTest extends TestCase
         $this->assertCount(9, $result->data->errors);
     }
 
-    public function test_create()
+    public function test_create_ok()
     {
-        // empty call
+        // valid create call
         $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'];
         $data = self::VALID_TEST_TABLE_RECORD;
-        $data['name'] = 'unique test_name '.time();
+        $suffix = (string) Str::uuid();
+        $data['name'] = "unique test_name $suffix";
+        $data['email'] = "test.$suffix@email.com";
         $response = $this->post($endpoint, $data);
-        $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
         $result = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
         $this->assertEquals(Response::$statusTexts[$response->getStatusCode()], $result->status);
         $this->assertIsArray($result->data);
         $this->assertCount(1, $result->data);
@@ -90,9 +93,6 @@ class _01CreateTest extends TestCase
                 default:
                     $this->assertEquals($value, $result->data[0]->$key);
             }
-//            case
-//
-//            $this->assertEquals($value, $result->data[0]->$key);
         }
     }
 }
