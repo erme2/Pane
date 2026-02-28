@@ -11,6 +11,8 @@ TEST_MIGRATIONS=no
 VERBOSE=yes
 SHOW_OPTIONS=yes
 
+source .env
+
 while getopts ":c:d:o:s:t:v:" opt
    do
      # shellcheck disable=SC2220
@@ -24,14 +26,14 @@ while getopts ":c:d:o:s:t:v:" opt
      esac
 done
 
+echo "@ Running refresh.sh with options:"
+echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
+echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
+echo -e "\t SEEDING=${SEEDING} (-s)"
+echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
+
 if [ ${SHOW_OPTIONS} = 'yes' ]
 then
-    echo "@ Running refresh.sh with options:"
-    echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
-    echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
-    echo -e "\t SEEDING=${SEEDING} (-s)"
-    echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
-
     read -p "Do you want to run this script? (y/n): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Exiting without running the script."
@@ -68,8 +70,19 @@ else
     then
         echo "Deleting database (-d yes default)"
     fi
-    rm -f ./database/database.sqlite
-    touch ./database/database.sqlite
+
+    if [ "$DB_CONNECTION" = "sqlite" ]; then
+            rm -f ./database/database.sqlite
+            touch ./database/database.sqlite
+    elif [ "$DB_CONNECTION" = "mysql" ]; then
+
+
+        echo 'mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_DATABASE; CREATE DATABASE $DB_DATABASE;"'
+        mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_DATABASE; CREATE DATABASE $DB_DATABASE;"
+    else
+        echo "Unsupported database connection: $DB_CONNECTION - Database will not be deleted and recreated."
+        exit 1
+    fi
 fi
 
 # running migrations
