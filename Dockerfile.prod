@@ -17,8 +17,9 @@ RUN apk add --no-cache \
     oniguruma-dev \
     icu-dev \
     libxml2-dev \
-    mariadb-client \
-    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-xpm \
+    mariadb-client
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-xpm \
     && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd intl xml opcache
 
 # Production PHP settings
