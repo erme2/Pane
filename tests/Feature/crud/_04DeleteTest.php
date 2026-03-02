@@ -34,9 +34,8 @@ class _04DeleteTest extends TestCase
     public function test_delete_static_record(): void
     {
         $response = $this->delete($this->endpoint.'test_table/2');
-        $content = json_decode($response->getContent(), false);
         $this->assertEquals(Response::HTTP_NO_CONTENT, $response->getStatusCode());
-        $this->assertNull($content);
+        $this->assertNull($response->getContent());
     }
 
     public function test_delete_nonexistent_record(): void
