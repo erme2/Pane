@@ -232,4 +232,78 @@ class MapperHelperTest extends TestCase
         $this->assertEquals(4, count($res));
 
     }
+
+    public function test_get_validation_rules_in_laravel_format(): void
+    {
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
+
+        // Test with empty arrays
+        $result = $mapper->getValidationRulesInLaravelFormat([], []);
+        $this->assertEquals([], $result);
+
+        // Test with single validation rule per field
+        $data = [
+            'name' => ['required'],
+            'email' => ['email'],
+            'age' => ['numeric']
+        ];
+        $result = $mapper->getValidationRulesInLaravelFormat($data, []);
+        $expected = [
+            'name' => 'required',
+            'email' => 'email',
+            'age' => 'numeric'
+        ];
+        $this->assertEquals($expected, $result);
+
+        // Test with multiple validation rules per field
+        $data = [
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8']
+        ];
+        $result = $mapper->getValidationRulesInLaravelFormat($data, []);
+        $expected = [
+            'name' => 'required|string|min:2|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8'
+        ];
+        $this->assertEquals($expected, $result);
+
+        // Test with duplicate rules (should be removed by array_unique)
+        $data = [
+            'name' => ['required', 'string', 'required', 'string', 'min:2']
+        ];
+        $result = $mapper->getValidationRulesInLaravelFormat($data, []);
+        $expected = [
+            'name' => 'required|string|min:2'
+        ];
+        $this->assertEquals($expected, $result);
+
+        // Test with empty arrays in data (should be skipped)
+        $data = [
+            'name' => ['required', 'string'],
+            'empty_field' => [],
+            'email' => ['email']
+        ];
+        $result = $mapper->getValidationRulesInLaravelFormat($data, []);
+        $expected = [
+            'name' => 'required|string',
+            'email' => 'email'
+        ];
+        $this->assertEquals($expected, $result);
+
+        // Test with existing return array (should merge/override)
+        $data = [
+            'name' => ['required', 'string']
+        ];
+        $existingReturn = [
+            'email' => 'email|required'
+        ];
+        $result = $mapper->getValidationRulesInLaravelFormat($data, $existingReturn);
+        $expected = [
+            'email' => 'email|required',
+            'name' => 'required|string'
+        ];
+        $this->assertEquals($expected, $result);
+    }
 }

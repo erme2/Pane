@@ -4,11 +4,10 @@ namespace App\Actions;
 
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
-use App\Helpers\DefaultsHelper;
 use App\Helpers\PaginationHelper;
-use App\Mappers\AbstractMapper;
 use App\Stories\StoryPlot;
 use App\Helpers\ActionHelper;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -24,9 +23,13 @@ class ReadAction extends AbstractAction
     use ActionHelper, PaginationHelper;
 
     /**
-     * @throws ValidationException
-     * @throws SystemException
-     */
+    * @param string $subject
+    * @param StoryPlot $plot
+    * @param mixed|null $key
+    * @return StoryPlot
+    * @throws SystemException
+    * @throws ValidationException
+    */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
         $mapper = $this->getMapper($subject);
@@ -45,7 +48,12 @@ class ReadAction extends AbstractAction
                 throw new ValidationException($errors->toArray());
             } else {
                 try {
-                    $plot->data[] = $mapper->extractFromModel($model->find($key));
+                    $record = $model->find($key);
+                    if ($record) {
+                        $plot->data[] = $mapper->extractFromModel($record);
+                    } else {
+                        $plot->setStatus(Response::HTTP_NOT_FOUND);
+                    }
                 } catch (\Exception $e) {
                     throw new SystemException($e->getMessage());
                 }

@@ -18,7 +18,6 @@ class _02ReadTest extends TestCase
     {
         $response = $this->get($this->endpoint);
         $content = json_decode($response->getContent(), false);
-
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
         $this->assertEquals('Error', $content->status);
         $this->assertEquals('The route crud could not be found.', $content->data->message);
@@ -45,19 +44,25 @@ class _02ReadTest extends TestCase
         $this->assertEquals( 1, count($content->data));
         foreach (TestTableSeeder::getStaticRecords()[0] as $key => $value) {
             switch ($key) {
-                    case 'test_date':
-                        $value = new \DateTime($value);
-                        foreach ($value as $k => $v) {
-                            $this->assertEquals($v, $content->data[0]->$key->$k);
-                        }
-                        break;
-                    case 'password':
-                        $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $content->data[0]->$key);
-                        break;
-                    default:
-                        $this->assertEquals($value, $content->data[0]->$key);
-                }
+                case 'test_date':
+                    $value = new \DateTime($value);
+                    foreach ($value as $k => $v) {
+                        $this->assertEquals($v, $content->data[0]->$key->$k);
+                    }
+                    break;
+                case 'password':
+                    $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $content->data[0]->$key);
+                    break;
+                default:
+                    $this->assertEquals($value, $content->data[0]->$key);
+            }
         }
+    }
+
+    public function test_read_deleted_record(): void
+    {
+        $response = $this->get($this->endpoint.'test_table/999999');
+        $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
     public function test_pagination()
@@ -242,12 +247,59 @@ class _02ReadTest extends TestCase
         $this->assertEquals(1003, $content->pagination->total);
         $this->assertEquals(101, $content->pagination->pages);
 
-        // todo add test wrong sort field
-        // todo add test wrong sort order
-        // todo add test wrong page
-        // todo add test wrong limit
+        // Test wrong sort field
+        $params = [
+            'page' => 1,
+            'limit' => 10,
+            'sort' => 'nonexistent_field',
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
 
-        $this->markTestIncomplete();
+        // Test wrong sort order
+        $params = [
+            'page' => 1,
+            'limit' => 10,
+            'order' => 'invalid_order',
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+
+        // Test wrong page (negative)
+        $params = [
+            'page' => -1,
+            'limit' => 10,
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());        // Test wrong sort field
+        $params = [
+            'page' => 1,
+            'limit' => 10,
+            'sort' => 'nonexistent_field',
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+
+        // Test wrong sort order
+        $params = [
+            'page' => 1,
+            'limit' => 10,
+            'order' => 'invalid_order',
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+
+        // Test wrong page (negative)
+        $params = [
+            'page' => -1,
+            'limit' => 10,
+        ];
+        $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
     }
 
     function sort_check(array $data, string $field, bool $asc = true): array {
