@@ -16,7 +16,6 @@ class _04DeleteTest extends TestCase
     {
         $response = $this->delete($this->endpoint);
         $content = json_decode($response->getContent(), false);
-
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
         $this->assertEquals('Error', $content->status);
         $this->assertEquals('The route crud could not be found.', $content->data->message);
@@ -27,7 +26,6 @@ class _04DeleteTest extends TestCase
         $wrongTable = 'wrong_table';
         $response = $this->delete("$this->endpoint$wrongTable/1");
         $content = json_decode($response->getContent(), false);
-
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
         $this->assertEquals('Internal Server Error', $content->status);
         $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX."Table for $wrongTable ($wrongTable) not found", $content->data->message);
@@ -46,7 +44,6 @@ class _04DeleteTest extends TestCase
         $nonExistentId = 99999;
         $response = $this->delete($this->endpoint.'test_table/'.$nonExistentId);
         $content = json_decode($response->getContent(), false);
-
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         $this->assertEquals('Not Found', $content->status);
         $this->assertStringContainsString('Record not found', $content->data->message);
