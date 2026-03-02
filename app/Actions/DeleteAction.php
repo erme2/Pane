@@ -26,7 +26,9 @@ class DeleteAction extends AbstractAction
         $model = $this->getModel($subject);
         $keyName = $model->getPrimaryKey($subject);
 
-        if ($key) {
+        if (empty($key)) {
+            throw new SystemException("Key is required", Response::HTTP_BAD_REQUEST);
+        } else {
             try {
                 $errors = Validator::make(
                     [$keyName => $key],
@@ -47,8 +49,6 @@ class DeleteAction extends AbstractAction
             } catch (\Exception $e) {
                 throw new SystemException($e->getMessage());
             }
-        } else {
-            throw new SystemException("Key is required", Response::HTTP_BAD_REQUEST);
         }
         return $plot;
     }
