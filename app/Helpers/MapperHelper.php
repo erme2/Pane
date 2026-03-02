@@ -252,9 +252,6 @@ trait MapperHelper
                 if ($field->type === 'number') {
                      $array[$field->name][] = 'numeric';
                 }
-
-                // primary fields are always unique or exists if we are validating the primary key
-                $array[$field->name][] = 'exists:' . $this->getSqlTableName($this->name) . ',' . $field->name;
             }
 
             // if $onlyPrimary is true, only primary fields will be included
@@ -276,17 +273,14 @@ trait MapperHelper
             // checking for the field type
             $array[$field->name] = $this->getTypeRules($array[$field->name] ?? [], $field);
         }
-
-        // writing down the rules in laravel format
-        foreach ($array as $key => $value) {
-            if (!empty($value)) {
-                $return[$key] = implode('|', array_unique($value));
-            }
-        }
-
-        return $return;
+        return $this->getValidationRulesInLaravelFormat($array, $return);
     }
 
+    /**
+     * Get indexable fields for model
+     *
+     * @return array
+     */
     public function getIndexableFields(): array
     {
         $return = [];
@@ -294,6 +288,23 @@ trait MapperHelper
         foreach ($this->getFields($this->name) as $field) {
             if ($field->index || $field->primary || $field->sortable || $field->hasValidation('unique')) {
                 $return[] = $field->name;
+            }
+        }
+        return $return;
+    }
+
+    /**
+     * format the validation rules in a way that Laravel can understand
+     *
+     * @param array $data
+     * @param array $return
+     * @return array
+     */
+    public function getValidationRulesInLaravelFormat(array $data, array $return): array
+    {
+        foreach ($data as $key => $value) {
+            if (!empty($value)) {
+                $return[$key] = implode('|', array_unique($value));
             }
         }
         return $return;

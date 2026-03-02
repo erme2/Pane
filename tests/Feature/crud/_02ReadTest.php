@@ -45,19 +45,26 @@ class _02ReadTest extends TestCase
         $this->assertEquals( 1, count($content->data));
         foreach (TestTableSeeder::getStaticRecords()[0] as $key => $value) {
             switch ($key) {
-                    case 'test_date':
-                        $value = new \DateTime($value);
-                        foreach ($value as $k => $v) {
-                            $this->assertEquals($v, $content->data[0]->$key->$k);
-                        }
-                        break;
-                    case 'password':
-                        $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $content->data[0]->$key);
-                        break;
-                    default:
-                        $this->assertEquals($value, $content->data[0]->$key);
-                }
+                case 'test_date':
+                    $value = new \DateTime($value);
+                    foreach ($value as $k => $v) {
+                        $this->assertEquals($v, $content->data[0]->$key->$k);
+                    }
+                    break;
+                case 'password':
+                    $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $content->data[0]->$key);
+                    break;
+                default:
+                    $this->assertEquals($value, $content->data[0]->$key);
+            }
         }
+    }
+
+    public function test_read_deleted_record(): void
+    {
+        $response = $this->get($this->endpoint.'test_table/999999');
+        $content = json_decode($response->getContent(), false);
+        $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
     public function test_pagination()
