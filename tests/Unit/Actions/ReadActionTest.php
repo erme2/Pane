@@ -74,6 +74,7 @@ class ReadActionTest extends TestCase
      *
      * @return void
      * @throws SystemException
+     * @throws ValidationException
      */
     public function testExecWithWrongKey()
     {

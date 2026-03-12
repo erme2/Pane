@@ -6,7 +6,6 @@ use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\PaginationHelper;
 use App\Stories\StoryPlot;
-use App\Helpers\ActionHelper;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,11 +15,9 @@ use Illuminate\Support\Facades\Validator;
  *
  * @package App\Actions
  */
-
-
 class ReadAction extends AbstractAction
 {
-    use ActionHelper, PaginationHelper;
+    use PaginationHelper;
 
     /**
     * @param string $subject
