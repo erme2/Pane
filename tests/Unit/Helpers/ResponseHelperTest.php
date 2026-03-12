@@ -5,8 +5,9 @@ namespace Tests\Unit\Helpers;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
+use Tests\TestCase;
 
-class ResponseHelperTest extends \Tests\TestCase
+class ResponseHelperTest extends TestCase
 {
     private string $testError = 'Test Error';
     private int $testErrorCode = 789;

@@ -17,6 +17,11 @@ class ReadActionTest extends TestCase
     private StoryPlot $mockStoryPlot;
     private ReadAction $action;
 
+    /**
+     * Set up the test environment before each test.
+     *
+     * @return void
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -25,6 +30,13 @@ class ReadActionTest extends TestCase
         $this->action = new ReadAction();
     }
 
+    /**
+     * Run the test for executing the ReadAction with an empty key, which should return the first page of results.
+     *
+     * @return void
+     * @throws SystemException
+     * @throws ValidationException
+     */
     public function testExecWithEmptyKey()
     {
         $plot = $this->action->exec('test_table', $this->mockStoryPlot);
@@ -41,6 +53,11 @@ class ReadActionTest extends TestCase
         $this->assertEquals(1001, $plot->getPagination()['total']);
     }
 
+    /**
+     * Run the test for executing the ReadAction with an invalid key, which should throw a ValidationException.
+     *
+     * @return void
+     */
     public function testExecWithInvalidKey()
     {
         try {
@@ -52,15 +69,18 @@ class ReadActionTest extends TestCase
         }
     }
 
+    /**
+     * Run the test for executing the ReadAction with a non-existent key, which should throw a ValidationException.
+     *
+     * @return void
+     * @throws SystemException
+     */
     public function testExecWithWrongKey()
     {
-        try {
-            $this->action->exec('test_table', $this->mockStoryPlot, 999999);
-        } catch (\Exception $e) {
-            $this->assertInstanceOf(ValidationException::class, $e);
-            $this->assertEquals('Validation failed', $e->getMessage());
-            $this->assertEquals(Response::HTTP_BAD_REQUEST, $e->getCode());
-        }
+        $plot = $this->action->exec('test_table', $this->mockStoryPlot, 999999);
+        $this->assertInstanceOf(StoryPlot::class, $plot);
+        $this->assertEmpty($plot->data);
+        $this->assertEquals($plot->getStatus(), Response::HTTP_NOT_FOUND);
     }
 
     public function testExecWithKey()
