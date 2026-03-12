@@ -9,10 +9,11 @@ use Illuminate\Support\Facades\Validator;
 
 trait PaginationHelper
 {
-    use DefaultsHelper;
+    use ActionHelper, DefaultsHelper;
 
     /**
-     * Creates and return a pagination data array from a StoryPlot object and a Subject
+     * Creates and return an array built from the plot data you can use to paginate the data in the database.
+     * It will also validate the pagination data and throw a ValidationException if the data is invalid.
      *
      * @param StoryPlot $plot
      * @param string $subject

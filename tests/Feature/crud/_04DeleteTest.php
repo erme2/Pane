@@ -35,7 +35,7 @@ class _04DeleteTest extends TestCase
     {
         $response = $this->delete($this->endpoint.'test_table/2');
         $this->assertEquals(Response::HTTP_NO_CONTENT, $response->getStatusCode());
-        $this->assertNull($response->getContent());
+        $this->assertEmpty($response->getContent());
     }
 
     public function test_delete_nonexistent_record(): void
@@ -46,10 +46,5 @@ class _04DeleteTest extends TestCase
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         $this->assertEquals('Not Found', $content->status);
         $this->assertStringContainsString('Record not found', $content->data->message);
-    }
-
-    public function test_delete()
-    {
-        $this->markTestIncomplete('This test has not been implemented yet.');
     }
 }

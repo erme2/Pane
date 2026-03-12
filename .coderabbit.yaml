@@ -3,4 +3,3 @@ reviews:
     - "**/*.php"
     - "composer.json"
     - "phpunit.xml"
-
