@@ -18,7 +18,9 @@
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.25",
         "mockery/mockery": "^1.6",
-        "phpunit/phpunit": "^10.5"
+        "pestphp/pest": "^4.4",
+        "pestphp/pest-plugin-laravel": "^4.1",
+        "phpunit/phpunit": "^12.0.1"
     },
     "autoload": {
         "psr-4": {

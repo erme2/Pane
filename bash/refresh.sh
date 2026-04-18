@@ -10,19 +10,20 @@ SEEDING=no
 TEST_MIGRATIONS=no
 VERBOSE=yes
 SHOW_OPTIONS=yes
+LOAD_CONFIG_FILE="testing"
 
 if [ ! -f .env ]; then
     echo "Error: .env file not found."
     exit 1
 fi
-source .env
 
-while getopts ":c:d:o:s:t:v:" opt
+while getopts ":c:d:f:o:s:t:v:" opt
    do
      # shellcheck disable=SC2220
      case $opt in
         c ) CLEAR_CACHE=$OPTARG;;
         d ) DELETE_DB=$OPTARG;;
+        f ) LOAD_CONFIG_FILE=$OPTARG;;
         o ) SHOW_OPTIONS=$$OPTARG;;
         s ) SEEDING=$OPTARG;;
         t ) TEST_MIGRATIONS=$OPTARG;;
@@ -30,11 +31,21 @@ while getopts ":c:d:o:s:t:v:" opt
      esac
 done
 
-echo "@ Running refresh.sh with options:"
-echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
-echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
-echo -e "\t SEEDING=${SEEDING} (-s)"
-echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
+if [ ${VERBOSE} = 'yes' ]
+then
+    echo "@ Running refresh.sh with options:"
+    echo -e "\t CLEAR_CACHE=${CLEAR_CACHE} (-c)"
+    echo -e "\t DELETE_DB=${DELETE_DB} (-d)"
+    echo -e "\t LOAD_CONFIG_FILE=${LOAD_CONFIG_FILE} (-f)"
+    echo -e "\t SEEDING=${SEEDING} (-s)"
+    echo -e "\t TEST_MIGRATIONS=${TEST_MIGRATIONS} (-t)"
+    echo -e "\t VERBOSE=${VERBOSE} (-v)"
+fi
+
+CONFIG_FILE=".env.${LOAD_CONFIG_FILE}"
+ENV_FILE="--env=${LOAD_CONFIG_FILE}"
+
+source ${CONFIG_FILE}
 
 if [ ${SHOW_OPTIONS} = 'yes' ]
 then
@@ -57,8 +68,7 @@ else
     then
         echo "Clearing cache (-c yes)"
     fi
-
-    ./bash/clear.sh -v ${VERBOSE}
+    ./bash/clear.sh -f ${LOAD_CONFIG_FILE}
 fi
 
 # deleting old database?
@@ -76,10 +86,22 @@ else
     fi
 
     if [ "$DB_CONNECTION" = "sqlite" ]; then
-        db_file="${DB_DATABASE:-./database/database.sqlite}"
+        if [ ${VERBOSE} = 'yes' ]; then
+            echo "Deleting sqlite"
+        fi
+        dirname="./database"
+        db_file="${DB_DATABASE:-${dirname}/database.sqlite}"
         mkdir -p "$(dirname "$db_file")"
-        rm -f "$db_file"
-        touch "$db_file"
+        rm -f "$dirname/${db_file}"
+        touch "$dirname/${db_file}"
+    elif [ "$DB_CONNECTION" = "mariadb" ]; then
+        safe_db_name="${DB_DATABASE//\`/\`\`}"
+        mariadb --skip-ssl \
+          -u "$DB_USERNAME" \
+          --password="$DB_PASSWORD" \
+          -h "$DB_HOST" \
+          -P "${DB_PORT:-3306}" \
+          -e "DROP DATABASE IF EXISTS \`$safe_db_name\`; CREATE DATABASE \`$safe_db_name\`;"
     elif [ "$DB_CONNECTION" = "mysql" ]; then
         safe_db_name="${DB_DATABASE//\`/\`\`}"
         mysql --skip-ssl \
@@ -95,7 +117,7 @@ else
 fi
 
 # running migrations
-php artisan migrate
+php artisan migrate $ENV_FILE
 
 # running test migrations?
 if [ ${TEST_MIGRATIONS} = 'no' ]
@@ -109,7 +131,7 @@ else
     then
         echo "Running testing migrations (-t yes)"
     fi
-    php artisan migrate --path /database/migrations/test
+    php artisan migrate --path /database/migrations/test ${ENV_FILE}
 fi
 
 # seeding database?
@@ -124,5 +146,5 @@ else
     then
         echo "Seeding database (-s yes)"
     fi
-    php artisan db:seed --class=TestTableSeeder
+    php artisan db:seed --class=TestTableSeeder ${ENV_FILE}
 fi
