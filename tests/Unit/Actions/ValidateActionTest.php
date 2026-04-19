@@ -15,9 +15,9 @@ class ValidateActionTest extends TestCase
     private StoryPlot $mockStoryPlot;
     private ValidateAction $action;
 
-    public function __construct(string $name)
+    protected function setUp(): void
     {
-        parent::__construct($name);
+        parent::setUp();
         $this->mockStoryPlot = new StoryPlot();
         $this->action = new ValidateAction();
     }

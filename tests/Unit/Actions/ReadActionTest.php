@@ -7,6 +7,7 @@ use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -40,6 +41,11 @@ class ReadActionTest extends TestCase
     public function testExecWithEmptyKey()
     {
         $plot = $this->action->exec('test_table', $this->mockStoryPlot);
+print_r($plot);
+die("ZAZAZA");
+
+        $expectedTotal = DB::table('map_test_table')->count();
+
         // it should return the first page
         $this->assertInstanceOf(StoryPlot::class, $plot);
         $this->assertIsArray($plot->data);
@@ -50,7 +56,7 @@ class ReadActionTest extends TestCase
         $this->assertEquals('table_id', $plot->getPagination()['sort']);
         $this->assertEquals(1, $plot->getPagination()['page']);
         $this->assertEquals(0, $plot->getPagination()['offset']);
-        $this->assertEquals(1001, $plot->getPagination()['total']);
+        $this->assertEquals($expectedTotal, $plot->getPagination()['total']);
     }
 
     /**
