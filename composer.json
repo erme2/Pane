@@ -11,7 +11,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "ext-pdo": "*",
-        "league/commonmark": "2.8.1"
+        "league/commonmark": "2.8.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.20",
