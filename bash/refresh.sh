@@ -78,7 +78,7 @@ then
     then
         echo "Database NOT deleted (-d no)"
     fi
-    php artisan migrate:reset
+    php artisan migrate:reset ${ENV_FILE}
 else
     if [ ${VERBOSE} = 'yes' ]
     then
@@ -117,7 +117,7 @@ else
 fi
 
 # running migrations
-php artisan migrate $ENV_FILE
+php artisan migrate ${ENV_FILE}
 
 # running test migrations?
 if [ ${TEST_MIGRATIONS} = 'no' ]
@@ -131,7 +131,7 @@ else
     then
         echo "Running testing migrations (-t yes)"
     fi
-    php artisan migrate --path /database/migrations/test ${ENV_FILE}
+    php artisan migrate ${ENV_FILE} --path /database/migrations/test
 fi
 
 # seeding database?
@@ -146,5 +146,5 @@ else
     then
         echo "Seeding database (-s yes)"
     fi
-    php artisan db:seed --class=TestTableSeeder ${ENV_FILE}
+    php artisan db:seed ${ENV_FILE} --class=TestTableSeeder
 fi

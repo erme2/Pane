@@ -58,7 +58,7 @@ else
 fi
 
 # creating the test tables to run tests
-php artisan migrate --path /database/migrations/test ${LOAD_CONFIG_FILE}
+php artisan migrate ${LOAD_CONFIG_FILE} --path /database/migrations/test
 
 if [ ${TEST_SEEDER} = 'yes' ]
 then
@@ -66,7 +66,7 @@ then
     then
         echo "Seeding the test database (-s yes default)"
     fi
-    php artisan db:seed --class=TestTableSeeder ${LOAD_CONFIG_FILE}
+    php artisan db:seed ${LOAD_CONFIG_FILE} --class=TestTableSeeder
 else
     echo "Test seeder NOT run (-s no)"
 fi
@@ -83,7 +83,7 @@ fi
 
 
 #vendor/bin/phpunit --testdox${SOF}
-php artisan test --testdox${SOF} ${LOAD_CONFIG_FILE}
+php artisan test ${LOAD_CONFIG_FILE} --testdox${SOF}
 TEST_EXIT_CODE=$?
 
 if [ $TEST_EXIT_CODE -ne 0 ]; then
@@ -97,5 +97,5 @@ then
     echo "Test migrations NOT rolled back (-u no default)"
 else
     echo "Rolling back test migrations (-u yes)"
-    php artisan migrate:rollback --path /database/migrations/test ${LOAD_CONFIG_FILE}
+    php artisan migrate:rollback ${LOAD_CONFIG_FILE} --path /database/migrations/test
 fi

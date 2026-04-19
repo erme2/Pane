@@ -17,7 +17,7 @@ class SaveActionTest extends TestCase
     private SaveAction $action;
 
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->mockStoryPlot = new StoryPlot();
