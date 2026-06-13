@@ -117,6 +117,11 @@ else
 fi
 
 # running migrations
+if [ ${VERBOSE} = 'yes' ]
+then
+    echo "Running migrations ${ENV_FILE}"
+fi
+
 php artisan migrate ${ENV_FILE}
 
 # running test migrations?

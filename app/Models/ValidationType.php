@@ -18,6 +18,11 @@ class ValidationType extends Model
     use HasFactory;
 
     protected $table = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['validation_types'];
-
     protected $primaryKey = 'validation_type_id';
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = (env('DB_TABLE_PREFIX')) . $this->table;
+    }
 }

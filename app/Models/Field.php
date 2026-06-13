@@ -18,7 +18,18 @@ class Field extends Model
     use HasFactory;
 
     protected $table = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
+    protected $fieldTypesTable = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'];
+    protected $tablesTable = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'];
     protected $primaryKey = 'field_id';
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = (env('DB_TABLE_PREFIX')) . $this->table;
+        $this->fieldTypesTable = (env('DB_TABLE_PREFIX')) . $this->fieldTypesTable;
+        $this->tablesTable = (env('DB_TABLE_PREFIX')) . $this->tablesTable;
+    }
+
 
     /**
      * Returns a collection of field validations for the current field
@@ -44,26 +55,25 @@ class Field extends Model
     {
         $query = $this
             ->select([
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".field_id",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".name",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".sql_name",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".primary",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".index",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".sortable",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".nullable",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].".default",
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].".name as type",
+                $this->table.".field_id",
+                $this->table.".name",
+                $this->table.".sql_name",
+                $this->table.".primary",
+                $this->table.".index",
+                $this->table.".sortable",
+                $this->table.".nullable",
+                $this->table.".default",
+                $this->fieldTypesTable.".name as type",
             ])
-            ->join(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'],
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].'.table_id', '=',
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].'.table_id'
+            ->join($this->tablesTable,
+                $this->table.'.table_id', '=',
+                $this->tablesTable.'.table_id'
             )
-            ->join(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'],
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].'.field_type_id', '=',
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_types'].'.field_type_id'
+            ->join($this->fieldTypesTable,
+                $this->table.'.field_type_id', '=',
+                $this->fieldTypesTable.'.field_type_id'
             )
-            ->where(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].'.name', $table)
-        ;
+            ->where($this->tablesTable.'.name', $table);
         return $query->get();
     }
 
