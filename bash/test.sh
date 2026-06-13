@@ -2,16 +2,18 @@
 
 # TODO - document this file
 
+CONF_FILE="testing"
+REFRESH_DB=yes
 SHOW_OPTIONS=yes
+STOP_ON_FAILURE=yes
 TEST_SEEDER=yes
 UNDO_MIGRATIONS=yes
 VERBOSE=yes
-REFRESH_DB=yes
-STOP_ON_FAILURE=yes
 
-while getopts ":f:o:s:u:v:" opt
+while getopts ":c:f:o:s:u:v:" opt
    do
      case $opt in
+        c ) CONF_FILE=$OPTARG;;
         f ) STOP_ON_FAILURE=$OPTARG;;
         o ) SHOW_OPTIONS=$OPTARG;;
         r ) REFRESH_DB=$OPTARG;;
@@ -21,16 +23,22 @@ while getopts ":f:o:s:u:v:" opt
      esac
 done
 
-if [ ${SHOW_OPTIONS} = 'yes' ]
+LOAD_CONFIG_FILE="--env=${CONF_FILE}"
+
+if [ ${VERBOSE} = 'yes' ]
 then
     echo "Running tests with seeder:"
-    echo -e "\t show options: ${SHOW_OPTIONS} (-o)"
-    echo -e "\t stop on failure: ${REFRESH_DB} (-f)"
-    echo -e "\t refresh DB: ${REFRESH_DB} (-r)"
-    echo -e "\t run Seeder: ${TEST_SEEDER} (-s)"
-    echo -e "\t verbose: ${VERBOSE} (-v)"
-    echo -e "\t undo (remove) test seeder: ${UNDO_MIGRATIONS} (-u) "
+    echo "\t show options: ${SHOW_OPTIONS} (-o)"
+    echo "\t conf file: ${CONF_FILE} / ${LOAD_CONFIG_FILE} (-c)"
+    echo "\t stop on failure: ${STOP_ON_FAILURE} (-f)"
+    echo "\t refresh DB: ${REFRESH_DB} (-r)"
+    echo "\t run Seeder: ${TEST_SEEDER} (-s)"
+    echo "\t verbose: ${VERBOSE} (-v)"
+    echo "\t undo (remove) test seeder: ${UNDO_MIGRATIONS} (-u) "
+fi
 
+if [ ${SHOW_OPTIONS} = 'yes' ]
+then
     read -p "Do you want to run this script? (y/n): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Exiting without running the script."
@@ -44,21 +52,9 @@ then
     then
         echo "Refreshing the database (-r yes default)"
     fi
-    ./bash/refresh.sh -c yes -t yes -v no -o yes
-fi
-
-# creating the test tables to run tests
-php artisan migrate --path /database/migrations/test
-
-if [ ${TEST_SEEDER} = 'yes' ]
-then
-    if [ ${VERBOSE} = 'yes' ]
-    then
-        echo "Seeding the test database (-s yes default)"
-    fi
-    php artisan db:seed --class=TestTableSeeder
+    ./bash/refresh.sh -c yes -t yes -v ${VERBOSE} -o ${SHOW_OPTIONS} -f ${CONF_FILE} -s ${TEST_SEEDER}
 else
-    echo "Test seeder NOT run (-s no)"
+    echo "Database NOT refreshed ${REFRESH_DB} (-r no)"
 fi
 
 # running the tests
@@ -72,8 +68,8 @@ else
 fi
 
 
-
-vendor/bin/phpunit --testdox${SOF}
+#vendor/bin/phpunit --testdox${SOF}
+php artisan test ${LOAD_CONFIG_FILE} --testdox${SOF}
 TEST_EXIT_CODE=$?
 
 if [ $TEST_EXIT_CODE -ne 0 ]; then
@@ -81,11 +77,10 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
     exit $TEST_EXIT_CODE
 fi
 
-
 if [ ${UNDO_MIGRATIONS} = 'no' ]
 then
     echo "Test migrations NOT rolled back (-u no default)"
 else
     echo "Rolling back test migrations (-u yes)"
-    php artisan migrate:rollback --path /database/migrations/test
+    php artisan migrate:rollback ${LOAD_CONFIG_FILE} --path /database/migrations/test
 fi

@@ -5,8 +5,10 @@ namespace Tests\Unit\Actions;
 use App\Actions\ReadAction;
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
+use App\Mappers\AbstractMapper;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -16,6 +18,7 @@ class ReadActionTest extends TestCase
 
     private StoryPlot $mockStoryPlot;
     private ReadAction $action;
+    private $table = 'test_table';
 
     /**
      * Set up the test environment before each test.
@@ -39,7 +42,10 @@ class ReadActionTest extends TestCase
      */
     public function testExecWithEmptyKey()
     {
-        $plot = $this->action->exec('test_table', $this->mockStoryPlot);
+        $plot = $this->action->exec($this->table, $this->mockStoryPlot);
+
+        $expectedTotal = DB::table((env('DB_TABLE_PREFIX')) . AbstractMapper::MAP_TABLES_PREFIX . $this->table)->count();
+
         // it should return the first page
         $this->assertInstanceOf(StoryPlot::class, $plot);
         $this->assertIsArray($plot->data);
@@ -50,7 +56,7 @@ class ReadActionTest extends TestCase
         $this->assertEquals('table_id', $plot->getPagination()['sort']);
         $this->assertEquals(1, $plot->getPagination()['page']);
         $this->assertEquals(0, $plot->getPagination()['offset']);
-        $this->assertEquals(1001, $plot->getPagination()['total']);
+        $this->assertEquals($expectedTotal, $plot->getPagination()['total']);
     }
 
     /**
@@ -61,7 +67,7 @@ class ReadActionTest extends TestCase
     public function testExecWithInvalidKey()
     {
         try {
-            $this->action->exec('test_table', $this->mockStoryPlot, 'A');
+            $this->action->exec($this->table, $this->mockStoryPlot, 'A');
         } catch (\Exception $e) {
             $this->assertInstanceOf(ValidationException::class, $e);
             $this->assertEquals('Validation failed', $e->getMessage());
@@ -78,7 +84,7 @@ class ReadActionTest extends TestCase
      */
     public function testExecWithWrongKey()
     {
-        $plot = $this->action->exec('test_table', $this->mockStoryPlot, 999999);
+        $plot = $this->action->exec($this->table, $this->mockStoryPlot, 999999);
         $this->assertInstanceOf(StoryPlot::class, $plot);
         $this->assertEmpty($plot->data);
         $this->assertEquals($plot->getStatus(), Response::HTTP_NOT_FOUND);
@@ -87,7 +93,7 @@ class ReadActionTest extends TestCase
     public function testExecWithKey()
     {
         $key = 1;
-        $plot = $this->action->exec('test_table', $this->mockStoryPlot, $key);
+        $plot = $this->action->exec($this->table, $this->mockStoryPlot, $key);
         $this->assertInstanceOf(StoryPlot::class, $plot);
         $this->assertIsArray($plot->data);
         $this->assertIsArray($plot->getPagination());
@@ -112,7 +118,7 @@ class ReadActionTest extends TestCase
             'sort' => 'table_id',
             'page' => 2,
         ];
-        $plot = $this->action->exec('test_table', $this->mockStoryPlot);
+        $plot = $this->action->exec($this->table, $this->mockStoryPlot);
         // it should return the first page
         $this->assertInstanceOf(StoryPlot::class, $plot);
         $this->assertIsArray($plot->data);

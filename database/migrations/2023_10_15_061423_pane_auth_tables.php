@@ -1,6 +1,7 @@
 <?php
 
 use App\Mappers\AbstractMapper;
+use App\Helpers\SystemMigrationsHelper;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -8,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    use SystemMigrationsHelper;
+
     private array $insertKeys = [];
 
     /**
@@ -16,7 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(
-            AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'],
+            $this->getUsersTableName(),
             function (Blueprint $table) {
             $table->unsignedInteger('user_id')->autoIncrement();
             $table->unsignedInteger('user_type_id')->index();
@@ -29,20 +32,18 @@ return new class extends Migration
             $table->boolean('is_active')->default(false);
             $table->dateTimeTz('last_login_at')->nullable();
             $table->timestamps();
-        }
-        );
+        });
         Schema::create(
-            AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'],
+            $this->getUsersTypesTableName(),
             function (Blueprint $table) {
             $table->unsignedInteger('user_type_id')->autoIncrement();
             $table->string('name');
             $table->string('slug')->unique();
             $table->json('details')->nullable();
             $table->timestamps();
-        }
-        );
+        });
 
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'])->insert([
+        DB::table($this->getUsersTypesTableName())->insert([
             [
                 'user_type_id' => 1,
                 'name' => 'Administrator',
@@ -74,20 +75,20 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users']);
-        Schema::dropIfExists(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types']);
+        Schema::dropIfExists($this->getUsersTableName());
+        Schema::dropIfExists($this->getUsersTypesTableName());
     }
 
     private function insertAllTableRecords(): void
     {
         $this->insertKeys['users']['table_id'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
+            DB::table($this->getTablesTableName())->insertGetId([
                 'name' => AbstractMapper::TABLES['users'],
                 'sql_name' => AbstractMapper::TABLES['users'],
                 'description' => 'Users table',
             ]);
         $this->insertKeys['user_types']['table_id'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'])->insertGetId([
+            DB::table($this->getTablesTableName())->insertGetId([
                 'name' => AbstractMapper::TABLES['user_types'],
                 'sql_name' => AbstractMapper::TABLES['user_types'],
                 'description' => 'User types table',
@@ -97,7 +98,7 @@ return new class extends Migration
     private function insertUserTableFields(): void
     {
         $this->insertKeys['users']['fields']['user_id'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'user_id',
@@ -107,7 +108,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['user_type_id'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'user_type_id',
@@ -117,7 +118,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['name'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'name',
@@ -127,7 +128,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['email'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'email',
@@ -137,7 +138,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['email_verified_at'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
                 'name' => 'email_verified_at',
@@ -147,7 +148,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['password'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['password'],
                 'name' => 'password',
@@ -157,7 +158,7 @@ return new class extends Migration
                 'default' => '',
             ]);
         $this->insertKeys['users']['fields']['details'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['json'],
                 'name' => 'details',
@@ -167,7 +168,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['settings'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['json'],
                 'name' => 'settings',
@@ -177,7 +178,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['is_active'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['boolean'],
                 'name' => 'is_active',
@@ -187,7 +188,7 @@ return new class extends Migration
                 'default' => 'false',
             ]);
         $this->insertKeys['users']['fields']['last_login_at'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
                 'name' => 'last_login_at',
@@ -197,7 +198,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['created_at'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
                 'name' => 'created_at',
@@ -207,7 +208,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['users']['fields']['updated_at'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['users']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['date'],
                 'name' => 'updated_at',
@@ -221,7 +222,7 @@ return new class extends Migration
     private function insertUserTypeTableFields(): void
     {
         $this->insertKeys['user_types']['fields']['user_type_id'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['user_types']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'user_type_id',
@@ -231,7 +232,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['user_types']['fields']['name'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['user_types']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'name',
@@ -241,7 +242,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['user_types']['fields']['slug'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['user_types']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
                 'name' => 'slug',
@@ -251,7 +252,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['user_types']['fields']['details'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['user_types']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['text'],
                 'name' => 'details',
@@ -261,7 +262,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['user_types']['fields']['created_at'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['user_types']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'created_at',
@@ -271,7 +272,7 @@ return new class extends Migration
                 'default' => null,
             ]);
         $this->insertKeys['user_types']['fields']['updated_at'] =
-            DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'])->insertGetId([
+            DB::table($this->getFieldsTableName())->insertGetId([
                 'table_id' => $this->insertKeys['user_types']['table_id'],
                 'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
                 'name' => 'updated_at',
@@ -284,23 +285,23 @@ return new class extends Migration
 
     private function insertUserFieldsValidations(): void
     {
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+        DB::table($this->getFieldsValidationsTableName())->insert([
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'].',user_id',
+                'value' => $this->getUsersTableName().',user_id',
                 'message' => 'User ID does not exists',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['user_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'].',user_type_id',
+                'value' => $this->getUsersTypesTableName().',user_type_id',
                 'message' => 'User type ID does not exists',
             ],
             [
                 'field_id' => $this->insertKeys['users']['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'].',name',
+                'value' => $this->getUsersTableName().',name',
                 'message' => 'Name already exists',
             ],
             [
@@ -312,7 +313,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['users']['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'].',email',
+                'value' => $this->getUsersTableName().',email',
                 'message' => null,
             ],
             [
@@ -332,11 +333,11 @@ return new class extends Migration
 
     private function insertUserTypeFieldsValidations(): void
     {
-        DB::table(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['field_validations'])->insert([
+        DB::table($this->getFieldsValidationsTableName())->insert([
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['user_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'].',user_type_id',
+                'value' => $this->getUsersTypesTableName().',user_type_id',
             ],
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['name'],
@@ -346,7 +347,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['slug'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['user_types'].',slug'
+                'value' => $this->getUsersTypesTableName().',slug'
             ],
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['slug'],

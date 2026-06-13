@@ -14,9 +14,9 @@ class StoryHelperTest extends TestCase
 
     private object $testClass;
 
-    public function __construct(string $name)
+    protected function setUp(): void
     {
-        parent::__construct($name);
+        parent::setUp();
         $this->testClass = new class {
             use StringHelper, StoryHelper;
         };
