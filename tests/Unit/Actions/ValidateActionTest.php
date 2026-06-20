@@ -22,7 +22,7 @@ class ValidateActionTest extends TestCase
         $this->action = new ValidateAction();
     }
 
-    public function test_exec_empty_data(): void
+    public function testEmptyData(): void
     {
         // empty data
         try {
@@ -42,13 +42,13 @@ class ValidateActionTest extends TestCase
         }
     }
 
-    public function test_exec_error_1(): void
+    public function testError1(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
         $this->mockStoryPlot->requestData['data'] = self::INVALID_TEST_TABLE_RECORD;
 
         try {
-            $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
+            $this->action->exec('TestTable', $this->mockStoryPlot);
         } catch (ValidationException $e) {
             $errors = $e->getErrors();
             // no errors on the primary key
@@ -81,16 +81,14 @@ class ValidateActionTest extends TestCase
         }
     }
 
-    public function test_exec_ok(): void
+    public function testOk(): void
     {
         $this->mockStoryPlot->options['is_new_record'] = true;
         $this->mockStoryPlot->requestData['data'] = self::VALID_TEST_TABLE_RECORD;
         $this->mockStoryPlot->requestData['data']['name'] = 'just another test name';
         $suffix = (string) Str::uuid();
         $this->mockStoryPlot->requestData['data']['email'] = "unique$suffix@email.com";
-
         $plot = $this->action->exec('TestTable', $this->mockStoryPlot);
-        // no errors :) we are happy :)
         $this->assertInstanceOf(StoryPlot::class, $plot);
     }
 }

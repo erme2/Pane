@@ -22,6 +22,6 @@ class CoreHelperTest extends TestCase
 
         // test table
         $mapper = new class('TestTable') extends AbstractMapper {};
-        $this->assertEquals(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['test_table'], $mapper->getSqlTableName($mapper->name));
+        $this->assertEquals(AbstractMapper::TABLES['test_table'], $mapper->getSqlTableName($mapper->name));
     }
 }

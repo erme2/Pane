@@ -35,13 +35,14 @@ class FieldTest extends TestCase
 
     public function test_has_validation()
     {
+        $fieldsTable = (env('DB_TABLE_PREFIX')) . AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['fields'];
+        $tablesTable = (env('DB_TABLE_PREFIX')) .AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['tables'];
+
         // checking all the fields in test_table
         foreach ((new Field())
-            ->select(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].'.*')
-            ->join(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'],
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'].'.table_id', '=',
-                AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].'.table_id')
-            ->where(AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'].".name", 'test_table' )
+            ->select($fieldsTable.'.*')
+            ->join($tablesTable, $fieldsTable.'.table_id', '=', $tablesTable.'.table_id')
+            ->where($tablesTable.".name", 'test_table' )
             ->get() as $field) {
             switch ($field->name) {
                 case "name":
@@ -51,7 +52,6 @@ class FieldTest extends TestCase
                 default:
                     $this->assertEquals(false, $field->hasValidation('unique'));
             }
-
         }
     }
 }

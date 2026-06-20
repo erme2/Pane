@@ -102,8 +102,8 @@ class MapperHelperTest extends TestCase
     {
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         $field = new Field();
-        $fieldsTable = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
-        $tablesTable = AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'];
+        $fieldsTable = (env('DB_TABLE_PREFIX')) . AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['fields'];
+        $tablesTable = (env('DB_TABLE_PREFIX')) . AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['tables'];
 
         // getting the field_id for test_table.table_id
         $field->test_id = 'invalid';
@@ -127,7 +127,7 @@ class MapperHelperTest extends TestCase
             ->field_id
         ;
         $this->assertEquals([
-            'unique:map_test_table,name',
+            'unique:test_table,name',
             'min:1',
             'max:255'
         ],

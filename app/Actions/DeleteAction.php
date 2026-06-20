@@ -46,6 +46,9 @@ class DeleteAction extends AbstractAction
                         $plot->data['message'] = "Record not found with {$model->getKeyName()}: $key";
                     }
                 }
+            // we need to catch ValidationException separately to rethrow it, so that it can be handled appropriately by the caller.
+            } catch (ValidationException $e) {
+                throw $e;
             } catch (\Exception $e) {
                 throw new SystemException($e->getMessage());
             }
