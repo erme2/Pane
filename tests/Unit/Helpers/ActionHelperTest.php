@@ -30,7 +30,7 @@ class ActionHelperTest extends TestCase
         try {
             $this->getModel('');
         } catch (SystemException $e) {
-            $this->assertEquals( SystemException::ERROR_MESSAGE_PREFIX.'Table for  () not found', $e->getMessage());
+            $this->assertEquals( SystemException::ERROR_MESSAGE_PREFIX.'Table for () not found', $e->getMessage());
             $this->assertEquals(500, $e->getCode());
         }
         // wrong subject
@@ -43,7 +43,7 @@ class ActionHelperTest extends TestCase
         // ok
         $model = $this->getModel(AbstractMapper::TABLES['test_table']);
         $this->assertInstanceOf(AbstractModel::class, $model);
-        $this->assertEquals(AbstractMapper::MAP_TABLES_PREFIX.'test_table', $model->getTable());
+        $this->assertEquals('test_table', $model->getTable());
         $this->assertEquals(self::TEST_TABLE_PRIMARY_KEY, $model->getKeyName());
     }
 

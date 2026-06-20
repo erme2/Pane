@@ -39,7 +39,7 @@ trait ActionHelper
     {
         if (empty($subject)) {
             throw new SystemException(
-                'Table for  () not found',
+                'Table for () not found',
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }

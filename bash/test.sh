@@ -10,8 +10,9 @@ TEST_SEEDER=yes
 UNDO_MIGRATIONS=yes
 VERBOSE=yes
 
-while getopts ":c:f:o:s:u:v:" opt
+while getopts ":c:f:o:r:s:u:v:" opt
    do
+     # shellcheck disable=SC2220
      case $opt in
         c ) CONF_FILE=$OPTARG;;
         f ) STOP_ON_FAILURE=$OPTARG;;

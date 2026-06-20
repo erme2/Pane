@@ -27,7 +27,7 @@ trait CoreHelper
                 ->{'sql_name'};
         } catch (\Exception $e) {
             throw new SystemException(
-                "Table for $tableName (".Str::snake($tableName)." - $name) not found",
+                "Table for $tableName (".Str::snake($tableName).") not found",
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }

@@ -21,13 +21,13 @@ class ModelHelperTest extends TestCase
             $model = $this->getModel('');
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
-            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for  () not found', $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for () not found', $e->getMessage());
             $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $e->getCode());
         }
 
         try {
             $wrongName = 'not a table name';
-            $model = $this->getModel($wrongName);
+            $this->getModel($wrongName);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
             $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for '.$wrongName.' ('.Str::snake($wrongName).') not found', $e->getMessage());

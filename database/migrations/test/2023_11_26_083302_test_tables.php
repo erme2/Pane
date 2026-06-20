@@ -14,20 +14,13 @@ return new class extends Migration
     use SystemMigrationsHelper, TestsHelper;
     private array $insertKeys = [];
 
-    private $testTableName = AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['test_table'];
-
-    public function __construct()
-    {
-        $this->testTableName = (env('DB_TABLE_PREFIX')) . $this->testTableName;
-    }
-
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::create(
-            $this->testTableName,
+            AbstractMapper::TABLES['test_table'],
             function (Blueprint $table) {
                 $table->unsignedInteger('table_id')->autoIncrement();
                 $table->string('name');
@@ -51,7 +44,7 @@ return new class extends Migration
         public function down(): void
         {
             $this->removeRecords();
-            Schema::dropIfExists($this->testTableName);
+            Schema::dropIfExists(AbstractMapper::TABLES['test_table']);
         }
 
         private function addTableRecord(): void
@@ -59,7 +52,7 @@ return new class extends Migration
             $this->insertKeys['tables'][AbstractMapper::TABLES['test_table']] =
                 DB::table($this->getTablesTableName())->insertGetId([
                     'name' => AbstractMapper::TABLES['test_table'],
-                    'sql_name' => $this->testTableName,
+                    'sql_name' => AbstractMapper::TABLES['test_table'],
                     'description' => "Just a table to run tests",
                 ]);
         }
@@ -197,7 +190,7 @@ return new class extends Migration
             DB::table($this->getFieldsValidationsTableName())->insert([
                 'field_id' => $this->insertKeys['fields']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.'tthenksest_table,name',
+                'value' => 'test_table,name',
                 'message' => 'Name must be unique'.self::CHECK_ERROR_MESSAGES,
             ]);
             DB::table($this->getFieldsValidationsTableName())->insert([
@@ -223,7 +216,7 @@ return new class extends Migration
             DB::table($this->getFieldsValidationsTableName())->insert([
                 'field_id' => $this->insertKeys['fields']['email'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => AbstractMapper::MAP_TABLES_PREFIX.'test_table,email',
+                'value' => 'test_table,email',
                 'message' => 'Email must be unique'.self::CHECK_ERROR_MESSAGES,
             ]);
             DB::table($this->getFieldsValidationsTableName())->insert([
