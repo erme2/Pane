@@ -21,7 +21,7 @@ class _02ReadTest extends TestCase
         $response = $this->get($this->endpoint);
         $content = json_decode($response->getContent(), false);
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
-        $this->assertEquals('Error', $content->status);
+        $this->assertEquals('Internal Server Error', $content->status);
         $this->assertEquals('The route crud could not be found.', $content->data->message);
     }
 

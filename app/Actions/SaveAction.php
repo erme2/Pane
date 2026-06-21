@@ -50,7 +50,11 @@ class SaveAction extends AbstractAction
             }
             $record = $model->find($key);
         }
-        $record = $mapper->fillModel($record, $plot->requestData['data']);
+        if ($record) {
+            $record = $mapper->fillModel($record, $plot->requestData['data']);
+        } else {
+            throw new SystemException('Record not found', Response::HTTP_NOT_FOUND);
+        }
 
         try {
             $record->save();
