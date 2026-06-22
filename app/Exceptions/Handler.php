@@ -42,7 +42,7 @@ class Handler extends ExceptionHandler
         $statusID = $e->getCode() >= Response::HTTP_BAD_REQUEST && $e->getCode() <= 600 ?
             $e->getCode() : Response::HTTP_INTERNAL_SERVER_ERROR;
         $content = [
-            'status' => Response::$statusTexts[$e->getCode()] ?? 'Error',
+            'status' => Response::$statusTexts[$statusID],
             'data' => [],
         ];
 

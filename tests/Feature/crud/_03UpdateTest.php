@@ -57,6 +57,17 @@ class _03UpdateTest extends TestCase
         $this->assertEquals($result->data->errors[7]->message, "The test json field must be a valid JSON string.");
     }
 
+    public function test_update_not_found()
+    {
+        $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'].'/99999999';
+        $data = self::VALID_TEST_TABLE_RECORD;
+        $time = time();
+        $data['name'] = "updated test_name $time";
+        $data['email'] = "updated$time@email.com";
+        $response = $this->put($endpoint, $data);
+        $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+    }
+
     public function test_update()
     {
         $endpoint = '/crud/'.AbstractMapper::TABLES['test_table'].'/1';
