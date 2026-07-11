@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use App\Helpers\ResponseHelper;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Response;
@@ -34,8 +33,6 @@ class Handler extends ExceptionHandler
     /**
      * Returns an api response that will contain all the information about the error/s.
      *
-     * @param $request
-     * @param Throwable $e
      * @return Response
      */
     public function render($request, Throwable $e)
@@ -59,7 +56,7 @@ class Handler extends ExceptionHandler
             case $e instanceof SystemException:
             default:
                 $content['data']['message'] = $e->getMessage();
-                if (env('APP_DEBUG')) {
+                if (config('app.debug') && config('app.env') !== 'production') {
                     $content['data']['file'] = $e->getFile();
                     $content['data']['line'] = $e->getLine();
                     $content['data']['trace'] = $e->getTrace();
