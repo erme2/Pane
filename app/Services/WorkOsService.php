@@ -13,17 +13,25 @@ class WorkOsService
 
     public function authorizationUrl(string $state): string
     {
-        $query = array_filter([
+
+        $query = [
             'response_type' => 'code',
             'client_id' => $this->clientId(),
             'redirect_uri' => $this->redirectUri(),
             'state' => $state,
-            'provider' => config('services.workos.provider', 'authkit'),
-            'organization_id' => config('services.workos.organization_id'),
-            'connection_id' => config('services.workos.connection_id'),
-        ], fn ($value) => filled($value));
+        ];
 
-        return self::API_BASE_URL . '/user_management/authorize?' . http_build_query($query);
+        $provider = config('services.workos.provider', 'authkit');
+
+        if (filled($provider)) {
+            $query['provider'] = $provider;
+        } elseif (filled(config('services.workos.organization_id'))) {
+            $query['organization_id'] = config('services.workos.organization_id');
+        } elseif (filled(config('services.workos.connection_id'))) {
+            $query['connection_id'] = config('services.workos.connection_id');
+        }
+
+        return self::API_BASE_URL.'/user_management/authorize?'.http_build_query($query);
     }
 
     /**
@@ -35,7 +43,7 @@ class WorkOsService
     {
         return Http::acceptJson()
             ->asJson()
-            ->post(self::API_BASE_URL . '/user_management/authenticate', array_filter([
+            ->post(self::API_BASE_URL.'/user_management/authenticate', array_filter([
                 'client_id' => $this->clientId(),
                 'client_secret' => $this->apiKey(),
                 'grant_type' => 'authorization_code',
@@ -60,7 +68,7 @@ class WorkOsService
             'return_to' => $returnTo,
         ], fn ($value) => filled($value));
 
-        return self::API_BASE_URL . '/user_management/sessions/logout?' . http_build_query($query);
+        return self::API_BASE_URL.'/user_management/sessions/logout?'.http_build_query($query);
     }
 
     public function configured(): bool

@@ -24,7 +24,7 @@ while getopts ":c:d:f:o:s:t:v:" opt
         c ) CLEAR_CACHE=$OPTARG;;
         d ) DELETE_DB=$OPTARG;;
         f ) LOAD_CONFIG_FILE=$OPTARG;;
-        o ) SHOW_OPTIONS=$$OPTARG;;
+        o ) SHOW_OPTIONS=$OPTARG;;
         s ) SEEDING=$OPTARG;;
         t ) TEST_MIGRATIONS=$OPTARG;;
         v ) VERBOSE=$OPTARG;;

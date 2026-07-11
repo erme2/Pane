@@ -8,52 +8,96 @@ use App\Services\WorkOsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Http\Response;
 
 class WorkOsAuthController extends Controller
 {
-    public function __construct(private readonly WorkOsService $workOs)
-    {
-    }
+    private const STATE_COOKIE = 'pane_workos_state';
 
-    public function login(Request $request): RedirectResponse
+    public function __construct(private readonly WorkOsService $workOs) {}
+
+    public function loginUrl(Request $request): JsonResponse
     {
         $this->workOs->ensureConfigured();
 
         $state = $this->workOs->makeState();
 
         $request->session()->put('workos_state', $state);
-        $request->session()->put('workos_intended_url', $request->query('redirect_to', url('/')));
+        $request->session()->put('workos_intended_url', $request->query('redirect_to', config('services.workos.return_to') ?: url('/')));
 
-        return redirect()->away($this->workOs->authorizationUrl($state));
+        return response()->json([
+            'authorization_url' => $this->workOs->authorizationUrl($state),
+            'state' => $state,
+        ])->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
+    }
+
+    public function login(Request $request): RedirectResponse
+    {
+        $response = $this->loginUrl($request)->getData(true);
+
+        return redirect()->away($response['authorization_url']);
     }
 
     public function callback(Request $request): RedirectResponse|Response
     {
-        if ($request->has('error')) {
+        if ($request->filled('error')) {
             return redirect('/')
                 ->withErrors(['workos' => $request->query('error_description', $request->query('error'))]);
         }
 
-        if (! $request->filled('code')) {
-            return response('Missing WorkOS authorization code.', Response::HTTP_BAD_REQUEST);
+        $response = $this->completeCallback($request);
+
+        if ($response->getStatusCode() !== Response::HTTP_OK) {
+            return response($response->getData(true)['message'], $response->getStatusCode());
         }
 
-        if (! hash_equals((string) $request->session()->pull('workos_state'), (string) $request->query('state'))) {
-            return response('Invalid WorkOS state.', Response::HTTP_BAD_REQUEST);
+        return redirect()->to($request->session()->pull('workos_intended_url', url('/')));
+    }
+
+    public function completeCallback(Request $request): JsonResponse
+    {
+        if ($request->filled('error')) {
+            return response()->json([
+                'message' => $request->input('error_description', $request->input('error')),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (! $request->filled('code')) {
+            return response()->json(['message' => 'Missing WorkOS authorization code.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $state = (string) $request->input('state');
+        $sessionState = (string) $request->session()->get('workos_state');
+        $cookieState = (string) $request->cookie(self::STATE_COOKIE);
+        $stateIsValid = (filled($sessionState) && hash_equals($sessionState, $state))
+            || (filled($cookieState) && hash_equals($cookieState, $state));
+
+        if (! $stateIsValid) {
+            // React StrictMode mounts effects twice in development. If the first
+            // callback already completed, return the resulting session instead
+            // of attempting to exchange the one-time WorkOS code again.
+            if ($request->user() && hash_equals(
+                (string) $request->session()->get('workos_completed_state'),
+                $state
+            )) {
+                return $this->authenticatedResponse($request);
+            }
+
+            return response()->json(['message' => 'Invalid WorkOS state.'], Response::HTTP_BAD_REQUEST);
         }
 
         $authentication = $this->workOs->authenticateWithCode(
-            $request->query('code'),
+            $request->input('code'),
             $request->ip(),
             $request->userAgent()
         );
 
         if (! filled($authentication['user']['email'] ?? null)) {
-            return response('WorkOS did not return a user email.', Response::HTTP_BAD_REQUEST);
+            return response()->json(['message' => 'WorkOS did not return a user email.'], Response::HTTP_BAD_REQUEST);
         }
 
         $user = $this->syncUser($authentication);
@@ -61,27 +105,26 @@ class WorkOsAuthController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
-        $request->session()->put('workos_access_token', $authentication['access_token'] ?? null);
-        $request->session()->put('workos_refresh_token', $authentication['refresh_token'] ?? null);
-        $request->session()->put('workos_session_id', $authentication['session_id'] ?? null);
-        $request->session()->put('workos_organization_id', $authentication['organization_id'] ?? null);
+        $request->session()->forget('workos_state');
+        $request->session()->put([
+            'workos_completed_state' => $state,
+            'workos_access_token' => $authentication['access_token'] ?? null,
+            'workos_refresh_token' => $authentication['refresh_token'] ?? null,
+            'workos_session_id' => $authentication['session_id'] ?? null,
+            'workos_organization_id' => $authentication['organization_id'] ?? null,
+        ]);
 
-        return redirect()->to($request->session()->pull('workos_intended_url', url('/')));
-    }
+        Cookie::queue(Cookie::forget(self::STATE_COOKIE));
 
-    public function logout(Request $request): RedirectResponse
-    {
-        $sessionId = $request->session()->pull('workos_session_id');
-
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->away($this->workOs->logoutUrl($sessionId));
+        return $this->authenticatedResponse($request);
     }
 
     public function user(Request $request): JsonResponse
+    {
+        return $this->authenticatedResponse($request);
+    }
+
+    private function authenticatedResponse(Request $request): JsonResponse
     {
         return response()->json([
             'user' => $request->user(),
@@ -90,7 +133,7 @@ class WorkOsAuthController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $authentication
+     * @param  array<string, mixed>  $authentication
      */
     private function syncUser(array $authentication): User
     {

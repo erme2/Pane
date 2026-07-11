@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use App\Helpers\ResponseHelper;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Response;
 use Throwable;
@@ -39,8 +40,13 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $e)
     {
-        $statusID = $e->getCode() >= Response::HTTP_BAD_REQUEST && $e->getCode() <= 600 ?
-            $e->getCode() : Response::HTTP_INTERNAL_SERVER_ERROR;
+        $exceptionCode = $e->getCode();
+
+        $statusID = $e instanceof AuthenticationException
+            ? Response::HTTP_UNAUTHORIZED
+            : (is_int($exceptionCode) && $exceptionCode >= Response::HTTP_BAD_REQUEST && $exceptionCode <= 600
+                ? $exceptionCode
+                : Response::HTTP_INTERNAL_SERVER_ERROR);
         $content = [
             'status' => Response::$statusTexts[$statusID],
             'data' => [],
