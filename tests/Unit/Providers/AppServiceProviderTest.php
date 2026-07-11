@@ -1,0 +1,35 @@
+<?php
+
+namespace Tests\Unit\Providers;
+
+use App\Providers\AppServiceProvider;
+use RuntimeException;
+use Tests\TestCase;
+
+class AppServiceProviderTest extends TestCase
+{
+    public function test_production_fails_closed_when_debug_is_enabled(): void
+    {
+        config([
+            'app.env' => 'production',
+            'app.debug' => true,
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('APP_DEBUG must be false');
+
+        (new AppServiceProvider($this->app))->register();
+    }
+
+    public function test_production_boots_when_debug_is_disabled(): void
+    {
+        config([
+            'app.env' => 'production',
+            'app.debug' => false,
+        ]);
+
+        (new AppServiceProvider($this->app))->register();
+
+        $this->assertFalse(config('app.debug'));
+    }
+}
