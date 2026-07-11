@@ -1,6 +1,7 @@
 /.phpunit.cache
 /database/database.sqlite
 /node_modules
+/nginx/certs/
 /public/build
 /public/hot
 /public/storage
