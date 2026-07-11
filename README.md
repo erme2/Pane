@@ -10,6 +10,13 @@ Pane and Burro together should be like a "bread and butter".
 2. testable
 3. easy to use
 
+## Deployment requirements
+
+Production deployments must run with `APP_ENV=production` and `APP_DEBUG=false`.
+Pane fails during application boot when `APP_ENV=production` and `APP_DEBUG=true`
+so production errors cannot expose source paths, stack traces, or other internal
+exception details.
+
 ## Local development requirements
 
 - Docker Desktop with Docker Compose
