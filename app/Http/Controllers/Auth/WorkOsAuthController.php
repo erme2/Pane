@@ -27,7 +27,7 @@ class WorkOsAuthController extends Controller
         $state = $this->workOs->makeState();
 
         $request->session()->put('workos_state', $state);
-        $request->session()->put('workos_intended_url', $request->query('redirect_to', config('services.workos.return_to') ?: url('/')));
+        $request->session()->put('workos_intended_url', $this->intendedRedirectUrl($request));
 
         return response()->json([
             'authorization_url' => $this->workOs->authorizationUrl($state),
@@ -130,6 +130,67 @@ class WorkOsAuthController extends Controller
             'user' => $request->user(),
             'workos_organization_id' => $request->session()->get('workos_organization_id'),
         ]);
+    }
+
+    private function intendedRedirectUrl(Request $request): string
+    {
+        $fallback = config('services.workos.return_to') ?: url('/');
+        $redirectTo = $request->query('redirect_to');
+
+        if (! is_string($redirectTo) || blank($redirectTo)) {
+            return $fallback;
+        }
+
+        if (str_starts_with($redirectTo, '/') && ! str_starts_with($redirectTo, '//')) {
+            return $redirectTo;
+        }
+
+        if (! filter_var($redirectTo, FILTER_VALIDATE_URL)) {
+            return $fallback;
+        }
+
+        $allowedOrigins = array_filter(array_merge([
+            config('services.workos.return_to'),
+            config('app.url'),
+        ], config('cors.allowed_origins', [])));
+
+        foreach ($allowedOrigins as $allowedOrigin) {
+            if ($this->sameOrigin($redirectTo, $allowedOrigin)) {
+                return $redirectTo;
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function sameOrigin(string $url, string $allowedOrigin): bool
+    {
+        $urlParts = parse_url($url);
+        $allowedParts = parse_url($allowedOrigin);
+
+        if (! isset($urlParts['scheme'], $urlParts['host'], $allowedParts['scheme'], $allowedParts['host'])) {
+            return false;
+        }
+
+        return strtolower($urlParts['scheme']) === strtolower($allowedParts['scheme'])
+            && strtolower($urlParts['host']) === strtolower($allowedParts['host'])
+            && $this->originPort($urlParts) === $this->originPort($allowedParts);
+    }
+
+    /**
+     * @param  array{scheme?: string, port?: int}  $parts
+     */
+    private function originPort(array $parts): ?int
+    {
+        if (isset($parts['port'])) {
+            return $parts['port'];
+        }
+
+        return match (strtolower($parts['scheme'] ?? '')) {
+            'http' => 80,
+            'https' => 443,
+            default => null,
+        };
     }
 
     /**

@@ -10,7 +10,7 @@
 .env
 .env.backup
 .env.production
-.env.local.deleted
+.env.local
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml

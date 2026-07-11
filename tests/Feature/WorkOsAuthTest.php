@@ -13,6 +13,7 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
         config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.return_to', 'https://pane.test');
         config()->set('services.workos.provider', 'authkit');
 
         $response = $this->get('/auth/login?redirect_to=https://pane.test/dashboard');
@@ -27,6 +28,7 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
         config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.return_to', 'https://burro.test');
         config()->set('services.workos.provider', 'authkit');
 
         $response = $this->getJson('/auth/login-url?redirect_to=https://burro.test/dashboard');
@@ -42,6 +44,36 @@ class WorkOsAuthTest extends TestCase
             $response->json('authorization_url')
         );
         $this->assertStringContainsString('redirect_uri=https%3A%2F%2Fburro.test', $response->json('authorization_url'));
+    }
+
+    public function test_login_url_falls_back_when_redirect_to_is_external(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.return_to', 'https://burro.test');
+        config()->set('services.workos.provider', 'authkit');
+
+        $response = $this->getJson('/auth/login-url?redirect_to=https://evil.test/dashboard');
+
+        $response
+            ->assertOk()
+            ->assertSessionHas('workos_intended_url', 'https://burro.test');
+    }
+
+    public function test_login_url_accepts_relative_redirect_to(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.return_to', 'https://burro.test');
+        config()->set('services.workos.provider', 'authkit');
+
+        $response = $this->getJson('/auth/login-url?redirect_to=/dashboard');
+
+        $response
+            ->assertOk()
+            ->assertSessionHas('workos_intended_url', '/dashboard');
     }
 
     public function test_callback_rejects_invalid_state(): void
