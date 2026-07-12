@@ -5,16 +5,15 @@ namespace Tests\Feature\crud;
 use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use Illuminate\Http\Response;
-use Tests\TestCase;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class _01CreateTest extends TestCase
 {
-
     public function test_wrong_table(): void
     {
         // empty call
-        $wrongTable = "wrong_table";
+        $wrongTable = 'wrong_table';
         $endpoint = "/crud/$wrongTable";
         $response = $this->post($endpoint, ['some' => 'data']);
         $response->assertStatus(Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -58,7 +57,7 @@ class _01CreateTest extends TestCase
         $data = self::VALID_TEST_TABLE_RECORD;
         $suffix = (string) Str::uuid();
         $data['name'] = "unique test_name $suffix";
-        $data['email'] = "test.$suffix@email.com";
+        $data['email'] = "test.$suffix@gmail.com";
         $response = $this->post($endpoint, $data);
         $result = json_decode($response->getContent(), false);
         $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());

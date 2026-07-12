@@ -11,7 +11,7 @@ class _03UpdateTest extends TestCase
 {
     public function test_wrong_table_update(): void
     {
-        $wrongTable = "wrong_table";
+        $wrongTable = 'wrong_table';
         $endpoint = "/crud/$wrongTable/1";
         $response = $this->put($endpoint, ['some' => 'data']);
         $response->assertStatus(Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -33,7 +33,7 @@ class _03UpdateTest extends TestCase
         $this->assertIsArray($result->data->errors);
         $this->assertCount(3, $result->data->errors);
         foreach ($result->data->errors as $error) {
-            $this->assertEquals($error->message, "The ".str_replace('_', ' ', $error->field_name)." field is required.");
+            $this->assertEquals($error->message, 'The '.str_replace('_', ' ', $error->field_name).' field is required.');
         }
     }
 
@@ -47,14 +47,14 @@ class _03UpdateTest extends TestCase
         $this->assertIsObject($result->data);
         $this->assertIsArray($result->data->errors);
         $this->assertCount(9, $result->data->errors);
-        $this->assertEquals($result->data->errors[0]->message, "The table id field must be a number.");
-        $this->assertEquals($result->data->errors[1]->message, "The name field is required.");
-        $this->assertEquals($result->data->errors[2]->message, "The description field must be a string.");
-        $this->assertEquals($result->data->errors[3]->message, "The is active field must be true or false.");
-        $this->assertEquals($result->data->errors[4]->message, "The test date field must be a valid date.");
-        $this->assertEquals($result->data->errors[5]->message, "The test array field must be an array.");
-        $this->assertEquals($result->data->errors[6]->message, "The email field must be a valid email address.");
-        $this->assertEquals($result->data->errors[7]->message, "The test json field must be a valid JSON string.");
+        $this->assertEquals($result->data->errors[0]->message, 'The table id field must be a number.');
+        $this->assertEquals($result->data->errors[1]->message, 'The name field is required.');
+        $this->assertEquals($result->data->errors[2]->message, 'The description field must be a string.');
+        $this->assertEquals($result->data->errors[3]->message, 'The is active field must be true or false.');
+        $this->assertEquals($result->data->errors[4]->message, 'The test date field must be a valid date.');
+        $this->assertEquals($result->data->errors[5]->message, 'The test array field must be an array.');
+        $this->assertEquals($result->data->errors[6]->message, 'The email field must be a valid email address.');
+        $this->assertEquals($result->data->errors[7]->message, 'The test json field must be a valid JSON string.');
     }
 
     public function test_update_not_found()
@@ -63,7 +63,7 @@ class _03UpdateTest extends TestCase
         $data = self::VALID_TEST_TABLE_RECORD;
         $time = time();
         $data['name'] = "updated test_name $time";
-        $data['email'] = "updated$time@email.com";
+        $data['email'] = "updated$time@gmail.com";
         $response = $this->put($endpoint, $data);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
@@ -74,7 +74,7 @@ class _03UpdateTest extends TestCase
         $data = self::VALID_TEST_TABLE_RECORD;
         $time = time();
         $data['name'] = "updated test_name $time";
-        $data['email'] = "updated$time@email.com";
+        $data['email'] = "updated$time@gmail.com";
         $response = $this->put($endpoint, $data);
         $result = json_decode($response->getContent(), false);
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());

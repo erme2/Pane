@@ -9,6 +9,7 @@ abstract class TestCase extends BaseTestCase
     use CreatesApplication;
 
     const TEST_TABLE_NAME = 'test_table';
+
     const TEST_TABLE_PRIMARY_KEY = 'table_id';
 
     const array VALID_TEST_TABLE_RECORD = [
@@ -18,19 +19,19 @@ abstract class TestCase extends BaseTestCase
         'test_date' => '07-03-2017',
         'test_array' => ['this', 'is', 'an', 'array'],
         'password' => 'Pa$$word123#',
-        'email' => 'test@email.com',
+        'email' => 'test@gmail.com',
         'test_json' => '{"some": "JSON"}',
         'numero' => 33,
     ];
 
-    const array INVALID_TEST_TABLE_RECORD =  [
+    const array INVALID_TEST_TABLE_RECORD = [
         'name' => '',
         'description' => [1 => 2],
         'is_active' => ['aa'],
         'test_date' => 'not a date',
         'test_array' => 'not an array',
         'password' => '123',
-        'email' => 'invalid@email.con',
+        'email' => 'invalid-email',
         'test_json' => 'not json',
         'numero' => 3,
     ];
@@ -43,8 +44,8 @@ abstract class TestCase extends BaseTestCase
         'test_date' => '22-04-2021',
         'test_array' => ['this', 'is', 'another', 'array'],
         'password' => 'Hacked?123#',
-        'email' => 'another@email.com',
+        'email' => 'another@gmail.com',
         'test_json' => '{"some": "JSON", "more": "data"}',
-        'numero' => 55
+        'numero' => 55,
     ];
 }
