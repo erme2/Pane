@@ -28,5 +28,7 @@ Route::get('/auth/callback', [WorkOsAuthController::class, 'callback'])->name('a
 Route::get('/auth/user', [WorkOsAuthController::class, 'user'])->middleware('auth')->name('auth.user');
 
 // all stories (crud)
-Route::match(['get', 'post'], '/{story}/{subject}', [Controller::class, 'runStory']);
-Route::match(['get', 'put', 'delete'], '/{story}/{subject}/{key}', [Controller::class, 'runStory']);
+Route::middleware('auth')->group(function () {
+    Route::match(['get', 'post'], '/{story}/{subject}', [Controller::class, 'runStory']);
+    Route::match(['get', 'put', 'delete'], '/{story}/{subject}/{key}', [Controller::class, 'runStory']);
+});

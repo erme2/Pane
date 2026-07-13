@@ -10,6 +10,13 @@ use Tests\TestCase;
 
 class _01CreateTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->authenticateAsAdministrator();
+    }
+
     public function test_wrong_table(): void
     {
         // empty call

@@ -9,7 +9,15 @@ use Tests\TestCase;
 
 class _04DeleteTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->authenticateAsAdministrator();
+    }
+
     use DefaultsHelper;
+
     public string $endpoint = '/crud/';
 
     public function test_empty_delete()

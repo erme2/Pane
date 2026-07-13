@@ -12,8 +12,17 @@ use Tests\TestCase;
 
 class _02ReadTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->authenticateAsAdministrator();
+    }
+
     use DefaultsHelper;
+
     public string $endpoint = '/crud/';
+
     private $table = 'test_table';
 
     public function test_empty()
@@ -45,7 +54,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
 
-        $this->assertEquals( 1, count($content->data));
+        $this->assertEquals(1, count($content->data));
         foreach (TestTableSeeder::getStaticRecords()[0] as $key => $value) {
             switch ($key) {
                 case 'test_date':
@@ -82,7 +91,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
-        $this->assertEquals( $params['limit'], count($content->data));
+        $this->assertEquals($params['limit'], count($content->data));
         $this->assertEquals($content->data[0]->table_id, 1);
         $this->assertEquals($content->data[1]->table_id, 2);
         $this->assertEquals($content->pagination->page, $params['page']);
@@ -98,7 +107,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
-        $this->assertEquals( $params['limit'], count($content->data));
+        $this->assertEquals($params['limit'], count($content->data));
         $check = $this->sort_check($content->data, 'table_id');
         $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
@@ -107,7 +116,7 @@ class _02ReadTest extends TestCase
         $params = [
             'page' => 10,
             'limit' => 10,
-            'order' => 'desc'
+            'order' => 'desc',
         ];
         $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
         $content = json_decode($response->getContent(), false);
@@ -115,7 +124,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
-        $this->assertEquals( $params['limit'], count($content->data));
+        $this->assertEquals($params['limit'], count($content->data));
         $check = $this->sort_check($content->data, 'table_id', false);
         $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
@@ -124,7 +133,7 @@ class _02ReadTest extends TestCase
         $params = [
             'page' => 10,
             'limit' => 10,
-            'order' => 'asc'
+            'order' => 'asc',
         ];
         $response = $this->get($this->endpoint.'test_table?'.http_build_query($params));
         $content = json_decode($response->getContent(), false);
@@ -132,7 +141,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
-        $this->assertEquals( $params['limit'], count($content->data));
+        $this->assertEquals($params['limit'], count($content->data));
         $check = $this->sort_check($content->data, 'table_id');
         $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
@@ -150,7 +159,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
-        $this->assertEquals( $params['limit'], count($content->data));
+        $this->assertEquals($params['limit'], count($content->data));
         $check = $this->sort_check($content->data, 'email');
         $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
@@ -168,7 +177,7 @@ class _02ReadTest extends TestCase
         $this->assertEquals('OK', $content->status);
         $this->assertIsArray($content->data);
         $this->assertIsObject($content->pagination);
-        $this->assertEquals( $params['limit'], count($content->data));
+        $this->assertEquals($params['limit'], count($content->data));
         $check = $this->sort_check($content->data, 'email', false);
         $this->assertSame($check['sorted'], $check['rows']);
         $this->assertEquals($content->pagination->page, $params['page']);
@@ -225,12 +234,11 @@ class _02ReadTest extends TestCase
         $this->assertEquals($totalRecords, $content->pagination->total);
         $this->assertEquals($totalPages, $content->pagination->pages);
 
-
         // reverting the order
         $params = [
             'page' => 1,
             'limit' => 10,
-            'order' => 'desc'
+            'order' => 'desc',
         ];
         $lastID = DB::table($this->table)->select()->max('table_id');
         $totalPages = ceil($totalRecords / $params['limit']);
@@ -296,7 +304,8 @@ class _02ReadTest extends TestCase
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
     }
 
-    function sort_check(array $data, string $field, bool $asc = true): array {
+    public function sort_check(array $data, string $field, bool $asc = true): array
+    {
         $rows = array_map(fn ($row) => $row->{$field}, $data);
         $sorted = $rows;
         if ($asc) {
@@ -304,6 +313,7 @@ class _02ReadTest extends TestCase
         } else {
             rsort($sorted, SORT_NUMERIC);
         }
+
         return ['sorted' => $sorted, 'rows' => $rows];
     }
 }

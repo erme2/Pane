@@ -9,6 +9,13 @@ use Tests\TestCase;
 
 class _03UpdateTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->authenticateAsAdministrator();
+    }
+
     public function test_wrong_table_update(): void
     {
         $wrongTable = 'wrong_table';

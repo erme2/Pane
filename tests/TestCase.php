@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Str;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -48,4 +50,33 @@ abstract class TestCase extends BaseTestCase
         'test_json' => '{"some": "JSON", "more": "data"}',
         'numero' => 55,
     ];
+
+    protected function authenticateAsAdministrator(): User
+    {
+        $user = $this->makePaneUser(1);
+        $this->actingAs($user);
+
+        return $user;
+    }
+
+    protected function authenticateAsUser(): User
+    {
+        $user = $this->makePaneUser(2);
+        $this->actingAs($user);
+
+        return $user;
+    }
+
+    protected function makePaneUser(int $userTypeId): User
+    {
+        $suffix = (string) Str::uuid();
+
+        return User::query()->create([
+            'user_type_id' => $userTypeId,
+            'name' => "test-user-$suffix",
+            'email' => "test-user-$suffix@example.com",
+            'password' => 'password',
+            'is_active' => true,
+        ]);
+    }
 }
