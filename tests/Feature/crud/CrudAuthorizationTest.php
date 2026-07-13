@@ -13,13 +13,16 @@ class CrudAuthorizationTest extends TestCase
         $this->getJson('/crud/'.AbstractMapper::TABLES['test_table'])
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
 
-        $this->postJson('/crud/'.AbstractMapper::TABLES['test_table'], self::VALID_TEST_TABLE_RECORD)
+        $this->withCsrfToken()
+            ->postJson('/crud/'.AbstractMapper::TABLES['test_table'], self::VALID_TEST_TABLE_RECORD)
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
 
-        $this->putJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1', self::VALID_TEST_TABLE_RECORD)
+        $this->withCsrfToken()
+            ->putJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1', self::VALID_TEST_TABLE_RECORD)
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
 
-        $this->deleteJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1')
+        $this->withCsrfToken()
+            ->deleteJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1')
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
@@ -35,13 +38,16 @@ class CrudAuthorizationTest extends TestCase
     {
         $this->authenticateAsUser();
 
-        $this->postJson('/crud/'.AbstractMapper::TABLES['test_table'], self::VALID_TEST_TABLE_RECORD)
+        $this->withCsrfToken()
+            ->postJson('/crud/'.AbstractMapper::TABLES['test_table'], self::VALID_TEST_TABLE_RECORD)
             ->assertStatus(Response::HTTP_FORBIDDEN);
 
-        $this->putJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1', self::VALID_TEST_TABLE_RECORD)
+        $this->withCsrfToken()
+            ->putJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1', self::VALID_TEST_TABLE_RECORD)
             ->assertStatus(Response::HTTP_FORBIDDEN);
 
-        $this->deleteJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1')
+        $this->withCsrfToken()
+            ->deleteJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1')
             ->assertStatus(Response::HTTP_FORBIDDEN);
     }
 

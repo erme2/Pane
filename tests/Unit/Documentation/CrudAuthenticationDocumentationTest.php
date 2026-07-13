@@ -20,6 +20,8 @@ class CrudAuthenticationDocumentationTest extends TestCase
         $this->assertStringContainsString('Unauthenticated', $doc);
         $this->assertStringContainsString('Authenticated non-admin', $doc);
         $this->assertStringContainsString('Authenticated administrator', $doc);
+        $this->assertStringContainsString('X-XSRF-TOKEN', $doc);
+        $this->assertStringContainsString('POST /auth/callback', $doc);
         $this->assertStringContainsString('400 Invalid WorkOS state', $doc);
     }
 }

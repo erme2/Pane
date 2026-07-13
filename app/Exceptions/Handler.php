@@ -5,10 +5,13 @@ namespace App\Exceptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Response;
+use Illuminate\Session\TokenMismatchException;
 use Throwable;
 
 class Handler extends ExceptionHandler
 {
+    private const HTTP_PAGE_EXPIRED = 419;
+
     /**
      * The list of the inputs that are never flashed to the session on validation exceptions.
      *
@@ -39,13 +42,18 @@ class Handler extends ExceptionHandler
     {
         $exceptionCode = $e->getCode();
 
-        $statusID = $e instanceof AuthenticationException
-            ? Response::HTTP_UNAUTHORIZED
-            : (is_int($exceptionCode) && $exceptionCode >= Response::HTTP_BAD_REQUEST && $exceptionCode <= 600
-                ? $exceptionCode
-                : Response::HTTP_INTERNAL_SERVER_ERROR);
+        if ($e instanceof AuthenticationException) {
+            $statusID = Response::HTTP_UNAUTHORIZED;
+        } elseif ($e instanceof TokenMismatchException) {
+            $statusID = self::HTTP_PAGE_EXPIRED;
+        } elseif (is_int($exceptionCode) && $exceptionCode >= Response::HTTP_BAD_REQUEST && $exceptionCode <= 600) {
+            $statusID = $exceptionCode;
+        } else {
+            $statusID = Response::HTTP_INTERNAL_SERVER_ERROR;
+        }
+
         $content = [
-            'status' => Response::$statusTexts[$statusID],
+            'status' => $statusID === self::HTTP_PAGE_EXPIRED ? 'Page Expired' : Response::$statusTexts[$statusID],
             'data' => [],
         ];
 

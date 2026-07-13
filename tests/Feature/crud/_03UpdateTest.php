@@ -14,6 +14,7 @@ class _03UpdateTest extends TestCase
         parent::setUp();
 
         $this->authenticateAsAdministrator();
+        $this->withCsrfToken();
     }
 
     public function test_wrong_table_update(): void
