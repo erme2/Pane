@@ -129,3 +129,5 @@ Routes:
 Pane keeps WorkOS tokens in its private Laravel session. Burro receives only the user snapshot and organization ID.
 
 For the full Burro and Pane callback sequence, see [WorkOS and Burro Authentication](docs/workos-burro-auth.md).
+
+For how that authenticated session gates CRUD routes, see [CRUD Authentication and Authorization](docs/crud-authentication.md).
