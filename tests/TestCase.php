@@ -59,6 +59,15 @@ abstract class TestCase extends BaseTestCase
         return $user;
     }
 
+    protected function withCsrfToken(): static
+    {
+        $token = (string) Str::uuid();
+
+        return $this
+            ->withSession(['_token' => $token])
+            ->withHeader('X-CSRF-TOKEN', $token);
+    }
+
     protected function authenticateAsUser(): User
     {
         $user = $this->makePaneUser(2);

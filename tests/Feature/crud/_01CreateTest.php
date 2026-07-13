@@ -15,6 +15,7 @@ class _01CreateTest extends TestCase
         parent::setUp();
 
         $this->authenticateAsAdministrator();
+        $this->withCsrfToken();
     }
 
     public function test_wrong_table(): void

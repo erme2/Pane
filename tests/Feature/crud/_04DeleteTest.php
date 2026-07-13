@@ -14,6 +14,7 @@ class _04DeleteTest extends TestCase
         parent::setUp();
 
         $this->authenticateAsAdministrator();
+        $this->withCsrfToken();
     }
 
     use DefaultsHelper;

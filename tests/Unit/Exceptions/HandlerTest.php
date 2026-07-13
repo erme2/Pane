@@ -4,6 +4,7 @@ namespace Tests\Unit\Exceptions;
 
 use App\Exceptions\Handler;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -47,6 +48,20 @@ class HandlerTest extends TestCase
         $this->assertArrayHasKey('file', $data);
         $this->assertArrayHasKey('line', $data);
         $this->assertArrayHasKey('trace', $data);
+    }
+
+    public function test_csrf_token_mismatch_returns_page_expired(): void
+    {
+        $response = $this->handler()->render(
+            Request::create('/crud/test_table', 'POST'),
+            new TokenMismatchException('CSRF token mismatch.')
+        );
+
+        $content = $response->getOriginalContent();
+
+        $this->assertSame(419, $response->getStatusCode());
+        $this->assertSame('Page Expired', $content['status']);
+        $this->assertSame('CSRF token mismatch.', $content['data']['message']);
     }
 
     private function handler(): Handler

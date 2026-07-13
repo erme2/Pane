@@ -57,7 +57,9 @@ These subjects describe Pane's table metadata or authentication tables, so expos
 
 Authentication answers "who is making this request". Authorization answers "what is this user allowed to do". CSRF protection is separate: it protects browser-session requests from being triggered by another site.
 
-Pane's CRUD routes are in the `web` middleware stack, so Laravel's session and CSRF middleware still apply to normal browser form requests. JSON API requests from Burro must use the same session/cookie contract expected by Pane.
+Pane's CRUD routes are in the `web` middleware stack, so Laravel's session and CSRF middleware apply to browser-backed requests. For mutating JSON requests, Burro must send the Pane session cookie and echo the encrypted `XSRF-TOKEN` cookie value in the `X-XSRF-TOKEN` header. Pane validates that header against the Laravel session token before the CRUD story runs.
+
+`POST /auth/callback` is exempt from CSRF because it completes the external WorkOS callback flow before Burro has an authenticated Pane session. Pane still validates the WorkOS OAuth `state` value on that route.
 
 ## Troubleshooting
 
