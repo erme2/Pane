@@ -136,7 +136,7 @@ Routes:
 4. `GET /auth/callback` handles the WorkOS callback for legacy Pane-owned redirects.
 5. `GET /auth/user` returns the user attached to the authenticated Pane session.
 
-Pane keeps WorkOS tokens in its private Laravel session. Burro receives only the user snapshot and organization ID.
+Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Burro receives only the user snapshot and organization ID.
 
 For the full Burro and Pane callback sequence, see [WorkOS and Burro Authentication](docs/workos-burro-auth.md).
 

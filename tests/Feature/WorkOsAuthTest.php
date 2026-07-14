@@ -163,4 +163,46 @@ class WorkOsAuthTest extends TestCase
 
         Http::assertSentCount(1);
     }
+
+    public function test_json_callback_does_not_store_workos_bearer_tokens_in_session(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://burro.test');
+
+        Http::fake([
+            'api.workos.com/user_management/authenticate' => Http::response([
+                'user' => [
+                    'id' => 'user_123',
+                    'email' => 'issue34@example.com',
+                    'email_verified' => true,
+                ],
+                'access_token' => 'access_token',
+                'refresh_token' => 'refresh_token',
+                'session_id' => 'session_123',
+                'organization_id' => 'org_123',
+            ]),
+        ]);
+
+        $response = $this
+            ->withSession(['workos_state' => 'expected_state'])
+            ->postJson('/auth/callback', [
+                'code' => 'code_123',
+                'state' => 'expected_state',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('user.email', 'issue34@example.com')
+            ->assertJsonPath('workos_organization_id', 'org_123')
+            ->assertSessionHas('workos_completed_state', 'expected_state')
+            ->assertSessionHas('workos_session_id', 'session_123')
+            ->assertSessionHas('workos_organization_id', 'org_123')
+            ->assertSessionMissing([
+                'workos_access_token',
+                'workos_refresh_token',
+            ]);
+
+        Http::assertSentCount(1);
+    }
 }

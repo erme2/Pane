@@ -108,8 +108,6 @@ class WorkOsAuthController extends Controller
         $request->session()->forget('workos_state');
         $request->session()->put([
             'workos_completed_state' => $state,
-            'workos_access_token' => $authentication['access_token'] ?? null,
-            'workos_refresh_token' => $authentication['refresh_token'] ?? null,
             'workos_session_id' => $authentication['session_id'] ?? null,
             'workos_organization_id' => $authentication['organization_id'] ?? null,
         ]);

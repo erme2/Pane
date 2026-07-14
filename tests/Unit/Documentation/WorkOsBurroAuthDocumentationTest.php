@@ -19,5 +19,6 @@ class WorkOsBurroAuthDocumentationTest extends TestCase
         $this->assertStringContainsString('Burro owns browser redirects and callback forwarding.', $doc);
         $this->assertStringContainsString('WORKOS_REDIRECT_URI=https://burro.localhost/auth/callback', $doc);
         $this->assertStringContainsString('Invalid WorkOS state.', $doc);
+        $this->assertStringContainsString('Pane does not persist WorkOS access or refresh tokens', $doc);
     }
 }
