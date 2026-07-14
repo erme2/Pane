@@ -26,6 +26,11 @@ Local HTTP development should use `APP_ENV=local` or `APP_ENV=testing`, where
 secure session cookies are not forced. Local HTTPS Docker development can set
 `SESSION_SECURE_COOKIE=true`.
 
+Pane validates Host headers outside local/test environments. Set `APP_URL` to
+the canonical Pane origin and put only extra Pane hostnames in
+`TRUSTED_HOSTS`. See [Environment Configuration](docs/environment.md) for the
+complete `.env.example` contract.
+
 ## Local development requirements
 
 - Docker Desktop with Docker Compose

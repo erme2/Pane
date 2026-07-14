@@ -6,6 +6,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Response;
 use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -46,6 +47,8 @@ class Handler extends ExceptionHandler
             $statusID = Response::HTTP_UNAUTHORIZED;
         } elseif ($e instanceof TokenMismatchException) {
             $statusID = self::HTTP_PAGE_EXPIRED;
+        } elseif ($e instanceof RequestExceptionInterface) {
+            $statusID = Response::HTTP_BAD_REQUEST;
         } elseif (is_int($exceptionCode) && $exceptionCode >= Response::HTTP_BAD_REQUEST && $exceptionCode <= 600) {
             $statusID = $exceptionCode;
         } else {
