@@ -83,14 +83,14 @@ The WorkOS application must include `WORKOS_REDIRECT_URI` in its allowed redirec
 
 8. If state is valid, Pane exchanges the one-time WorkOS `code` with `/user_management/authenticate`.
 
-9. Pane syncs the WorkOS user into the local `users` table, logs the user in with Laravel Auth, regenerates the session, clears `workos_state`, stores WorkOS session metadata, and forgets the `pane_workos_state` cookie.
+9. Pane syncs the WorkOS user into the local `users` table, logs the user in with Laravel Auth, regenerates the session, clears `workos_state`, stores non-bearer WorkOS session metadata, and forgets the `pane_workos_state` cookie. Pane does not persist WorkOS access or refresh tokens after the code exchange.
 
 10. Pane returns the authenticated user and organization ID to Burro. Burro stores that small user snapshot in browser `sessionStorage`; it does not receive WorkOS access or refresh tokens.
 
 ## Ownership Rules
 
 - Pane owns OAuth state generation and validation.
-- Pane owns WorkOS code exchange and token handling.
+- Pane owns WorkOS code exchange and ignores bearer tokens after login because current Pane requests do not need them.
 - Pane owns the authenticated Laravel session.
 - Burro owns browser redirects and callback forwarding.
 - Burro must forward the WorkOS callback `state` unchanged to Pane.
