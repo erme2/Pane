@@ -17,6 +17,15 @@ Pane fails during application boot when `APP_ENV=production` and `APP_DEBUG=true
 so production errors cannot expose source paths, stack traces, or other internal
 exception details.
 
+Session cookies are secure by default when `APP_ENV` is not `local` or
+`testing`. Production, staging, and any other non-local deployment must run over
+HTTPS and keep `SESSION_SECURE_COOKIE=true`; Pane fails during application boot
+if a non-local environment disables secure session cookies.
+
+Local HTTP development should use `APP_ENV=local` or `APP_ENV=testing`, where
+secure session cookies are not forced. Local HTTPS Docker development can set
+`SESSION_SECURE_COOKIE=true`.
+
 ## Local development requirements
 
 - Docker Desktop with Docker Compose
@@ -114,6 +123,7 @@ WORKOS_REDIRECT_URI=http://localhost:5173/auth/callback
 WORKOS_RETURN_TO=http://localhost:5173
 WORKOS_PROVIDER=authkit
 SESSION_COOKIE=pane_session
+SESSION_SECURE_COOKIE=false
 ```
 
 Add `WORKOS_REDIRECT_URI` to the Redirects tab for your WorkOS application.
