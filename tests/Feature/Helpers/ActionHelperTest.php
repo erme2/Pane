@@ -1,11 +1,12 @@
 <?php
 
-namespace Tests\Unit\Helpers;
+namespace Tests\Feature\Helpers;
 
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
+use App\Stories\StoryPlot;
 use Tests\TestCase;
 
 class ActionHelperTest extends TestCase
@@ -14,8 +15,6 @@ class ActionHelperTest extends TestCase
 
     /**
      * @covers \App\Helpers\ActionHelper::getMapper
-     *
-     * @return void
      */
     public function test_get_mapper(): void
     {
@@ -30,14 +29,14 @@ class ActionHelperTest extends TestCase
         try {
             $this->getModel('');
         } catch (SystemException $e) {
-            $this->assertEquals( SystemException::ERROR_MESSAGE_PREFIX.'Table for () not found', $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for () not found', $e->getMessage());
             $this->assertEquals(500, $e->getCode());
         }
         // wrong subject
         try {
             $this->getModel('Test');
         } catch (SystemException $e) {
-            $this->assertEquals( SystemException::ERROR_MESSAGE_PREFIX.'Table for Test (test) not found', $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Table for Test (test) not found', $e->getMessage());
             $this->assertEquals(500, $e->getCode());
         }
         // ok
@@ -49,15 +48,12 @@ class ActionHelperTest extends TestCase
 
     /**
      * @covers \App\Helpers\ActionHelper::isCreate
-     *
-     * @return void
      */
     public function test_is_create(): void
     {
-        $plot = new \App\Stories\StoryPlot();
+        $plot = new StoryPlot;
         $this->assertFalse($this->isCreate($plot));
         $plot->options['is_new_record'] = true;
         $this->assertTrue($this->isCreate($plot));
     }
-
 }

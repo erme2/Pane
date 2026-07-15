@@ -1,14 +1,14 @@
 <?php
 
-namespace Tests\Unit\Actions;
+namespace Tests\Feature\Actions;
 
 use App\Actions\ReadAction;
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\DefaultsHelper;
 use App\Stories\StoryPlot;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Tests\TestCase;
 use Tests\TestsHelper;
 
@@ -17,22 +17,22 @@ class ReadActionTest extends TestCase
     use DefaultsHelper, TestsHelper;
 
     private StoryPlot $mockStoryPlot;
-    private ReadAction $action;
-    private $table = 'test_table';
-    private int  $expectedTotal;
 
+    private ReadAction $action;
+
+    private $table = 'test_table';
+
+    private int $expectedTotal;
 
     /**
      * Set up the test environment before each test.
-     *
-     * @return void
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
-        $this->mockStoryPlot = new StoryPlot();
+        $this->mockStoryPlot = new StoryPlot;
         $this->mockStoryPlot->requestData['method'] = 'GET';
-        $this->action = new ReadAction();
+        $this->action = new ReadAction;
         $this->expectedTotal = DB::table($this->table)->count();
     }
 
@@ -40,10 +40,11 @@ class ReadActionTest extends TestCase
      * Run the test for executing the ReadAction with an empty key, which should return the first page of results.
      *
      * @return void
+     *
      * @throws SystemException
      * @throws ValidationException
      */
-    public function testWithEmptyKey()
+    public function test_with_empty_key()
     {
         $plot = $this->action->exec($this->table, $this->mockStoryPlot);
 
@@ -65,7 +66,7 @@ class ReadActionTest extends TestCase
      *
      * @return void
      */
-    public function testWithInvalidKey()
+    public function test_with_invalid_key()
     {
         try {
             $this->action->exec($this->table, $this->mockStoryPlot, 'A');
@@ -80,10 +81,11 @@ class ReadActionTest extends TestCase
      * Run the test for executing the ReadAction with a non-existent key, which should throw a ValidationException.
      *
      * @return void
+     *
      * @throws SystemException
      * @throws ValidationException
      */
-    public function testWithWrongKey()
+    public function test_with_wrong_key()
     {
         $plot = $this->action->exec($this->table, $this->mockStoryPlot, 999999);
         $this->assertInstanceOf(StoryPlot::class, $plot);
@@ -91,7 +93,7 @@ class ReadActionTest extends TestCase
         $this->assertEquals($plot->getStatus(), ResponseAlias::HTTP_NOT_FOUND);
     }
 
-    public function testValidKey()
+    public function test_valid_key()
     {
         $key = 1;
         $plot = $this->action->exec($this->table, $this->mockStoryPlot, $key);
@@ -111,7 +113,7 @@ class ReadActionTest extends TestCase
         }
     }
 
-    public function testPagination()
+    public function test_pagination()
     {
         $sort = 'table_id';
         $order = 'desc';

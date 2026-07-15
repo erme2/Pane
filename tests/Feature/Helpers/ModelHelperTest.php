@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\Helpers;
+namespace Tests\Feature\Helpers;
 
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;

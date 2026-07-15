@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\Actions;
+namespace Tests\Feature\Actions;
 
 use App\Actions\SaveAction;
 use App\Exceptions\SystemException;
@@ -13,15 +13,16 @@ use Tests\TestsHelper;
 class SaveActionTest extends TestCase
 {
     use TestsHelper;
-    private StoryPlot $mockStoryPlot;
-    private SaveAction $action;
 
+    private StoryPlot $mockStoryPlot;
+
+    private SaveAction $action;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mockStoryPlot = new StoryPlot();
-        $this->action = new SaveAction();
+        $this->mockStoryPlot = new StoryPlot;
+        $this->action = new SaveAction;
     }
 
     public function test_empty_data_exec(): void

@@ -59,6 +59,10 @@ Generate or regenerate the certificate covering both applications:
 
 The script creates `nginx/certs/localhost.pem` and `nginx/certs/localhost-key.pem`. The entire `nginx/certs` directory is ignored by Git because its private key is local development material. After Nginx HTTPS is configured, Pane and Burro are available at `https://pane.localhost` and `https://burro.localhost`.
 
+## Testing
+
+Pane keeps isolated unit tests under `tests/Unit` and database-backed integration or request tests under `tests/Feature`. See [Testing](docs/testing.md) for the suite contract, testing environment, and database refresh workflow.
+
 ## Bash scripts
 
 Run scripts from the Pane repository root.
