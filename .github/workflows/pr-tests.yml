@@ -40,5 +40,8 @@ jobs:
       - name: Prepare test environment
         run: cp .env.testing .env
 
+      - name: Run static analysis
+        run: composer analyse
+
       - name: Run test suite
         run: ./bash/test.sh -o no -f no

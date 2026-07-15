@@ -17,7 +17,9 @@ class DeleteActionTest extends TestCase
 
     private DeleteAction $action;
 
-    private $table = 'test_table';
+    private string $table = 'test_table';
+
+    private int $expectedTotal;
 
     protected function setUp(): void
     {
