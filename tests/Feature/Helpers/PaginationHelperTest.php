@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\Helpers;
+namespace Tests\Feature\Helpers;
 
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
@@ -15,14 +15,13 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws ValidationException
-     * @throws \App\Exceptions\SystemException
+     * @throws SystemException
      */
     public function test_get_pagination_data_with_default_values(): void
     {
 
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = ['data' => []];
 
         $result = $this->getPaginationData($plot, self::TEST_TABLE_NAME);
@@ -36,22 +35,21 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws ValidationException
-     * @throws \App\Exceptions\SystemException
+     * @throws SystemException
      */
     public function test_get_pagination_with_custom_values(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
                 'limit' => 50,
                 'order' => 'desc',
                 'sort' => 'name',
-                'page' => 3
-            ]
+                'page' => 3,
+            ],
         ];
-        $offset = $plot->requestData['data']['limit'] * ($plot->requestData['data']['page'] - 1 ); // (3-1) * 50 = 100
+        $offset = $plot->requestData['data']['limit'] * ($plot->requestData['data']['page'] - 1); // (3-1) * 50 = 100
 
         $result = $this->getPaginationData($plot, self::TEST_TABLE_NAME);
 
@@ -65,16 +63,15 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_get_pagination_data_validates_limit_min(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'limit' => 0
-            ]
+                'limit' => 0,
+            ],
         ];
 
         $this->expectException(ValidationException::class);
@@ -84,16 +81,15 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_get_pagination_data_validates_limit_max(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'limit' => 101 // Greater than PAGINATION_MAX (100)
-            ]
+                'limit' => 101, // Greater than PAGINATION_MAX (100)
+            ],
         ];
 
         $this->expectException(ValidationException::class);
@@ -103,16 +99,15 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_get_pagination_data_validates_invalid_order(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'order' => 'invalid'
-            ]
+                'order' => 'invalid',
+            ],
         ];
 
         $this->expectException(ValidationException::class);
@@ -122,16 +117,15 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_get_pagination_data_validates_invalid_sort_field(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'sort' => 'non_indexable_field'
-            ]
+                'sort' => 'non_indexable_field',
+            ],
         ];
 
         $this->expectException(ValidationException::class);
@@ -141,16 +135,15 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_get_pagination_data_validates_page_min(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'page' => 0
-            ]
+                'page' => 0,
+            ],
         ];
 
         $this->expectException(ValidationException::class);
@@ -160,18 +153,17 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws ValidationException
-     * @throws \App\Exceptions\SystemException
+     * @throws SystemException
      */
     public function test_get_pagination_data_handles_string_numbers(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
                 'limit' => '10',
-                'page' => '2'
-            ]
+                'page' => '2',
+            ],
         ];
 
         $result = $this->getPaginationData($plot, self::TEST_TABLE_NAME);
@@ -186,9 +178,8 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws ValidationException
-     * @throws \App\Exceptions\SystemException
+     * @throws SystemException
      */
     public function test_get_pagination_data_calculates_offset_correctly(): void
     {
@@ -200,12 +191,12 @@ class PaginationHelperTest extends TestCase
         ];
 
         foreach ($testCases as $testCase) {
-            $plot = new StoryPlot();
+            $plot = new StoryPlot;
             $plot->requestData = [
                 'data' => [
                     'page' => $testCase['page'],
-                    'limit' => $testCase['limit']
-                ]
+                    'limit' => $testCase['limit'],
+                ],
             ];
 
             $result = $this->getPaginationData($plot, self::TEST_TABLE_NAME);
@@ -221,18 +212,17 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws ValidationException
-     * @throws \App\Exceptions\SystemException
+     * @throws SystemException
      */
     public function test_get_pagination_data_with_partial_data(): void
     {
         // Test with only limit specified
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'limit' => 15
-            ]
+                'limit' => 15,
+            ],
         ];
 
         $result = $this->getPaginationData($plot, self::TEST_TABLE_NAME);
@@ -247,17 +237,16 @@ class PaginationHelperTest extends TestCase
     /**
      * @covers \App\Helpers\PaginationHelper::getPaginationData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_get_pagination_data_validates_data_types(): void
     {
         // Test invalid limit type
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->requestData = [
             'data' => [
-                'limit' => 'not_a_number'
-            ]
+                'limit' => 'not_a_number',
+            ],
         ];
 
         $this->expectException(ValidationException::class);

@@ -1,9 +1,10 @@
 <?php
 
-namespace Tests\Unit\Helpers;
+namespace Tests\Feature\Helpers;
 
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
+use App\Helpers\MapperHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
 use App\Models\Field;
@@ -18,33 +19,34 @@ class MapperHelperTest extends TestCase
 
     public function test_check_if_required(): void
     {
-        $newField = new Field();
+        $newField = new Field;
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
 
         $newField->nullable = true;
         $this->assertEquals([], $mapper->checkIfRequired([], $newField));
-        $this->assertEquals(["required"], $mapper->checkIfRequired([], new Field()));
+        $this->assertEquals(['required'], $mapper->checkIfRequired([], new Field));
 
     }
 
     public function test_extract_from_model()
     {
         $model = $this->getModel(AbstractMapper::TABLES['test_table'])->find(2);
-        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {
-            use \App\Helpers\MapperHelper;
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper
+        {
+            use MapperHelper;
         };
         foreach ($mapper->extractFromModel($model) as $key => $value) {
             switch ($key) {
-                case "test_json":
+                case 'test_json':
                     $this->assertEquals(
                         json_decode(self::UPDATED_VALID_TEST_TABLE_RECORD[$key], false, 512, JSON_THROW_ON_ERROR),
                         $value
                     );
                     break;
-                case "password":
+                case 'password':
                     $this->assertEquals(AbstractMapper::PASSWORD_REPLACEMENT, $value);
                     break;
-                case "test_date":
+                case 'test_date':
                     $this->assertInstanceOf(\DateTime::class, $value);
                     $this->assertEquals(
                         $model->test_date,
@@ -59,8 +61,9 @@ class MapperHelperTest extends TestCase
 
     public function test_fill_model()
     {
-        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {
-            use \App\Helpers\MapperHelper;
+        $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper
+        {
+            use MapperHelper;
         };
         $model = $this->getModel(AbstractMapper::TABLES['test_table']);
         $res = $mapper->fillModel($model, self::VALID_TEST_TABLE_RECORD);
@@ -95,41 +98,39 @@ class MapperHelperTest extends TestCase
                     $this->assertEquals(self::VALID_TEST_TABLE_RECORD[$field], $value);
             }
 
-       }
+        }
     }
 
     public function test_get_additional_validation_rules(): void
     {
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
-        $field = new Field();
-        $fieldsTable = (env('DB_TABLE_PREFIX')) . AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['fields'];
-        $tablesTable = (env('DB_TABLE_PREFIX')) . AbstractMapper::MAP_TABLES_PREFIX . AbstractMapper::TABLES['tables'];
+        $field = new Field;
+        $fieldsTable = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
+        $tablesTable = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'];
 
         // getting the field_id for test_table.table_id
         $field->test_id = 'invalid';
         $this->assertEquals([], $mapper->getAdditionalValidationRules([], $field));
 
         $field->field_id = DB::table($fieldsTable)
-            ->join($tablesTable,"$fieldsTable.table_id", '=', "$tablesTable.table_id")
-            ->where("$fieldsTable.name", '=','table_id')
-            ->where("$tablesTable.name", '=',self::TEST_TABLE_NAME)
+            ->join($tablesTable, "$fieldsTable.table_id", '=', "$tablesTable.table_id")
+            ->where("$fieldsTable.name", '=', 'table_id')
+            ->where("$tablesTable.name", '=', self::TEST_TABLE_NAME)
             ->first()
-            ->field_id
-        ;
+            ->field_id;
         $this->assertEquals([], $mapper->getAdditionalValidationRules([], $field));
 
         // getting the field_id for test_table.name
         $field->field_id = DB::table($fieldsTable)
-            ->join($tablesTable,"$fieldsTable.table_id", '=', "$tablesTable.table_id")
-            ->where("$fieldsTable.name", '=','name')
-            ->where("$tablesTable.name", '=',self::TEST_TABLE_NAME)
+            ->join($tablesTable, "$fieldsTable.table_id", '=', "$tablesTable.table_id")
+            ->where("$fieldsTable.name", '=', 'name')
+            ->where("$tablesTable.name", '=', self::TEST_TABLE_NAME)
             ->first()
-            ->field_id
-        ;
+            ->field_id;
         $this->assertEquals([
             'unique:test_table,name',
             'min:1',
-            'max:255'
+            'max:255',
         ],
             $mapper->getAdditionalValidationRules([], $field)
         );
@@ -154,7 +155,7 @@ class MapperHelperTest extends TestCase
 
     public function test_get_type_rules(): void
     {
-        $field = new Field();
+        $field = new Field;
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         try {
             $mapper->getTypeRules([], $field);
@@ -245,13 +246,13 @@ class MapperHelperTest extends TestCase
         $data = [
             'name' => ['required'],
             'email' => ['email'],
-            'age' => ['numeric']
+            'age' => ['numeric'],
         ];
         $result = $mapper->getValidationRulesInLaravelFormat($data, []);
         $expected = [
             'name' => 'required',
             'email' => 'email',
-            'age' => 'numeric'
+            'age' => 'numeric',
         ];
         $this->assertEquals($expected, $result);
 
@@ -259,23 +260,23 @@ class MapperHelperTest extends TestCase
         $data = [
             'name' => ['required', 'string', 'min:2', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8']
+            'password' => ['required', 'string', 'min:8'],
         ];
         $result = $mapper->getValidationRulesInLaravelFormat($data, []);
         $expected = [
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8'
+            'password' => 'required|string|min:8',
         ];
         $this->assertEquals($expected, $result);
 
         // Test with duplicate rules (should be removed by array_unique)
         $data = [
-            'name' => ['required', 'string', 'required', 'string', 'min:2']
+            'name' => ['required', 'string', 'required', 'string', 'min:2'],
         ];
         $result = $mapper->getValidationRulesInLaravelFormat($data, []);
         $expected = [
-            'name' => 'required|string|min:2'
+            'name' => 'required|string|min:2',
         ];
         $this->assertEquals($expected, $result);
 
@@ -283,26 +284,26 @@ class MapperHelperTest extends TestCase
         $data = [
             'name' => ['required', 'string'],
             'empty_field' => [],
-            'email' => ['email']
+            'email' => ['email'],
         ];
         $result = $mapper->getValidationRulesInLaravelFormat($data, []);
         $expected = [
             'name' => 'required|string',
-            'email' => 'email'
+            'email' => 'email',
         ];
         $this->assertEquals($expected, $result);
 
         // Test with existing return array (should merge/override)
         $data = [
-            'name' => ['required', 'string']
+            'name' => ['required', 'string'],
         ];
         $existingReturn = [
-            'email' => 'email|required'
+            'email' => 'email|required',
         ];
         $result = $mapper->getValidationRulesInLaravelFormat($data, $existingReturn);
         $expected = [
             'email' => 'email|required',
-            'name' => 'required|string'
+            'name' => 'required|string',
         ];
         $this->assertEquals($expected, $result);
     }
