@@ -63,6 +63,18 @@ The script creates `nginx/certs/localhost.pem` and `nginx/certs/localhost-key.pe
 
 Pane keeps isolated unit tests under `tests/Unit` and database-backed integration or request tests under `tests/Feature`. See [Testing](docs/testing.md) for the suite contract, testing environment, and database refresh workflow.
 
+## Static analysis
+
+Pane uses Larastan, PHPStan's Laravel extension, to complement the test suite. Tests verify expected behavior; static analysis catches incorrect type assumptions and code paths the tests may not cover.
+
+Run it locally with:
+
+```bash
+composer analyse
+```
+
+The initial level is 5. `phpstan-baseline.neon` records the technical debt that already existed when Larastan was introduced; new errors are not covered by the baseline and fail both `composer analyse` and the PR workflow.
+
 ## Bash scripts
 
 Run scripts from the Pane repository root.

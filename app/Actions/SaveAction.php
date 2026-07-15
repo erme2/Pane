@@ -4,7 +4,6 @@ namespace App\Actions;
 
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
-use App\Helpers\MapperHelper;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Response;
 
@@ -12,22 +11,15 @@ use Illuminate\Http\Response;
  * Class SaveAction
  * This action will save every record in the plot->data array,
  * using the array keys to connect the data to the correct model.
- *
- * @package App\Actions
  */
-
 class SaveAction extends AbstractAction
 {
-    use ActionHelper, MapperHelper;
+    use ActionHelper;
 
     /**
      * This action will save every record in the plot->data array,
      * using the array keys to connect the data to the correct model.
      *
-     * @param string $subject
-     * @param StoryPlot $plot
-     * @param mixed|null $key
-     * @return StoryPlot
      * @throws SystemException
      */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
