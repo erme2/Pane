@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# TODO - document this file
 #rm -f ./database/database.sqlite
 #touch ./database/database.sqlite
 

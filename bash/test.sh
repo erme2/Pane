@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# TODO - document this file
-
 CONF_FILE="testing"
 REFRESH_DB=yes
 SHOW_OPTIONS=yes
