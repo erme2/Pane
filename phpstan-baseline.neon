@@ -613,12 +613,6 @@ parameters:
 			path: tests/Feature/crud/_02ReadTest.php
 
 		-
-			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
-			identifier: method.alreadyNarrowedType
-			count: 1
-			path: tests/Unit/ExampleTest.php
-
-		-
 			message: '#^PHPDoc tag @return with type mixed is not subtype of native type object\.$#'
 			identifier: return.phpDocType
 			count: 3
