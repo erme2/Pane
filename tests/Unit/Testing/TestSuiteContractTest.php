@@ -64,10 +64,16 @@ class TestSuiteContractTest extends TestCase
         self::assertStringContainsString('docs/testing.md', $readme);
         self::assertStringContainsString('tests/Unit', $doc);
         self::assertStringContainsString('tests/Feature', $doc);
+        self::assertStringContainsString('php artisan test --env=testing --testsuite=Unit', $doc);
+        self::assertStringContainsString('./bash/test.sh -o no -f no', $doc);
+        self::assertStringContainsString('-r no', $doc);
         self::assertStringContainsString('DB_CONNECTION=sqlite', $doc);
+        self::assertStringContainsString('database/database.sqlite', $doc);
         self::assertStringContainsString('CACHE_DRIVER=array', $doc);
         self::assertStringContainsString('LOG_CHANNEL=stderr', $doc);
-        self::assertStringContainsString('./bash/test.sh -o no -f no', $doc);
+        self::assertStringContainsString('Full Suite Lifecycle', $doc);
+        self::assertStringContainsString('Writing Tests', $doc);
+        self::assertStringContainsString('database/migrations/test', $doc);
     }
 
     /**
