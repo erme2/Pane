@@ -77,61 +77,7 @@ The initial level is 5. `phpstan-baseline.neon` records the technical debt that 
 
 ## Bash scripts
 
-Run scripts from the Pane repository root.
-
-### `bash/clear.sh`
-
-Clears Laravel's compiled files and application, configuration, event, route, schedule, and view caches. It uses the `testing` environment by default.
-
-```bash
-./bash/clear.sh [-f environment]
-```
-
-- `-f`: Laravel environment name; defaults to `testing`.
-
-### `bash/generate-certs.sh`
-
-Installs the local `mkcert` certificate authority when necessary and generates or replaces the shared Pane and Burro development certificate.
-
-```bash
-./bash/generate-certs.sh
-```
-
-The generated certificate and private key are written under the ignored `nginx/certs` directory.
-
-### `bash/refresh.sh`
-
-Rebuilds the configured database and runs migrations. By default it loads `.env.testing`, asks for confirmation, deletes and recreates the database, and does not seed or run test-only migrations. **This script is destructive when database deletion is enabled.**
-
-```bash
-./bash/refresh.sh [-c yes|no] [-d yes|no] [-f environment] \
-  [-o yes|no] [-s yes|no] [-t yes|no] [-v yes|no]
-```
-
-- `-c`: clear Laravel caches; defaults to `no`.
-- `-d`: delete and recreate the database; defaults to `yes`.
-- `-f`: environment name; defaults to `testing`.
-- `-o`: show the confirmation prompt; defaults to `yes`.
-- `-s`: run `TestTableSeeder`; defaults to `no`.
-- `-t`: run migrations under `database/migrations/test`; defaults to `no`.
-- `-v`: print progress and selected options; defaults to `yes`.
-
-### `bash/test.sh`
-
-Optionally refreshes the test database, runs the Laravel test suite, and rolls back test-only migrations after a successful run. It uses the `testing` environment and asks for confirmation by default.
-
-```bash
-./bash/test.sh [-c environment] [-f yes|no] [-o yes|no] \
-  [-r yes|no] [-s yes|no] [-u yes|no] [-v yes|no]
-```
-
-- `-c`: environment name; defaults to `testing`.
-- `-f`: stop on the first test failure; defaults to `yes`.
-- `-o`: show confirmation prompts; defaults to `yes`.
-- `-r`: refresh the database before testing; defaults to `yes`.
-- `-s`: run the test seeder during refresh; defaults to `yes`.
-- `-u`: roll back test-only migrations after success; defaults to `yes`.
-- `-v`: print progress and selected options; defaults to `yes`.
+Pane keeps repository helper scripts under `bash/` for cache clearing, local certificate generation, database refreshes, and test runs. See [Bash Scripts](docs/bash.md) for command usage, options, destructive operations, and common workflows.
 
 ## WorkOS Auth
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# TO DO - document this file
-
 CONFIG_FILE="testing"
 
 while getopts ":f:" opt
