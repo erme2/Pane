@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Stories;
 
+use App\Stories\AbstractStory;
+use App\Stories\StoryPlot;
 use PHPUnit\Framework\TestCase;
 use Tests\TestsHelper;
-use App\Stories\AbstractStory;
-
 
 class AbstractStoryTest extends TestCase
 {
@@ -13,19 +13,18 @@ class AbstractStoryTest extends TestCase
 
     public function test_construct(): void
     {
-        $testStory = new class($this->createMockRequest()) extends AbstractStory {
-            public array $actions = ['Test'];
-        };
-        $this->assertInstanceOf('App\Stories\AbstractStory', $testStory);
-        $this->assertInstanceOf('App\Stories\StoryPlot', $testStory->plot);
+        $testStory = new class($this->createMockRequest()) extends AbstractStory {};
+
+        $this->assertInstanceOf(AbstractStory::class, $testStory);
+        $this->assertInstanceOf(StoryPlot::class, $testStory->plot);
     }
 
-    public function test_run(): void
+    public function test_run_returns_plot_when_story_has_no_actions(): void
     {
-        $testStory = new class($this->createMockRequest()) extends AbstractStory {
-            public array $actions = ['Test'];
-        };
+        $testStory = new class($this->createMockRequest()) extends AbstractStory {};
+
         $storyPlot = $testStory->run('test');
-        $this->assertInstanceOf('App\Stories\StoryPlot', $storyPlot);
+
+        $this->assertSame($testStory->plot, $storyPlot);
     }
 }

@@ -9,7 +9,6 @@
         "guzzlehttp/guzzle": "^7.12.1",
         "guzzlehttp/psr7": "^2.12.1",
         "laravel/framework": "^v13.15.0",
-        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "ext-pdo": "*",
         "league/commonmark": "2.8.2"

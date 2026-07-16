@@ -43,9 +43,9 @@ TRUSTED_HOSTS=pane.staging.example.com,pane.internal.example.com
 - `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` configure Pane's database connection.
 - `DB_TABLE_PREFIX` prefixes Pane's system mapping tables. The Docker/local default is `pane_`.
 
-## Cache, Broadcast, And Filesystem
+## Cache And Filesystem
 
-- `BROADCAST_DRIVER`, `CACHE_DRIVER`, and `FILESYSTEM_DISK` configure framework services used by Pane. The example values are local-development defaults.
+- `CACHE_DRIVER` and `FILESYSTEM_DISK` configure framework services used by Pane. The example values are local-development defaults.
 
 ## WorkOS And Burro
 
