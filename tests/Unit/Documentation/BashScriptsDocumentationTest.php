@@ -25,6 +25,9 @@ class BashScriptsDocumentationTest extends TestCase
         self::assertStringContainsString('nginx/certs/localhost.pem', $doc);
         self::assertStringContainsString('database/migrations/test', $doc);
         self::assertStringContainsString('TestTableSeeder', $doc);
+        self::assertStringContainsString('cp .env.testing .env', $doc);
+        self::assertStringContainsString('Error: .env file not found.', $doc);
+        self::assertStringContainsString('the default test command also requires the root `.env` file', $doc);
         foreach ([$clear, $refresh, $test] as $script) {
             self::assertStringNotContainsString('TODO - document this file', $script);
             self::assertStringNotContainsString('TO DO - document this file', $script);

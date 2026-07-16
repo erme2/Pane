@@ -2,6 +2,12 @@
 
 Run all scripts from the Pane repository root. The scripts assume Laravel dependencies are installed and that an environment file for the selected environment exists.
 
+`bash/refresh.sh` and any script that calls it also require a root `.env` file because Laravel boots from `.env` before the script sources `.env.<environment>`. For a testing-only checkout, copy `.env.testing` to `.env` first:
+
+```bash
+cp .env.testing .env
+```
+
 ## Script Overview
 
 | Script | Purpose |
@@ -49,6 +55,8 @@ The generated certificate covers `pane.localhost`, `burro.localhost`, `localhost
 
 Rebuilds the configured database for one Laravel environment. By default it loads `.env.testing`, asks for confirmation, deletes and recreates the database, runs normal migrations, and does not run test-only migrations or seed data unless requested.
 
+The script exits with `Error: .env file not found.` when the root `.env` file is missing, even when the selected `.env.<environment>` file exists.
+
 This script is destructive when database deletion is enabled.
 
 ```bash
@@ -76,6 +84,8 @@ Supported database reset paths:
 
 Runs the Laravel test suite through `php artisan test`. By default it refreshes the testing database first, runs test migrations, seeds test records, and rolls back test-only migrations after a successful run.
 
+Because the default `-r yes` path calls `bash/refresh.sh`, the default test command also requires the root `.env` file. Use `-r no` only when the database has already been refreshed and you do not want `bash/test.sh` to call `bash/refresh.sh`.
+
 ```bash
 ./bash/test.sh [-c environment] [-f yes|no] [-o yes|no] \
   [-r yes|no] [-s yes|no] [-u yes|no] [-v yes|no]
@@ -97,7 +107,7 @@ The CI-friendly full-suite command is:
 ./bash/test.sh -o no -f no
 ```
 
-Use `-r no` only when the database has already been refreshed and you intentionally want to reuse it while iterating locally.
+Use `-r no` only when the database has already been refreshed and you intentionally want to reuse it while iterating locally without invoking `bash/refresh.sh`.
 
 ## Common Workflows
 
