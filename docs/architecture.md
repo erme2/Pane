@@ -326,6 +326,12 @@ Pane validates the application registration, trusted origin and redirect,
 fixed organization, active membership, role, connection grant, operation, and
 row ownership. Frontend visibility is never an authorization control.
 
+Every organization-scoped API route carries an explicit organization
+identifier. Pane resolves the calling application's registered organization
+and rejects the request when the route organization does not match it. The
+route value provides explicit server-side scope; it never allows the browser or
+a Latte-derived application to discover or switch organizations.
+
 ## Target invitations and settings
 
 Pane owns invitations; WorkOS only proves the recipient's identity.
@@ -485,9 +491,10 @@ own presentation and recovery UI. Pane owns HTTP status, validation details,
 authorization decisions, and request correlation IDs. Secrets, SQL, internal
 host details, source paths, and stack traces never appear in production errors.
 
-Exact target route naming and API versioning are unresolved. Future route work
-must make application and fixed organization context unambiguous without
-allowing a browser to switch the application's organization binding.
+The exact route prefix, organization identifier form, and API versioning are
+unresolved. Future route work must preserve the explicit organization segment
+and verify it against the application's fixed organization before resolving an
+organization-owned resource.
 
 ## Impersonation and auditing
 
@@ -591,6 +598,8 @@ that the current behavior matches the target.
 
 - One Pane installation never reads another Pane installation's state.
 - Every Latte-derived application is fixed to one organization.
+- Every organization-scoped API route identifies that organization explicitly,
+  and it must match the calling application's fixed organization.
 - A browser never chooses or overrides that application organization.
 - Organization resources are never resolved without organization ownership and
   active membership checks.

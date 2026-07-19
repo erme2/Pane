@@ -22,6 +22,8 @@ class ArchitectureDocumentationTest extends TestCase
         self::assertStringContainsString('## Before making changes', $doc);
         self::assertStringContainsString('information_schema', $doc);
         self::assertStringContainsString('pane_membership_id', $doc);
+        self::assertStringContainsString('Every organization-scoped API route carries an explicit organization', $doc);
+        self::assertStringContainsString('route organization does not match it', $doc);
         self::assertStringContainsString('docs/product-architecture.md', $doc);
     }
 }
