@@ -12,7 +12,7 @@ class WorkOsAuthTest extends TestCase
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
         config()->set('services.workos.return_to', 'https://pane.test');
         config()->set('services.workos.provider', 'authkit');
 
@@ -27,46 +27,46 @@ class WorkOsAuthTest extends TestCase
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
-        config()->set('services.workos.return_to', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
+        config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.workos.provider', 'authkit');
 
-        $response = $this->getJson('/auth/login-url?redirect_to=https://burro.test/dashboard');
+        $response = $this->getJson('/auth/login-url?redirect_to=https://latte.test/dashboard');
 
         $response
             ->assertOk()
             ->assertJsonStructure(['authorization_url', 'state'])
             ->assertSessionHas('workos_state')
-            ->assertSessionHas('workos_intended_url', 'https://burro.test/dashboard');
+            ->assertSessionHas('workos_intended_url', 'https://latte.test/dashboard');
 
         $this->assertStringStartsWith(
             'https://api.workos.com/user_management/authorize?',
             $response->json('authorization_url')
         );
-        $this->assertStringContainsString('redirect_uri=https%3A%2F%2Fburro.test', $response->json('authorization_url'));
+        $this->assertStringContainsString('redirect_uri=https%3A%2F%2Flatte.test', $response->json('authorization_url'));
     }
 
     public function test_login_url_falls_back_when_redirect_to_is_external(): void
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
-        config()->set('services.workos.return_to', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
+        config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.workos.provider', 'authkit');
 
         $response = $this->getJson('/auth/login-url?redirect_to=https://evil.test/dashboard');
 
         $response
             ->assertOk()
-            ->assertSessionHas('workos_intended_url', 'https://burro.test');
+            ->assertSessionHas('workos_intended_url', 'https://latte.test');
     }
 
     public function test_login_url_accepts_relative_redirect_to(): void
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
-        config()->set('services.workos.return_to', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
+        config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.workos.provider', 'authkit');
 
         $response = $this->getJson('/auth/login-url?redirect_to=/dashboard');
@@ -112,7 +112,7 @@ class WorkOsAuthTest extends TestCase
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
 
         Http::fake([
             'api.workos.com/user_management/authenticate' => Http::response([
@@ -139,7 +139,7 @@ class WorkOsAuthTest extends TestCase
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
 
         Http::fake([
             'api.workos.com/user_management/authenticate' => Http::response([
@@ -168,7 +168,7 @@ class WorkOsAuthTest extends TestCase
     {
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
 
         Http::fake([
             'api.workos.com/user_management/authenticate' => Http::response([

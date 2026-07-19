@@ -9,9 +9,9 @@ long-term design. Future changes should move deliberately toward the target
 without silently weakening current security contracts.
 
 The corresponding frontend product decisions are recorded in the
-[Pane, Latte, and Burro product architecture](https://github.com/erme2/Burro/blob/main/docs/product-architecture.md).
-The current Burro repository is planned to become Latte; a new Burro will be
-created from Latte as Pane's private administrator console.
+[Pane, Latte, and Burro product architecture](https://github.com/erme2/Latte/blob/main/docs/product-architecture.md).
+The original Burro repository is now Latte; a new Burro will be created from
+Latte as Pane's private administrator console.
 
 ## Architectural status labels
 
@@ -27,12 +27,12 @@ This document uses three labels:
 
 Pane is a Laravel application that exposes WorkOS-backed browser authentication
 and metadata-driven CRUD over its one configured default database. The current
-Burro React application owns the browser login experience and proxies requests
+Latte React application owns the browser login experience and proxies requests
 to Pane.
 
 ```mermaid
 flowchart LR
-    Browser[Burro browser app] -->|/pane proxy| Web[Pane web routes]
+    Browser[Latte browser app] -->|/pane proxy| Web[Pane web routes]
     Web --> Auth[WorkOsAuthController]
     Auth --> WorkOS[WorkOS AuthKit]
     Web --> Controller[Controller::runStory]
@@ -137,14 +137,14 @@ and organization-admin UI, but Pane remains the authorization authority.
 ### WorkOS login and session creation
 
 The complete verified browser sequence is in
-[WorkOS and Burro Authentication](workos-burro-auth.md).
+[WorkOS and Latte Authentication](workos-latte-auth.md).
 
-1. Burro requests `GET /auth/login-url` through its Pane proxy.
+1. Latte requests `GET /auth/login-url` through its Pane proxy.
 2. `WorkOsAuthController::loginUrl()` creates OAuth state and stores it in the
    Laravel session and a short-lived HTTP-only cookie.
 3. `WorkOsService::authorizationUrl()` constructs the WorkOS AuthKit URL.
-4. WorkOS returns the browser to Burro.
-5. Burro posts the code and state to `POST /auth/callback`.
+4. WorkOS returns the browser to Latte.
+5. Latte posts the code and state to `POST /auth/callback`.
 6. `WorkOsAuthController::completeCallback()` validates state and calls
    `WorkOsService::authenticateWithCode()`.
 7. `WorkOsAuthController::syncUser()` finds or creates a local user by WorkOS ID
@@ -160,7 +160,7 @@ are no organization memberships.
 
 ```mermaid
 sequenceDiagram
-    participant B as Burro
+    participant B as Latte
     participant R as routes/web.php
     participant C as Controller
     participant S as CrudStory
@@ -241,7 +241,7 @@ data-source lifecycle operation.
 - `auth` middleware protects CRUD routes.
 - Laravel web middleware applies session and CSRF protection. Only
   `POST /auth/callback` is CSRF-exempt because Pane validates OAuth state.
-- Burro must forward cookies and the encrypted `XSRF-TOKEN` value as
+- Latte must forward cookies and the encrypted `XSRF-TOKEN` value as
   `X-XSRF-TOKEN` for mutating requests.
 - `TrustHosts` validates request hosts outside local/test environments.
 - CORS allows one environment-configured frontend origin and credentials.
@@ -592,7 +592,8 @@ that the current behavior matches the target.
   configurable audit retention are deferred.
 - Invitation expiry bounds are controlled by Pane administrators but their
   exact minimum and maximum values are unresolved.
-- The Burro-to-Latte repository transition requires its own migration plan.
+- The Burro-to-Latte repository transition is tracked by Latte's repository
+  rename record and must complete before the old Burro name is reused.
 
 ## Invariants and forbidden dependencies
 

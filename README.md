@@ -7,9 +7,9 @@ applications created from Latte.
 
 Each Pane installation is an independent universe that may serve many unrelated
 organizations. Every Latte-derived application is linked to exactly one
-organization and uses Pane as its only data-access layer. Burro is the private
-Pane-administrator console; the current Burro repository is planned to become
-the Latte frontend template.
+organization and uses Pane as its only data-access layer. Latte is the frontend
+template. Burro will be a separate Latte-derived private Pane-administrator
+console.
 
 The current code is a transitional metadata-driven CRUD implementation over one
 default database. The target introduces invite-only multi-tenancy, managed
@@ -61,7 +61,7 @@ mkcert -install
 Add the local development domains to `/etc/hosts`:
 
 ```text
-127.0.0.1 pane.localhost burro.localhost
+127.0.0.1 pane.localhost latte.localhost
 ```
 
 Generate or regenerate the certificate covering both applications:
@@ -70,7 +70,7 @@ Generate or regenerate the certificate covering both applications:
 ./bash/generate-certs.sh
 ```
 
-The script creates `nginx/certs/localhost.pem` and `nginx/certs/localhost-key.pem`. The entire `nginx/certs` directory is ignored by Git because its private key is local development material. After Nginx HTTPS is configured, Pane and Burro are available at `https://pane.localhost` and `https://burro.localhost`.
+The script creates `nginx/certs/localhost.pem` and `nginx/certs/localhost-key.pem`. The entire `nginx/certs` directory is ignored by Git because its private key is local development material. After Nginx HTTPS is configured, Pane and Latte are available at `https://pane.localhost` and `https://latte.localhost`.
 
 ## Testing
 
@@ -111,13 +111,13 @@ Add `WORKOS_REDIRECT_URI` to the Redirects tab for your WorkOS application.
 Routes:
 
 1. `GET /auth/login-url` returns the WorkOS AuthKit authorization URL as JSON.
-2. `POST /auth/callback` exchanges WorkOS callback params, creates the Pane session, and returns the authenticated user to Burro.
+2. `POST /auth/callback` exchanges WorkOS callback params, creates the Pane session, and returns the authenticated user to Latte.
 3. `GET /auth/login` redirects to WorkOS AuthKit.
 4. `GET /auth/callback` handles the WorkOS callback for legacy Pane-owned redirects.
 5. `GET /auth/user` returns the user attached to the authenticated Pane session.
 
-Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Burro receives only the user snapshot and organization ID.
+Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Latte receives only the user snapshot and organization ID.
 
-For the full Burro and Pane callback sequence, see [WorkOS and Burro Authentication](docs/workos-burro-auth.md).
+For the full Latte and Pane callback sequence, see [WorkOS and Latte Authentication](docs/workos-latte-auth.md).
 
 For how that authenticated session gates CRUD routes, see [CRUD Authentication and Authorization](docs/crud-authentication.md).

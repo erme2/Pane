@@ -17,7 +17,7 @@ class EnvironmentDocumentationTest extends TestCase
         $this->assertStringContainsString('docs/environment.md', $envExample);
         $this->assertStringContainsString('APP_URL', $doc);
         $this->assertStringContainsString('TRUSTED_HOSTS', $doc);
-        $this->assertStringContainsString('burro.localhost` should not normally be in `TRUSTED_HOSTS`', $doc);
+        $this->assertStringContainsString('latte.localhost` should not normally be in `TRUSTED_HOSTS`', $doc);
         $this->assertStringContainsString('VITE_PANE_PROXY_HOST=pane.localhost', $doc);
         $this->assertStringContainsString('WORKOS_REDIRECT_URI', $doc);
         $this->assertStringContainsString('SESSION_SECURE_COOKIE', $doc);

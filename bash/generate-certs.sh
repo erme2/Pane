@@ -17,11 +17,11 @@ mkdir -p "${CERT_DIR}"
 echo "Installing the local mkcert certificate authority if required..."
 mkcert -install
 
-echo "Generating certificates for Pane and Burro..."
+echo "Generating certificates for Pane and Latte..."
 mkcert \
     -cert-file "${CERT_FILE}" \
     -key-file "${KEY_FILE}" \
-    pane.localhost burro.localhost localhost 127.0.0.1 ::1
+    pane.localhost latte.localhost localhost 127.0.0.1 ::1
 
 echo "Certificate: ${CERT_FILE}"
 echo "Private key: ${KEY_FILE}"
