@@ -1,14 +1,27 @@
 # Pane
 
-Pane is a simple, lightweight, and easy Restful API framework based on [Laravel](https://laravel.com/).
+Pane is an independently installable Laravel data-access control plane. It owns
+authentication, organization isolation, authorization, encrypted database
+connections, catalog discovery, descriptions, and controlled CRUD for
+applications created from Latte.
 
-Pane (Bread) is designed to be used with [Burro](https://github.com/erme2/Burro) (Butter).
+Each Pane installation is an independent universe that may serve many unrelated
+organizations. Every Latte-derived application is linked to exactly one
+organization and uses Pane as its only data-access layer. Burro is the private
+Pane-administrator console; the current Burro repository is planned to become
+the Latte frontend template.
 
-Pane and Burro together should be like a "bread and butter".
+The current code is a transitional metadata-driven CRUD implementation over one
+default database. The target introduces invite-only multi-tenancy, managed
+MySQL/MariaDB connections, system-catalog discovery, membership-owned rows,
+connection grants, impersonation, and auditing. Read
+[Pane Architecture](docs/architecture.md) before making structural changes.
 
-1. keep it simple and lightweight
-2. testable
-3. easy to use
+Pane remains focused on three qualities:
+
+1. simple and lightweight;
+2. testable;
+3. easy to use.
 
 ## Deployment requirements
 
