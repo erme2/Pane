@@ -15,12 +15,20 @@ objects, invitations, impersonation sessions, and audit events. Managed row
 keys are JSON strings because the connected table, rather than Pane, defines
 their scalar type.
 
-Pane derives the application from the browser's `Origin`; browser JavaScript
-does not send an application identifier. Every trusted origin is globally
-unique among active registrations in one Pane installation. Registration and
-origin updates reject a duplicate with `409 duplicate_resource`. Pane rejects a
-missing, opaque, `null`, or unregistered origin. Proxies preserve `Origin` and
-must remove any client-supplied application-identity header.
+Pane derives the application from the browser's `Origin` when a login intent is
+created, then stores that immutable application UUID in Pane's server-side
+session. Every authenticated request reloads the active registration by that
+UUID so origin removal or application disabling takes effect immediately.
+Mutating requests require an `Origin` matching the session application; reads
+validate it when present because browsers do not guarantee `Origin` on
+same-origin `GET` or `HEAD` requests. Browser JavaScript never supplies an
+application identifier.
+
+Every trusted origin is globally unique among active registrations in one Pane
+installation. Registration and origin updates reject a duplicate with
+`409 duplicate_resource`. Login intents reject a missing, opaque, `null`, or
+unregistered origin. Proxies preserve `Origin` and remove any client-supplied
+application-identity header.
 
 Burro uses an installation-scoped registration without an organization. A
 Latte-derived registration has exactly one immutable `organization_id`.
@@ -34,8 +42,8 @@ generates a UUID, returns it in the same response header, and includes it in
 `meta.request_id` or `error.request_id`. Invalid request IDs are replaced, not
 reflected.
 
-Browser requests use Pane's Laravel session cookie. `GET /csrf-cookie` issues
-the CSRF cookie; mutating authenticated requests use the existing
+Browser requests use Pane's Laravel session cookie. `POST /csrf-cookie` issues
+the CSRF cookie from an Origin-validated request; mutating authenticated requests use the existing
 `X-XSRF-TOKEN` contract. Responses containing secrets are never defined:
 connection passwords and private certificate material are write-only.
 
@@ -44,7 +52,8 @@ connection passwords and private certificate material are write-only.
 Pane performs these checks in order and stops at the first failure:
 
 1. establish or generate the request ID;
-2. resolve the one active application registered for the trusted origin;
+2. resolve the active application from the login origin or authenticated
+   server-side session and revalidate its registration;
 3. authenticate the Pane session and apply CSRF validation when required;
 4. compare `{organization_id}` with the application's fixed organization;
 5. load the organization and require its active state;
@@ -75,7 +84,9 @@ suspension, or organization suspension/closure.
 
 ### Shared session
 
-- `GET /csrf-cookie` initializes CSRF protection for browser mutations.
+- `POST /csrf-cookie` initializes CSRF protection from a request whose browser
+  `Origin` identifies the application. This bootstrap route does not itself
+  require a CSRF token.
 - `POST /auth/login-intents` stores redirect and optional invitation intent in
   Pane's session and returns the WorkOS authorization URL and OAuth state.
 - `POST /auth/callback` completes WorkOS authentication. If the login intent
@@ -119,6 +130,12 @@ suspension, or organization suspension/closure.
 
 The exact parameters, request and response schemas, required headers, method
 matrix, and status codes are in the OpenAPI contract.
+
+Invitation creation never accepts a caller-selected expiry. Pane-admin
+invitations resolve the installation setting; organization invitations resolve
+the organization override, then installation setting, then versioned default.
+The response exposes the resolved `expires_at`. Exact configurable bounds remain
+a Pane-admin product decision and are not hard-coded into the HTTP contract.
 
 ## Success, pagination, and concurrency
 

@@ -493,7 +493,9 @@ host details, source paths, and stack traces never appear in production errors.
 
 The phase-one contract uses `/api/v1`, UUID organization identifiers, explicit
 `/organizations/{organization_id}` route scope, and a globally unique trusted
-browser origin to resolve the registered application. The exact route matrix,
+browser origin to bind the registered application into Pane's server-side
+session at login. Authenticated requests reload that active registration from
+the session, while mutations revalidate the origin. The exact route matrix,
 verification order, schemas, envelopes, statuses, errors, and legacy migration policy are defined in
 [Pane Phase-One HTTP API](api-v1.md) and its machine-readable
 [`contracts/pane-v1.json`](../contracts/pane-v1.json) fixture. Pane verifies the

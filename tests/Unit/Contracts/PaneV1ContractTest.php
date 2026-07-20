@@ -39,11 +39,15 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
-    public function test_browser_application_is_resolved_from_one_unique_origin(): void
+    public function test_browser_application_is_bound_at_login_and_reloaded_from_session(): void
     {
         $resolution = $this->contract['x-pane-application-resolution'];
 
-        $this->assertSame('origin', $resolution['source']);
+        $this->assertSame('origin', $resolution['login_source']);
+        $this->assertSame('server_session_application_id', $resolution['authenticated_source']);
+        $this->assertTrue($resolution['reload_active_registration_each_request']);
+        $this->assertTrue($resolution['origin_required_on_mutations']);
+        $this->assertTrue($resolution['origin_validated_when_present_on_reads']);
         $this->assertTrue($resolution['active_origin_globally_unique']);
         $this->assertFalse($resolution['client_application_header_allowed']);
         $this->assertStringNotContainsString('X-Pane-Application-Id', json_encode($this->contract, JSON_THROW_ON_ERROR));
@@ -79,6 +83,8 @@ class PaneV1ContractTest extends TestCase
             $this->contract['paths']['/auth/login-intents']['post']['requestBody']['content']['application/json']['schema']['$ref'],
         );
         $this->assertTrue($this->contract['components']['schemas']['LoginIntentInput']['properties']['invitation_token']['writeOnly']);
+        $this->assertArrayHasKey('post', $this->contract['paths']['/csrf-cookie']);
+        $this->assertArrayNotHasKey('get', $this->contract['paths']['/csrf-cookie']);
     }
 
     public function test_every_operation_has_an_id_and_declares_responses(): void
@@ -94,6 +100,24 @@ class PaneV1ContractTest extends TestCase
                 $operationCount++;
                 $this->assertNotEmpty($operation['operationId'], $path.' '.$method.' needs operationId');
                 $this->assertNotEmpty($operation['responses'], $path.' '.$method.' needs responses');
+                $this->assertContains(
+                    '#/components/parameters/RequestId',
+                    array_column($operation['parameters'] ?? [], '$ref'),
+                    $path.' '.$method.' needs the request ID input',
+                );
+
+                foreach ($operation['responses'] as $response) {
+                    if (isset($response['$ref'])) {
+                        $name = basename($response['$ref']);
+                        $response = $this->contract['components']['responses'][$name];
+                    }
+
+                    $this->assertArrayHasKey(
+                        'X-Request-Id',
+                        $response['headers'],
+                        $path.' '.$method.' response needs the request ID output',
+                    );
+                }
             }
         }
 
@@ -122,6 +146,61 @@ class PaneV1ContractTest extends TestCase
         $this->assertTrue($schemas['CredentialsWrite']['writeOnly']);
         $this->assertArrayNotHasKey('credentials', $schemas['ConnectionResource']['properties']['attributes']['properties']);
         $this->assertArrayHasKey('credentials_configured', $schemas['ConnectionResource']['properties']['attributes']['properties']);
+        $this->assertContains('credentials', $schemas['ConnectionCreate']['required']);
+        $this->assertContains('password', $schemas['CredentialsCreate']['required']);
+    }
+
+    public function test_domain_responses_use_specific_resource_schemas(): void
+    {
+        $responses = $this->contract['components']['responses'];
+
+        foreach ([
+            'Organization' => 'OrganizationResource',
+            'Application' => 'ApplicationResource',
+            'Membership' => 'MembershipResource',
+            'Invitation' => 'InvitationResource',
+            'Impersonation' => 'ImpersonationResource',
+            'Grant' => 'GrantResource',
+            'CatalogObject' => 'CatalogObjectResource',
+            'Row' => 'RowResource',
+        ] as $response => $schema) {
+            $this->assertSame(
+                '#/components/schemas/'.$schema,
+                $responses[$response]['content']['application/json']['schema']['properties']['data']['$ref'],
+            );
+        }
+
+        $this->assertSame(
+            '#/components/schemas/AuditEventResource',
+            $responses['AuditEventCollection']['content']['application/json']['schema']['properties']['data']['items']['$ref'],
+        );
+    }
+
+    public function test_create_schemas_reject_invalid_application_invitation_and_empty_resources(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+
+        $this->assertCount(2, $schemas['ApplicationCreate']['oneOf']);
+        $this->assertSame('latte', $schemas['ApplicationCreate']['oneOf'][0]['properties']['kind']['const']);
+        $this->assertContains('organization_id', $schemas['ApplicationCreate']['oneOf'][0]['required']);
+        $this->assertSame('burro', $schemas['ApplicationCreate']['oneOf'][1]['properties']['kind']['const']);
+        $this->assertArrayNotHasKey('organization_id', $schemas['ApplicationCreate']['oneOf'][1]['properties']);
+        $this->assertSame(
+            ['organization_administrator', 'organization_user'],
+            $schemas['OrganizationInvitationCreate']['properties']['role']['enum'],
+        );
+        $this->assertArrayNotHasKey('role', $schemas['PaneAdminInvitationCreate']['properties']);
+        $this->assertContains('name', $schemas['OrganizationCreate']['required']);
+        $this->assertContains('host', $schemas['ConnectionCreate']['required']);
+    }
+
+    public function test_invitation_expiry_is_resolved_from_settings_not_the_request(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+
+        $this->assertArrayNotHasKey('expires_in_seconds', $schemas['PaneAdminInvitationCreate']['properties']);
+        $this->assertArrayNotHasKey('expires_in_seconds', $schemas['OrganizationInvitationCreate']['properties']);
+        $this->assertStringContainsString('never accepts a caller-selected expiry', $this->documentation);
     }
 
     public function test_pagination_concurrency_row_keys_and_grants_are_exact(): void
