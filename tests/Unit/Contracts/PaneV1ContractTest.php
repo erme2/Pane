@@ -182,16 +182,16 @@ class PaneV1ContractTest extends TestCase
 
         $this->assertCount(2, $schemas['ApplicationResource']['oneOf']);
         $this->assertSame(
-            'latte',
-            $schemas['ApplicationResource']['oneOf'][0]['properties']['attributes']['properties']['kind']['const'],
+            '#/components/schemas/LatteApplicationResource',
+            $schemas['ApplicationResource']['oneOf'][0]['$ref'],
         );
         $this->assertSame(
             '#/components/schemas/Uuid',
-            $schemas['ApplicationResource']['oneOf'][0]['properties']['attributes']['properties']['organization_id']['$ref'],
+            $schemas['LatteApplicationResource']['properties']['attributes']['properties']['organization_id']['$ref'],
         );
         $this->assertSame(
             'null',
-            $schemas['ApplicationResource']['oneOf'][1]['properties']['attributes']['properties']['organization_id']['type'],
+            $schemas['BurroApplicationResource']['properties']['attributes']['properties']['organization_id']['type'],
         );
 
         $this->assertCount(2, $schemas['InvitationResource']['oneOf']);
@@ -232,19 +232,9 @@ class PaneV1ContractTest extends TestCase
         $this->assertStringContainsString('never accepts a caller-selected expiry', $this->documentation);
     }
 
-    public function test_errors_use_exact_statuses_and_status_specific_codes(): void
+    public function test_errors_use_exact_statuses_and_operation_specific_codes(): void
     {
-        $responseByStatus = [
-            '400' => 'InvalidRequest',
-            '401' => 'Unauthenticated',
-            '403' => 'Forbidden',
-            '404' => 'NotFound',
-            '409' => 'Conflict',
-            '412' => 'VersionConflict',
-            '422' => 'ValidationFailed',
-            '428' => 'PreconditionRequired',
-            '429' => 'RateLimited',
-        ];
+        $responses = $this->contract['components']['responses'];
 
         foreach ($this->contract['paths'] as $path => $pathItem) {
             foreach ($pathItem as $method => $operation) {
@@ -253,29 +243,30 @@ class PaneV1ContractTest extends TestCase
                 }
 
                 $this->assertArrayNotHasKey('4XX', $operation['responses'], $path.' '.$method.' must use exact errors');
+                $this->assertSame('#/components/responses/InternalError', $operation['responses']['500']['$ref']);
+                $this->assertSame('#/components/responses/DependencyUnavailable', $operation['responses']['503']['$ref']);
 
                 foreach ($operation['responses'] as $status => $response) {
-                    if (! isset($responseByStatus[$status])) {
+                    if (! in_array($status, ['400', '401', '403', '409', '422'], true)) {
                         continue;
                     }
 
-                    $this->assertSame(
-                        '#/components/responses/'.$responseByStatus[$status],
-                        $response['$ref'],
-                        $path.' '.$method.' '.$status.' must use its status-specific error schema',
-                    );
+                    $name = basename($response['$ref']);
+                    $codes = $responses[$name]['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'];
+
+                    $this->assertNotEmpty($codes, $path.' '.$method.' '.$status.' needs exact machine codes');
+                    $this->assertStringStartsWith('Error'.$status, $name);
                 }
             }
         }
 
-        $responses = $this->contract['components']['responses'];
         $this->assertSame(
-            ['resource_not_found'],
-            $responses['NotFound']['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
+            ['application_not_allowed'],
+            $responses[basename($this->contract['paths']['/csrf-cookie']['post']['responses']['403']['$ref'])]['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
         );
-        $this->assertContains(
-            'redirect_not_allowed',
-            $responses['ValidationFailed']['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
+        $this->assertSame(
+            ['validation_failed', 'redirect_not_allowed'],
+            $responses[basename($this->contract['paths']['/auth/login-intents']['post']['responses']['422']['$ref'])]['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
         );
     }
 
@@ -285,10 +276,49 @@ class PaneV1ContractTest extends TestCase
         $output = $this->contract['components']['headers']['RequestId']['schema'];
 
         $this->assertSame('string', $input['type']);
-        $this->assertSame(128, $input['maxLength']);
+        $this->assertArrayNotHasKey('minLength', $input);
+        $this->assertArrayNotHasKey('maxLength', $input);
         $this->assertArrayNotHasKey('format', $input);
         $this->assertStringContainsString('replaced', $input['description']);
         $this->assertSame('#/components/schemas/Uuid', $output['$ref']);
+    }
+
+    public function test_application_registration_enforces_normalized_origins_and_redirects(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $latte = $schemas['ApplicationCreate']['oneOf'][0]['properties'];
+
+        $this->assertSame('#/components/schemas/TrustedOrigin', $latte['trusted_origin']['$ref']);
+        $this->assertSame('#/components/schemas/RedirectUri', $latte['redirect_uris']['items']['$ref']);
+        $this->assertStringContainsString('[^/?#@]+', $schemas['TrustedOrigin']['pattern']);
+        $this->assertSame(
+            'globally_unique_normalized_active_registration',
+            $schemas['TrustedOrigin']['x-pane-uniqueness'],
+        );
+        $this->assertStringContainsString('[^#]*', $schemas['RedirectUri']['pattern']);
+        $this->assertStringContainsString('loopback', $schemas['RedirectUri']['description']);
+    }
+
+    public function test_session_response_discriminates_all_authorization_contexts(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $data = $schemas['SessionResponse']['properties']['data'];
+
+        $this->assertSame('mode', $data['discriminator']['propertyName']);
+        $this->assertCount(3, $data['oneOf']);
+
+        foreach (['LatteSessionData', 'BurroInstallationSessionData', 'BurroImpersonationSessionData'] as $name) {
+            $this->assertContains('organization', $schemas[$name]['required']);
+            $this->assertContains('membership', $schemas[$name]['required']);
+            $this->assertContains('impersonation', $schemas[$name]['required']);
+            $this->assertNotEmpty($schemas[$name]['x-pane-equality-invariants']);
+        }
+
+        $this->assertSame('null', $schemas['BurroInstallationSessionData']['properties']['organization']['type']);
+        $this->assertSame(
+            '#/components/schemas/ImpersonationResource',
+            $schemas['BurroImpersonationSessionData']['properties']['impersonation']['$ref'],
+        );
     }
 
     public function test_login_redirect_requires_normalized_exact_allowlist_match(): void

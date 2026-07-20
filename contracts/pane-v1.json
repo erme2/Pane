@@ -33,7 +33,13 @@
                         }
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Issue CSRF cookie",
@@ -75,13 +81,19 @@
                         }
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowed"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrRedirectNotAllowed"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Login Intent",
@@ -123,16 +135,22 @@
                         }
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidRequest"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowed"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Complete Auth Callback",
@@ -163,10 +181,16 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Session",
@@ -196,10 +220,16 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Delete Session"
@@ -224,13 +254,19 @@
                         "$ref": "#/components/responses/OrganizationCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Organizations"
@@ -260,16 +296,22 @@
                         "$ref": "#/components/responses/Organization"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409QuotaExceededOrDuplicateResource"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Organization"
@@ -288,13 +330,19 @@
                         "$ref": "#/components/responses/Organization"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Organization",
@@ -332,10 +380,10 @@
                         "$ref": "#/components/responses/Organization"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -344,10 +392,16 @@
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Update Organization"
@@ -372,13 +426,19 @@
                         "$ref": "#/components/responses/ApplicationCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Applications"
@@ -408,16 +468,22 @@
                         "$ref": "#/components/responses/Application"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409DuplicateResource"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Application"
@@ -436,13 +502,19 @@
                         "$ref": "#/components/responses/Application"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Application",
@@ -480,25 +552,31 @@
                         "$ref": "#/components/responses/Application"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409DuplicateResourceOrOperationConflict"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Update Application"
@@ -526,22 +604,28 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409DuplicateResourceOrOperationConflict"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Delete Application"
@@ -573,13 +657,19 @@
                         "$ref": "#/components/responses/Impersonation"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Impersonation"
@@ -609,13 +699,19 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Delete Impersonation"
@@ -640,13 +736,19 @@
                         "$ref": "#/components/responses/InvitationCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Pane Admin Invitations"
@@ -676,19 +778,25 @@
                         "$ref": "#/components/responses/Invitation"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409OperationConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Pane Admin Invitation"
@@ -721,10 +829,10 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -734,6 +842,12 @@
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Revoke Pane Admin Invitation"
@@ -758,13 +872,19 @@
                         "$ref": "#/components/responses/AuditEventCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Installation Audit Events"
@@ -792,16 +912,22 @@
                         "$ref": "#/components/responses/MembershipCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Memberships"
@@ -826,13 +952,19 @@
                         "$ref": "#/components/responses/Membership"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Membership"
@@ -871,25 +1003,31 @@
                         "$ref": "#/components/responses/Membership"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409OperationConflict"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Update Membership"
@@ -917,16 +1055,22 @@
                         "$ref": "#/components/responses/InvitationCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Organization Invitations"
@@ -959,22 +1103,28 @@
                         "$ref": "#/components/responses/Invitation"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409DuplicateResourceOrOperationConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Organization Invitation"
@@ -999,13 +1149,19 @@
                         "$ref": "#/components/responses/Invitation"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Organization Invitation"
@@ -1039,10 +1195,10 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1052,6 +1208,12 @@
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Revoke Organization Invitation"
@@ -1082,10 +1244,10 @@
                         "$ref": "#/components/responses/Invitation"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1098,6 +1260,12 @@
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Resend Organization Invitation"
@@ -1125,16 +1293,22 @@
                         "$ref": "#/components/responses/ConnectionCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Connections"
@@ -1167,19 +1341,25 @@
                         "$ref": "#/components/responses/Connection"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Error409QuotaExceededOrDuplicateResourceOrTableContractIncompatibleOrOperationConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Connection"
@@ -1204,13 +1384,19 @@
                         "$ref": "#/components/responses/Connection"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Connection"
@@ -1249,10 +1435,10 @@
                         "$ref": "#/components/responses/Connection"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1261,10 +1447,16 @@
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Update Connection"
@@ -1298,10 +1490,10 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1311,6 +1503,12 @@
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Delete Connection"
@@ -1338,19 +1536,25 @@
                         "$ref": "#/components/responses/ConnectionTest"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ConnectionTestFailed"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Test Connection"
@@ -1378,16 +1582,22 @@
                         "$ref": "#/components/responses/CatalogRefresh"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Refresh Catalog"
@@ -1428,16 +1638,22 @@
                         "$ref": "#/components/responses/Grant"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Put Connection Grant"
@@ -1471,13 +1687,19 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Delete Connection Grant"
@@ -1508,16 +1730,22 @@
                         "$ref": "#/components/responses/CatalogObjectCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Catalog"
@@ -1545,13 +1773,19 @@
                         "$ref": "#/components/responses/CatalogObject"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Catalog Object"
@@ -1593,10 +1827,10 @@
                         "$ref": "#/components/responses/CatalogObject"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1605,10 +1839,16 @@
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Update Catalog Description"
@@ -1648,16 +1888,22 @@
                         "$ref": "#/components/responses/RowCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursorOrInvalidIdentifier"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Rows"
@@ -1696,16 +1942,22 @@
                         "$ref": "#/components/responses/Row"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Create Row"
@@ -1736,13 +1988,19 @@
                         "$ref": "#/components/responses/Row"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Get Row"
@@ -1787,10 +2045,10 @@
                         "$ref": "#/components/responses/Row"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1799,10 +2057,16 @@
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationFailed"
+                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Update Row"
@@ -1842,10 +2106,10 @@
                         }
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1855,6 +2119,12 @@
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Delete Row"
@@ -1891,10 +2161,10 @@
                         "$ref": "#/components/responses/Row"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1904,6 +2174,12 @@
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "Restore Row"
@@ -1931,16 +2207,22 @@
                         "$ref": "#/components/responses/AuditEventCollection"
                     },
                     "400": {
-                        "$ref": "#/components/responses/InvalidRequest"
+                        "$ref": "#/components/responses/Error400InvalidCursor"
                     },
                     "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Forbidden"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
                     }
                 },
                 "summary": "List Organization Audit Events"
@@ -2107,9 +2389,7 @@
                 "required": false,
                 "schema": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 128,
-                    "description": "A valid UUID is echoed; any other value is ignored and replaced with a generated UUID."
+                    "description": "Any transport-valid header value is accepted. A valid UUID is echoed; every other value is ignored and replaced with a generated UUID."
                 }
             }
         },
@@ -2169,10 +2449,7 @@
                 ],
                 "properties": {
                     "redirect_to": {
-                        "type": "string",
-                        "format": "uri",
-                        "maxLength": 2048,
-                        "description": "Must exactly match a normalized redirect URI on the resolved active application registration."
+                        "$ref": "#/components/schemas/RedirectUri"
                     },
                     "invitation_token": {
                         "type": "string",
@@ -2242,55 +2519,25 @@
                 ],
                 "properties": {
                     "data": {
-                        "type": "object",
-                        "required": [
-                            "actor",
-                            "effective_user",
-                            "application",
-                            "impersonation"
-                        ],
-                        "properties": {
-                            "actor": {
-                                "$ref": "#/components/schemas/UserResource"
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/LatteSessionData"
                             },
-                            "effective_user": {
-                                "$ref": "#/components/schemas/UserResource"
+                            {
+                                "$ref": "#/components/schemas/BurroInstallationSessionData"
                             },
-                            "application": {
-                                "$ref": "#/components/schemas/ApplicationResource"
-                            },
-                            "organization": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/OrganizationResource"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ]
-                            },
-                            "membership": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/MembershipResource"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ]
-                            },
-                            "impersonation": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/ImpersonationResource"
-                                    },
-                                    {
-                                        "type": "null"
-                                    }
-                                ]
+                            {
+                                "$ref": "#/components/schemas/BurroImpersonationSessionData"
                             }
-                        },
-                        "additionalProperties": false
+                        ],
+                        "discriminator": {
+                            "propertyName": "mode",
+                            "mapping": {
+                                "latte": "#/components/schemas/LatteSessionData",
+                                "burro_installation": "#/components/schemas/BurroInstallationSessionData",
+                                "burro_impersonation": "#/components/schemas/BurroImpersonationSessionData"
+                            }
+                        }
                     },
                     "meta": {
                         "$ref": "#/components/schemas/Meta"
@@ -2316,16 +2563,14 @@
                                 "maxLength": 200
                             },
                             "trusted_origin": {
-                                "type": "string",
-                                "format": "uri"
+                                "$ref": "#/components/schemas/TrustedOrigin"
                             },
                             "redirect_uris": {
                                 "type": "array",
                                 "minItems": 1,
                                 "uniqueItems": true,
                                 "items": {
-                                    "type": "string",
-                                    "format": "uri"
+                                    "$ref": "#/components/schemas/RedirectUri"
                                 }
                             },
                             "kind": {
@@ -2352,16 +2597,14 @@
                                 "maxLength": 200
                             },
                             "trusted_origin": {
-                                "type": "string",
-                                "format": "uri"
+                                "$ref": "#/components/schemas/TrustedOrigin"
                             },
                             "redirect_uris": {
                                 "type": "array",
                                 "minItems": 1,
                                 "uniqueItems": true,
                                 "items": {
-                                    "type": "string",
-                                    "format": "uri"
+                                    "$ref": "#/components/schemas/RedirectUri"
                                 }
                             },
                             "kind": {
@@ -2382,16 +2625,14 @@
                         "maxLength": 200
                     },
                     "trusted_origin": {
-                        "type": "string",
-                        "format": "uri"
+                        "$ref": "#/components/schemas/TrustedOrigin"
                     },
                     "redirect_uris": {
                         "type": "array",
                         "minItems": 1,
                         "uniqueItems": true,
                         "items": {
-                            "type": "string",
-                            "format": "uri"
+                            "$ref": "#/components/schemas/RedirectUri"
                         }
                     }
                 },
@@ -2682,140 +2923,10 @@
             "ApplicationResource": {
                 "oneOf": [
                     {
-                        "type": "object",
-                        "required": [
-                            "id",
-                            "type",
-                            "attributes"
-                        ],
-                        "properties": {
-                            "id": {
-                                "$ref": "#/components/schemas/Uuid"
-                            },
-                            "type": {
-                                "const": "application"
-                            },
-                            "attributes": {
-                                "type": "object",
-                                "required": [
-                                    "name",
-                                    "kind",
-                                    "organization_id",
-                                    "trusted_origin",
-                                    "redirect_uris",
-                                    "status",
-                                    "created_at",
-                                    "updated_at"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "type": "string"
-                                    },
-                                    "trusted_origin": {
-                                        "type": "string",
-                                        "format": "uri"
-                                    },
-                                    "redirect_uris": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "uri"
-                                        }
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "active",
-                                            "disabled"
-                                        ]
-                                    },
-                                    "created_at": {
-                                        "type": "string",
-                                        "format": "date-time"
-                                    },
-                                    "updated_at": {
-                                        "type": "string",
-                                        "format": "date-time"
-                                    },
-                                    "kind": {
-                                        "const": "latte"
-                                    },
-                                    "organization_id": {
-                                        "$ref": "#/components/schemas/Uuid"
-                                    }
-                                },
-                                "additionalProperties": false
-                            }
-                        },
-                        "additionalProperties": false
+                        "$ref": "#/components/schemas/LatteApplicationResource"
                     },
                     {
-                        "type": "object",
-                        "required": [
-                            "id",
-                            "type",
-                            "attributes"
-                        ],
-                        "properties": {
-                            "id": {
-                                "$ref": "#/components/schemas/Uuid"
-                            },
-                            "type": {
-                                "const": "application"
-                            },
-                            "attributes": {
-                                "type": "object",
-                                "required": [
-                                    "name",
-                                    "kind",
-                                    "organization_id",
-                                    "trusted_origin",
-                                    "redirect_uris",
-                                    "status",
-                                    "created_at",
-                                    "updated_at"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "type": "string"
-                                    },
-                                    "trusted_origin": {
-                                        "type": "string",
-                                        "format": "uri"
-                                    },
-                                    "redirect_uris": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "uri"
-                                        }
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "active",
-                                            "disabled"
-                                        ]
-                                    },
-                                    "created_at": {
-                                        "type": "string",
-                                        "format": "date-time"
-                                    },
-                                    "updated_at": {
-                                        "type": "string",
-                                        "format": "date-time"
-                                    },
-                                    "kind": {
-                                        "const": "burro"
-                                    },
-                                    "organization_id": {
-                                        "type": "null"
-                                    }
-                                },
-                                "additionalProperties": false
-                            }
-                        },
-                        "additionalProperties": false
+                        "$ref": "#/components/schemas/BurroApplicationResource"
                     }
                 ]
             },
@@ -3690,6 +3801,286 @@
                 },
                 "additionalProperties": false,
                 "minProperties": 1
+            },
+            "TrustedOrigin": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^(?:https://[^/?#@]+|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[1-9][0-9]{0,4})?)$",
+                "description": "A normalized serialized origin: scheme, host, and optional non-default port only. HTTP is limited to loopback local/test registrations.",
+                "x-pane-normalization": [
+                    "lowercase_scheme_and_host",
+                    "remove_default_port"
+                ],
+                "x-pane-uniqueness": "globally_unique_normalized_active_registration"
+            },
+            "RedirectUri": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048,
+                "pattern": "^(?:https://[^/?#@]+|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[1-9][0-9]{0,4})?)(?:/[^#]*)?$",
+                "description": "An absolute HTTPS redirect without credentials or a fragment. HTTP is limited to loopback local/test registrations.",
+                "x-pane-normalization": [
+                    "lowercase_scheme_and_host",
+                    "remove_default_port",
+                    "empty_path_becomes_slash",
+                    "preserve_path_and_query"
+                ]
+            },
+            "LatteApplicationResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "application"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "kind",
+                            "organization_id",
+                            "trusted_origin",
+                            "redirect_uris",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "trusted_origin": {
+                                "$ref": "#/components/schemas/TrustedOrigin"
+                            },
+                            "redirect_uris": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/RedirectUri"
+                                }
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "active",
+                                    "disabled"
+                                ]
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "kind": {
+                                "const": "latte"
+                            },
+                            "organization_id": {
+                                "$ref": "#/components/schemas/Uuid"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "BurroApplicationResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "application"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "kind",
+                            "organization_id",
+                            "trusted_origin",
+                            "redirect_uris",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "trusted_origin": {
+                                "$ref": "#/components/schemas/TrustedOrigin"
+                            },
+                            "redirect_uris": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/RedirectUri"
+                                }
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "active",
+                                    "disabled"
+                                ]
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "kind": {
+                                "const": "burro"
+                            },
+                            "organization_id": {
+                                "type": "null"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "LatteSessionData": {
+                "type": "object",
+                "required": [
+                    "mode",
+                    "actor",
+                    "effective_user",
+                    "application",
+                    "organization",
+                    "membership",
+                    "impersonation"
+                ],
+                "properties": {
+                    "mode": {
+                        "const": "latte"
+                    },
+                    "actor": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "effective_user": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "application": {
+                        "$ref": "#/components/schemas/LatteApplicationResource"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/OrganizationResource"
+                    },
+                    "membership": {
+                        "$ref": "#/components/schemas/MembershipResource"
+                    },
+                    "impersonation": {
+                        "type": "null"
+                    }
+                },
+                "additionalProperties": false,
+                "x-pane-equality-invariants": [
+                    "organization.id == application.attributes.organization_id",
+                    "membership.attributes.organization_id == organization.id",
+                    "effective_user.id == actor.id",
+                    "membership.attributes.user_id == effective_user.id"
+                ]
+            },
+            "BurroInstallationSessionData": {
+                "type": "object",
+                "required": [
+                    "mode",
+                    "actor",
+                    "effective_user",
+                    "application",
+                    "organization",
+                    "membership",
+                    "impersonation"
+                ],
+                "properties": {
+                    "mode": {
+                        "const": "burro_installation"
+                    },
+                    "actor": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "effective_user": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "application": {
+                        "$ref": "#/components/schemas/BurroApplicationResource"
+                    },
+                    "organization": {
+                        "type": "null"
+                    },
+                    "membership": {
+                        "type": "null"
+                    },
+                    "impersonation": {
+                        "type": "null"
+                    }
+                },
+                "additionalProperties": false,
+                "x-pane-equality-invariants": [
+                    "effective_user.id == actor.id"
+                ]
+            },
+            "BurroImpersonationSessionData": {
+                "type": "object",
+                "required": [
+                    "mode",
+                    "actor",
+                    "effective_user",
+                    "application",
+                    "organization",
+                    "membership",
+                    "impersonation"
+                ],
+                "properties": {
+                    "mode": {
+                        "const": "burro_impersonation"
+                    },
+                    "actor": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "effective_user": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "application": {
+                        "$ref": "#/components/schemas/BurroApplicationResource"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/OrganizationResource"
+                    },
+                    "membership": {
+                        "$ref": "#/components/schemas/MembershipResource"
+                    },
+                    "impersonation": {
+                        "$ref": "#/components/schemas/ImpersonationResource"
+                    }
+                },
+                "additionalProperties": false,
+                "x-pane-equality-invariants": [
+                    "organization.id == impersonation.attributes.organization_id",
+                    "membership.id == impersonation.attributes.effective_membership_id",
+                    "membership.attributes.organization_id == organization.id",
+                    "membership.attributes.user_id == effective_user.id",
+                    "actor.id == impersonation.attributes.actor_user_id"
+                ]
             }
         },
         "responses": {
@@ -3879,156 +4270,6 @@
                     }
                 }
             },
-            "InvalidRequest": {
-                "description": "HTTP 400",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "invalid_request",
-                                                "invalid_cursor",
-                                                "invalid_identifier"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
-            "Unauthenticated": {
-                "description": "HTTP 401",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "authentication_required",
-                                                "session_expired"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
-            "Forbidden": {
-                "description": "HTTP 403",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "application_not_allowed",
-                                                "organization_context_mismatch",
-                                                "organization_inactive",
-                                                "membership_required",
-                                                "permission_denied",
-                                                "csrf_failed",
-                                                "impersonation_required"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
             "NotFound": {
                 "description": "HTTP 404",
                 "headers": {
@@ -4076,56 +4317,6 @@
                     }
                 }
             },
-            "Conflict": {
-                "description": "HTTP 409",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "quota_exceeded",
-                                                "duplicate_resource",
-                                                "table_contract_incompatible",
-                                                "operation_conflict"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
             "VersionConflict": {
                 "description": "HTTP 412",
                 "headers": {
@@ -4153,56 +4344,6 @@
                                             "type": "string",
                                             "enum": [
                                                 "version_conflict"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
-            "ValidationFailed": {
-                "description": "HTTP 422",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "validation_failed",
-                                                "connection_policy_rejected",
-                                                "connection_test_failed",
-                                                "redirect_not_allowed"
                                             ]
                                         },
                                         "message": {
@@ -4713,6 +4854,1072 @@
                                 },
                                 "meta": {
                                     "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "InternalError": {
+                "description": "HTTP 500",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "internal_error"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "DependencyUnavailable": {
+                "description": "HTTP 503",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "dependency_unavailable"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowed": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error422ValidationFailedOrRedirectNotAllowed": {
+                "description": "HTTP 422",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "validation_failed",
+                                                "redirect_not_allowed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error400InvalidRequest": {
+                "description": "HTTP 400",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "invalid_request"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error422ValidationFailed": {
+                "description": "HTTP 422",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "validation_failed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error401AuthenticationRequiredOrSessionExpired": {
+                "description": "HTTP 401",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "authentication_required",
+                                                "session_expired"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowedOrPermissionDenied": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "permission_denied"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "permission_denied",
+                                                "csrf_failed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error400InvalidCursor": {
+                "description": "HTTP 400",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "invalid_cursor"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error409QuotaExceededOrDuplicateResource": {
+                "description": "HTTP 409",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "quota_exceeded",
+                                                "duplicate_resource"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error409DuplicateResource": {
+                "description": "HTTP 409",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "duplicate_resource"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error409DuplicateResourceOrOperationConflict": {
+                "description": "HTTP 409",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "duplicate_resource",
+                                                "operation_conflict"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error409OperationConflict": {
+                "description": "HTTP 409",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "operation_conflict"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "organization_context_mismatch",
+                                                "organization_inactive",
+                                                "membership_required",
+                                                "permission_denied"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "organization_context_mismatch",
+                                                "organization_inactive",
+                                                "membership_required",
+                                                "permission_denied",
+                                                "csrf_failed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "organization_context_mismatch",
+                                                "organization_inactive",
+                                                "membership_required",
+                                                "permission_denied",
+                                                "impersonation_required"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "organization_context_mismatch",
+                                                "organization_inactive",
+                                                "membership_required",
+                                                "permission_denied",
+                                                "csrf_failed",
+                                                "impersonation_required"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error409QuotaExceededOrDuplicateResourceOrTableContractIncompatibleOrOperationConflict": {
+                "description": "HTTP 409",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "quota_exceeded",
+                                                "duplicate_resource",
+                                                "table_contract_incompatible",
+                                                "operation_conflict"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error422ValidationFailedOrConnectionPolicyRejected": {
+                "description": "HTTP 422",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "validation_failed",
+                                                "connection_policy_rejected"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error422ConnectionTestFailed": {
+                "description": "HTTP 422",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "connection_test_failed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error400InvalidCursorOrInvalidIdentifier": {
+                "description": "HTTP 400",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "invalid_cursor",
+                                                "invalid_identifier"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
                                 }
                             },
                             "additionalProperties": false

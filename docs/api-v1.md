@@ -30,6 +30,13 @@ installation. Registration and origin updates reject a duplicate with
 unregistered origin. Proxies preserve `Origin` and remove any client-supplied
 application-identity header.
 
+Pane stores a trusted origin only in normalized serialized-origin form:
+scheme, lowercase host, and an optional non-default port, with no credentials,
+path, query, or fragment. HTTPS is mandatory except for loopback local/test
+registrations. Global uniqueness is checked after lowercasing scheme and host
+and removing a default port. Registered redirects use the normalization and
+validation rules below when they are written, not only when they are used.
+
 Burro uses an installation-scoped registration without an organization. A
 Latte-derived registration has exactly one immutable `organization_id`.
 Changing that binding requires replacing the registration, and a registration
@@ -37,11 +44,12 @@ cannot be deleted while it has active sessions. Neither a query parameter,
 cookie, callback value, request body, route value, nor browser-controlled header
 can select or change the application organization.
 
-Clients may send a UUID in `X-Request-Id`. Pane returns that value when valid or
-generates a UUID, returns it in the same response header, and includes it in
-`meta.request_id` or `error.request_id`. Invalid request IDs are replaced, not
-reflected. The request header accepts a bounded string so middleware can apply
-that replacement rule; response request IDs are always UUIDs.
+Clients may send any transport-valid value in `X-Request-Id`. Pane returns it
+only when it is a valid UUID; every other value is ignored and replaced with a
+generated UUID. The UUID is returned in the response header and included in
+`meta.request_id` or `error.request_id`. Request-ID middleware applies this rule
+before API schema validation and does not reject a request because of that
+header. Response request IDs are always UUIDs.
 
 Browser requests use Pane's Laravel session cookie. `POST /csrf-cookie` issues
 the CSRF cookie from an Origin-validated request; mutating authenticated requests use the existing
@@ -132,12 +140,25 @@ suspension, or organization suspension/closure.
 The exact parameters, request and response schemas, required headers, method
 matrix, and status codes are in the OpenAPI contract.
 
-`redirect_to` must exactly match a URI on the active application's redirect
-allowlist after lowercasing scheme and host, removing a default port, and
-normalizing an empty path to `/`. Path and query remain significant. Credentials
-and fragments are forbidden. HTTPS is required outside local/test environments.
-A mismatch returns `422 redirect_not_allowed`; Pane never redirects to a
-partially matched origin, suffix, wildcard, or caller-derived fallback.
+`GET /session` has three discriminated modes. A `latte` session always returns
+its fixed organization and the actor's membership, has no impersonation, and
+uses the actor as effective user. A `burro_installation` session has null
+organization, membership, and impersonation and also uses the actor as
+effective user. A `burro_impersonation` session returns an organization,
+membership, and impersonation whose identifiers must agree; its actor matches
+the impersonation actor and its effective user owns the effective membership.
+All nullable context keys are present in every mode so consumers never infer
+state from an omitted field.
+
+Every registered redirect and `redirect_to` value must be an absolute URI with
+no credentials or fragment. HTTPS is required except for loopback local/test
+registrations. Pane normalizes both the stored allowlist value and candidate by
+lowercasing scheme and host, removing a default port, and changing an empty path
+to `/`; path and query remain significant. Registration rejects invalid values
+and normalized duplicates. `redirect_to` must then exactly match one normalized
+URI on the active application's allowlist. A mismatch returns
+`422 redirect_not_allowed`; Pane never redirects to a partially matched origin,
+suffix, wildcard, or caller-derived fallback.
 
 Invitation creation never accepts a caller-selected expiry. Pane-admin
 invitations resolve the installation setting; organization invitations resolve
@@ -190,7 +211,11 @@ Errors have one stable shape:
 ```
 
 `details` is optional and machine-readable. Each OpenAPI operation declares its
-exact error statuses, and each status constrains the allowed machine codes.
+exact error statuses and references a response schema whose machine-code enum is
+limited to that operation. The shared `500 internal_error` and
+`503 dependency_unavailable` responses are declared on every operation; Pane
+may return them only after request correlation has been established and always
+uses the safe error envelope.
 Production messages are safe and
 do not contain SQL, credentials, internal hosts, source paths, stack traces, or
 unfiltered upstream errors. Stable v1 codes are:
