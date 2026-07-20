@@ -492,9 +492,9 @@ authorization decisions, and request correlation IDs. Secrets, SQL, internal
 host details, source paths, and stack traces never appear in production errors.
 
 The phase-one contract uses `/api/v1`, UUID organization identifiers, explicit
-`/organizations/{organization_id}` route scope, and the registered application
-UUID in `X-Pane-Application-Id`. The exact route matrix, verification order,
-envelopes, statuses, errors, and legacy migration policy are defined in
+`/organizations/{organization_id}` route scope, and a globally unique trusted
+browser origin to resolve the registered application. The exact route matrix,
+verification order, schemas, envelopes, statuses, errors, and legacy migration policy are defined in
 [Pane Phase-One HTTP API](api-v1.md) and its machine-readable
 [`contracts/pane-v1.json`](../contracts/pane-v1.json) fixture. Pane verifies the
 application and fixed organization before resolving an organization-owned

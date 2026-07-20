@@ -1,101 +1,2498 @@
 {
-  "contract": "pane-http-api",
-  "version": "1.0.0",
-  "base_path": "/api/v1",
-  "media_type": "application/json",
-  "identifiers": {
-    "resources": "uuid",
-    "row_key": "string",
-    "request_id": "uuid"
-  },
-  "application": {
-    "header": "X-Pane-Application-Id",
-    "trusted_origin_required": true,
-    "organization_source": "registered_application",
-    "browser_organization_selection": false
-  },
-  "request_correlation": {
-    "header": "X-Request-Id",
-    "success_path": "meta.request_id",
-    "error_path": "error.request_id"
-  },
-  "organization_resolution_order": [
-    "request_id",
-    "application_and_origin",
-    "session_and_csrf",
-    "fixed_organization_match",
-    "active_organization",
-    "active_membership_and_role",
-    "organization_owned_resource",
-    "grant_catalog_operation_ownership_concurrency"
-  ],
-  "pagination": {
-    "cursor_parameter": "page[cursor]",
-    "limit_parameter": "page[limit]",
-    "default_limit": 25,
-    "maximum_limit": 100
-  },
-  "concurrency": {
-    "response_header": "ETag",
-    "request_header": "If-Match",
-    "required_status": 428,
-    "conflict_status": 412
-  },
-  "envelopes": {
-    "success": {"required": ["data", "meta.request_id"]},
-    "collection": {"required": ["data", "meta.request_id", "meta.page.next_cursor", "meta.page.has_more"]},
-    "error": {"required": ["error.code", "error.message", "error.request_id"], "optional": ["error.details"]}
-  },
-  "paths": {
-    "/session": {"GET": 200, "DELETE": 204},
-    "/installation/organizations": {"GET": 200, "POST": 201},
-    "/installation/organizations/{organization_id}": {"GET": 200, "PATCH": 200},
-    "/installation/applications": {"GET": 200, "POST": 201},
-    "/installation/applications/{application_id}": {"GET": 200, "PATCH": 200, "DELETE": 204},
-    "/installation/pane-admin-invitations": {"GET": 200, "POST": 201},
-    "/installation/pane-admin-invitations/{invitation_id}": {"DELETE": 204},
-    "/installation/impersonations": {"POST": 201},
-    "/installation/impersonations/{impersonation_id}": {"DELETE": 204},
-    "/installation/audit-events": {"GET": 200},
-    "/organizations/{organization_id}/memberships": {"GET": 200},
-    "/organizations/{organization_id}/memberships/{membership_id}": {"GET": 200, "PATCH": 200},
-    "/organizations/{organization_id}/invitations": {"GET": 200, "POST": 201},
-    "/organizations/{organization_id}/invitations/{invitation_id}": {"GET": 200, "DELETE": 204},
-    "/organizations/{organization_id}/invitations/{invitation_id}/resends": {"POST": 201},
-    "/organizations/{organization_id}/connections": {"GET": 200, "POST": 201},
-    "/organizations/{organization_id}/connections/{connection_id}": {"GET": 200, "PATCH": 200, "DELETE": 204},
-    "/organizations/{organization_id}/connections/{connection_id}/test": {"POST": 200},
-    "/organizations/{organization_id}/connections/{connection_id}/catalog-refreshes": {"POST": 202},
-    "/organizations/{organization_id}/connections/{connection_id}/grants": {"GET": 200, "PUT": 200},
-    "/organizations/{organization_id}/connections/{connection_id}/catalog": {"GET": 200},
-    "/organizations/{organization_id}/connections/{connection_id}/catalog/{catalog_object_id}": {"GET": 200, "PATCH": 200},
-    "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows": {"GET": 200, "POST": 201},
-    "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}": {"GET": 200, "PATCH": 200, "DELETE": 204},
-    "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}/restore": {"POST": 200},
-    "/organizations/{organization_id}/audit-events": {"GET": 200}
-  },
-  "error_codes": {
-    "400": ["invalid_request", "invalid_cursor", "invalid_identifier"],
-    "401": ["authentication_required", "session_expired"],
-    "403": ["application_not_allowed", "organization_context_mismatch", "organization_inactive", "membership_required", "permission_denied", "csrf_failed", "impersonation_required"],
-    "404": ["resource_not_found"],
-    "409": ["quota_exceeded", "duplicate_resource", "table_contract_incompatible", "operation_conflict"],
-    "412": ["version_conflict"],
-    "422": ["validation_failed", "connection_policy_rejected", "connection_test_failed"],
-    "428": ["precondition_required"],
-    "429": ["rate_limited"],
-    "500": ["internal_error"],
-    "503": ["dependency_unavailable"]
-  },
-  "forbidden_inputs": [
-    "raw_sql",
-    "physical_identifier",
-    "connection_secret_response",
-    "browser_selected_organization"
-  ],
-  "legacy": {
-    "patterns": ["/{story}/{subject}", "/{story}/{subject}/{key}"],
-    "part_of_v1": false,
-    "new_capabilities_allowed": false
-  }
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Pane phase-one HTTP API",
+        "version": "1.0.0",
+        "license": {
+            "name": "Proprietary",
+            "identifier": "LicenseRef-Proprietary"
+        }
+    },
+    "servers": [
+        {
+            "url": "/api/v1"
+        }
+    ],
+    "security": [
+        {
+            "paneSession": []
+        }
+    ],
+    "paths": {
+        "/csrf-cookie": {
+            "get": {
+                "operationId": "issueCsrfCookie",
+                "security": [],
+                "responses": {
+                    "204": {
+                        "description": "CSRF cookie issued"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "Issue Csrf Cookie"
+            }
+        },
+        "/auth/login-intents": {
+            "post": {
+                "operationId": "createLoginIntent",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginIntentInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login intent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginIntentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                },
+                "summary": "Create Login Intent"
+            }
+        },
+        "/auth/callback": {
+            "post": {
+                "operationId": "completeAuthCallback",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AuthCallbackInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authenticated session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SessionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                },
+                "summary": "Complete Auth Callback"
+            }
+        },
+        "/session": {
+            "get": {
+                "operationId": "getSession",
+                "responses": {
+                    "200": {
+                        "description": "Current session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SessionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    }
+                },
+                "summary": "Get Session"
+            },
+            "delete": {
+                "operationId": "deleteSession",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Session deleted"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "Delete Session"
+            }
+        },
+        "/installation/organizations": {
+            "get": {
+                "operationId": "listOrganizations",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/OrganizationCollection"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Organizations"
+            },
+            "post": {
+                "operationId": "createOrganization",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/OrganizationWrite"
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/Organization"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Organization"
+            }
+        },
+        "/installation/organizations/{organization_id}": {
+            "parameters": [
+                {
+                    "$ref": "#/components/parameters/OrganizationId"
+                }
+            ],
+            "get": {
+                "operationId": "getOrganization",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Organization"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Get Organization"
+            },
+            "patch": {
+                "operationId": "updateOrganization",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/OrganizationWrite"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Organization"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Update Organization"
+            }
+        },
+        "/installation/applications": {
+            "get": {
+                "operationId": "listApplications",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/ApplicationCollection"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Applications"
+            },
+            "post": {
+                "operationId": "createApplication",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplicationCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/Application"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Application"
+            }
+        },
+        "/installation/applications/{application_id}": {
+            "parameters": [
+                {
+                    "$ref": "#/components/parameters/ApplicationId"
+                }
+            ],
+            "get": {
+                "operationId": "getApplication",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Application"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Get Application"
+            },
+            "patch": {
+                "operationId": "updateApplication",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplicationUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Application"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Update Application"
+            },
+            "delete": {
+                "operationId": "deleteApplication",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Application deleted"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Delete Application"
+            }
+        },
+        "/installation/impersonations": {
+            "post": {
+                "operationId": "createImpersonation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImpersonationCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Impersonation session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImpersonationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Impersonation"
+            }
+        },
+        "/installation/impersonations/{impersonation_id}": {
+            "delete": {
+                "operationId": "deleteImpersonation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/ImpersonationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Impersonation ended"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Delete Impersonation"
+            }
+        },
+        "/installation/pane-admin-invitations": {
+            "get": {
+                "operationId": "listPaneAdminInvitations",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Pane Admin Invitations"
+            },
+            "post": {
+                "operationId": "createPaneAdminInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/InvitationWrite"
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Pane Admin Invitation"
+            }
+        },
+        "/installation/pane-admin-invitations/{invitation_id}": {
+            "delete": {
+                "operationId": "revokePaneAdminInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/InvitationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Invitation revoked"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Revoke Pane Admin Invitation"
+            }
+        },
+        "/installation/audit-events": {
+            "get": {
+                "operationId": "listInstallationAuditEvents",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Installation Audit Events"
+            }
+        },
+        "/organizations/{organization_id}/memberships": {
+            "get": {
+                "operationId": "listMemberships",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Memberships"
+            }
+        },
+        "/organizations/{organization_id}/memberships/{membership_id}": {
+            "get": {
+                "operationId": "getMembership",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MembershipId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Get Membership"
+            },
+            "patch": {
+                "operationId": "updateMembership",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MembershipId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MembershipUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Update Membership"
+            }
+        },
+        "/organizations/{organization_id}/invitations": {
+            "get": {
+                "operationId": "listOrganizationInvitations",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Organization Invitations"
+            },
+            "post": {
+                "operationId": "createOrganizationInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/InvitationWrite"
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Organization Invitation"
+            }
+        },
+        "/organizations/{organization_id}/invitations/{invitation_id}": {
+            "get": {
+                "operationId": "getOrganizationInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/InvitationId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Get Organization Invitation"
+            },
+            "delete": {
+                "operationId": "revokeOrganizationInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/InvitationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Invitation revoked"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Revoke Organization Invitation"
+            }
+        },
+        "/organizations/{organization_id}/invitations/{invitation_id}/resends": {
+            "post": {
+                "operationId": "resendOrganizationInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/InvitationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Resend Organization Invitation"
+            }
+        },
+        "/organizations/{organization_id}/connections": {
+            "get": {
+                "operationId": "listConnections",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/ConnectionCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Connections"
+            },
+            "post": {
+                "operationId": "createConnection",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConnectionWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/Connection"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Connection"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}": {
+            "get": {
+                "operationId": "getConnection",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Connection"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Get Connection"
+            },
+            "patch": {
+                "operationId": "updateConnection",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConnectionWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Connection"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Update Connection"
+            },
+            "delete": {
+                "operationId": "deleteConnection",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Connection disabled"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Delete Connection"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/test": {
+            "post": {
+                "operationId": "testConnection",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Test Connection"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/catalog-refreshes": {
+            "post": {
+                "operationId": "refreshCatalog",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "Refresh Catalog"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/grants/{membership_id}": {
+            "put": {
+                "operationId": "putConnectionGrant",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MembershipId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GrantWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Put Connection Grant"
+            },
+            "delete": {
+                "operationId": "deleteConnectionGrant",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MembershipId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Grant removed"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "Delete Connection Grant"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/catalog": {
+            "get": {
+                "operationId": "getCatalog",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "Get Catalog"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/catalog/{catalog_object_id}": {
+            "get": {
+                "operationId": "getCatalogObject",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CatalogObjectId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "Get Catalog Object"
+            },
+            "patch": {
+                "operationId": "updateCatalogDescription",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/CatalogObjectId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DescriptionWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Update Catalog Description"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows": {
+            "get": {
+                "operationId": "listRows",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/TableId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Filter"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Sort"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Rows"
+            },
+            "post": {
+                "operationId": "createRow",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/TableId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RowWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "summary": "Create Row"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}": {
+            "get": {
+                "operationId": "getRow",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/TableId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "summary": "Get Row"
+            },
+            "patch": {
+                "operationId": "updateRow",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/TableId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RowWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Update Row"
+            },
+            "delete": {
+                "operationId": "deleteRow",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/TableId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Row soft deleted"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Delete Row"
+            }
+        },
+        "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}/restore": {
+            "post": {
+                "operationId": "restoreRow",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/ConnectionId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/TableId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericResource"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    }
+                },
+                "summary": "Restore Row"
+            }
+        },
+        "/organizations/{organization_id}/audit-events": {
+            "get": {
+                "operationId": "listOrganizationAuditEvents",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/GenericCollection"
+                    },
+                    "4XX": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "summary": "List Organization Audit Events"
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "paneSession": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "pane_session"
+            }
+        },
+        "parameters": {
+            "OrganizationId": {
+                "name": "organization_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "ApplicationId": {
+                "name": "application_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "MembershipId": {
+                "name": "membership_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "ConnectionId": {
+                "name": "connection_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "InvitationId": {
+                "name": "invitation_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "ImpersonationId": {
+                "name": "impersonation_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "CatalogObjectId": {
+                "name": "catalog_object_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "TableId": {
+                "name": "table_id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "RowKey": {
+                "name": "row_key",
+                "in": "path",
+                "required": true,
+                "description": "Unpadded RFC 4648 base64url encoding of the scalar primary key",
+                "schema": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "maxLength": 2048
+                }
+            },
+            "XsrfToken": {
+                "name": "X-XSRF-TOKEN",
+                "in": "header",
+                "required": true,
+                "schema": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "IfMatch": {
+                "name": "If-Match",
+                "in": "header",
+                "required": true,
+                "schema": {
+                    "type": "string",
+                    "minLength": 3
+                }
+            },
+            "PageCursor": {
+                "name": "page[cursor]",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                }
+            },
+            "PageLimit": {
+                "name": "page[limit]",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 25
+                }
+            },
+            "Filter": {
+                "name": "filter",
+                "in": "query",
+                "required": false,
+                "style": "deepObject",
+                "explode": true,
+                "schema": {
+                    "type": "object",
+                    "propertyNames": {
+                        "format": "uuid"
+                    },
+                    "additionalProperties": {
+                        "type": [
+                            "string",
+                            "number",
+                            "integer",
+                            "boolean",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Sort": {
+                "name": "sort",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string",
+                    "pattern": "^-?[0-9a-fA-F-]{36}$"
+                }
+            }
+        },
+        "schemas": {
+            "Uuid": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "Meta": {
+                "type": "object",
+                "required": [
+                    "request_id"
+                ],
+                "properties": {
+                    "request_id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PageMeta": {
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "page"
+                ],
+                "properties": {
+                    "request_id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "page": {
+                        "type": "object",
+                        "required": [
+                            "next_cursor",
+                            "has_more"
+                        ],
+                        "properties": {
+                            "next_cursor": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "has_more": {
+                                "type": "boolean"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "Error": {
+                "type": "object",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "required": [
+                            "code",
+                            "message",
+                            "request_id"
+                        ],
+                        "properties": {
+                            "code": {
+                                "$ref": "#/components/schemas/ErrorCode"
+                            },
+                            "message": {
+                                "type": "string"
+                            },
+                            "details": {
+                                "type": "object"
+                            },
+                            "request_id": {
+                                "$ref": "#/components/schemas/Uuid"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ErrorCode": {
+                "type": "string",
+                "enum": [
+                    "invalid_request",
+                    "invalid_cursor",
+                    "invalid_identifier",
+                    "authentication_required",
+                    "session_expired",
+                    "application_not_allowed",
+                    "organization_context_mismatch",
+                    "organization_inactive",
+                    "membership_required",
+                    "permission_denied",
+                    "csrf_failed",
+                    "impersonation_required",
+                    "resource_not_found",
+                    "quota_exceeded",
+                    "duplicate_resource",
+                    "table_contract_incompatible",
+                    "operation_conflict",
+                    "version_conflict",
+                    "validation_failed",
+                    "connection_policy_rejected",
+                    "connection_test_failed",
+                    "precondition_required",
+                    "rate_limited",
+                    "internal_error",
+                    "dependency_unavailable"
+                ]
+            },
+            "Resource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "attributes": {
+                        "type": "object"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ResourceResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/Resource"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "CollectionResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Resource"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "LoginIntentInput": {
+                "type": "object",
+                "required": [
+                    "redirect_to"
+                ],
+                "properties": {
+                    "redirect_to": {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "invitation_token": {
+                        "type": "string",
+                        "minLength": 32,
+                        "maxLength": 512,
+                        "writeOnly": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "LoginIntentResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "authorization_url",
+                            "state"
+                        ],
+                        "properties": {
+                            "authorization_url": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "state": {
+                                "type": "string",
+                                "minLength": 32
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "AuthCallbackInput": {
+                "type": "object",
+                "required": [
+                    "code",
+                    "state"
+                ],
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "writeOnly": true
+                    },
+                    "state": {
+                        "type": "string",
+                        "minLength": 32,
+                        "writeOnly": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "SessionResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "actor",
+                            "effective_user",
+                            "application",
+                            "impersonation"
+                        ],
+                        "properties": {
+                            "actor": {
+                                "$ref": "#/components/schemas/Resource"
+                            },
+                            "effective_user": {
+                                "$ref": "#/components/schemas/Resource"
+                            },
+                            "application": {
+                                "$ref": "#/components/schemas/Resource"
+                            },
+                            "organization": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Resource"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "membership": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Resource"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "impersonation": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Resource"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "OrganizationWrite": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                    },
+                    "slug": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                        "maxLength": 100
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "suspended",
+                            "closed"
+                        ]
+                    },
+                    "database_limit": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ApplicationCreate": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "kind",
+                    "trusted_origin",
+                    "redirect_uris"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "latte",
+                            "burro"
+                        ]
+                    },
+                    "organization_id": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/Uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "trusted_origin": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "redirect_uris": {
+                        "type": "array",
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ApplicationUpdate": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                    },
+                    "trusted_origin": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "redirect_uris": {
+                        "type": "array",
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ImpersonationCreate": {
+                "type": "object",
+                "required": [
+                    "membership_id",
+                    "reason"
+                ],
+                "properties": {
+                    "membership_id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ImpersonationResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ResourceResponse"
+                    }
+                ]
+            },
+            "InvitationWrite": {
+                "type": "object",
+                "required": [
+                    "email",
+                    "role"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 320
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "pane_administrator",
+                            "organization_administrator",
+                            "organization_user"
+                        ]
+                    },
+                    "expires_in_seconds": {
+                        "type": "integer",
+                        "minimum": 3600,
+                        "maximum": 2592000
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MembershipUpdate": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "organization_administrator",
+                            "organization_user"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "suspended"
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            },
+            "CredentialsWrite": {
+                "type": "object",
+                "writeOnly": true,
+                "properties": {
+                    "password": {
+                        "type": "string",
+                        "minLength": 1,
+                        "writeOnly": true
+                    },
+                    "ca_certificate": {
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "client_certificate": {
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "client_private_key": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ConnectionWrite": {
+                "type": "object",
+                "properties": {
+                    "engine": {
+                        "type": "string",
+                        "enum": [
+                            "mysql",
+                            "mariadb"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    },
+                    "host": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 253
+                    },
+                    "port": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535
+                    },
+                    "database": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                    },
+                    "username": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                    },
+                    "tls_mode": {
+                        "type": "string",
+                        "enum": [
+                            "required",
+                            "verify_ca",
+                            "verify_identity"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "disabled"
+                        ]
+                    },
+                    "credentials": {
+                        "$ref": "#/components/schemas/CredentialsWrite"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ConnectionResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "connection"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "engine",
+                            "name",
+                            "host",
+                            "port",
+                            "database",
+                            "username",
+                            "tls_mode",
+                            "status",
+                            "credentials_configured"
+                        ],
+                        "properties": {
+                            "engine": {
+                                "type": "string",
+                                "enum": [
+                                    "mysql",
+                                    "mariadb"
+                                ]
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "host": {
+                                "type": "string"
+                            },
+                            "port": {
+                                "type": "integer"
+                            },
+                            "database": {
+                                "type": "string"
+                            },
+                            "username": {
+                                "type": "string"
+                            },
+                            "tls_mode": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "credentials_configured": {
+                                "type": "boolean"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "GrantWrite": {
+                "type": "object",
+                "required": [
+                    "preset"
+                ],
+                "properties": {
+                    "preset": {
+                        "type": "string",
+                        "enum": [
+                            "viewer",
+                            "editor",
+                            "manager"
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            },
+            "DescriptionWrite": {
+                "type": "object",
+                "required": [
+                    "description"
+                ],
+                "properties": {
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 5000
+                    }
+                },
+                "additionalProperties": false
+            },
+            "RowWrite": {
+                "type": "object",
+                "required": [
+                    "values"
+                ],
+                "properties": {
+                    "values": {
+                        "type": "object",
+                        "propertyNames": {
+                            "format": "uuid"
+                        },
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "number",
+                                "integer",
+                                "boolean",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "requestBodies": {
+            "OrganizationWrite": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/OrganizationWrite"
+                        }
+                    }
+                }
+            },
+            "InvitationWrite": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/InvitationWrite"
+                        }
+                    }
+                }
+            }
+        },
+        "responses": {
+            "GenericResource": {
+                "description": "Resource",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ResourceResponse"
+                        }
+                    }
+                }
+            },
+            "GenericCollection": {
+                "description": "Paginated resources",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/CollectionResponse"
+                        }
+                    }
+                }
+            },
+            "Organization": {
+                "$ref": "#/components/responses/GenericResource"
+            },
+            "OrganizationCollection": {
+                "$ref": "#/components/responses/GenericCollection"
+            },
+            "Application": {
+                "$ref": "#/components/responses/GenericResource"
+            },
+            "ApplicationCollection": {
+                "$ref": "#/components/responses/GenericCollection"
+            },
+            "Connection": {
+                "description": "Connection without secrets",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/ConnectionResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "ConnectionCollection": {
+                "description": "Connections without secrets",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ConnectionResource"
+                                    }
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/PageMeta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "InvalidRequest": {
+                "description": "Invalid request",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Unauthenticated": {
+                "description": "Authentication required",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Forbidden": {
+                "description": "Forbidden",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Conflict": {
+                "description": "Conflict",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "VersionConflict": {
+                "description": "ETag mismatch",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "ValidationFailed": {
+                "description": "Validation failed",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "PreconditionRequired": {
+                "description": "If-Match required",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "RateLimited": {
+                "description": "Rate limited",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "headers": {
+            "RequestId": {
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/Uuid"
+                }
+            },
+            "ETag": {
+                "required": true,
+                "schema": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "x-pane-application-resolution": {
+        "source": "origin",
+        "active_origin_globally_unique": true,
+        "client_application_header_allowed": false
+    },
+    "x-pane-organization-resolution-order": [
+        "request_id",
+        "application_from_origin",
+        "session_and_csrf",
+        "application_or_impersonation_organization_match",
+        "active_organization",
+        "active_membership_and_role",
+        "organization_owned_resource",
+        "grant_catalog_operation_ownership_concurrency"
+    ],
+    "x-pane-legacy": {
+        "patterns": [
+            "/{story}/{subject}",
+            "/{story}/{subject}/{key}",
+            "/auth/login-url",
+            "/auth/callback",
+            "/auth/user"
+        ],
+        "part_of_v1": false,
+        "new_capabilities_allowed": false
+    },
+    "x-pane-forbidden-inputs": [
+        "raw_sql",
+        "physical_identifier",
+        "connection_secret_response",
+        "browser_selected_application",
+        "browser_selected_organization"
+    ]
 }

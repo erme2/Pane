@@ -2,10 +2,10 @@
 
 Status: phase-one contract
 
-The machine-readable companion to this document is
-[`contracts/pane-v1.json`](../contracts/pane-v1.json). That file is the shared
-contract fixture for Pane, Latte, and Burro. A route is not part of v1 unless it
-appears there.
+The machine-readable companion to this document is the OpenAPI 3.1 document
+[`contracts/pane-v1.json`](../contracts/pane-v1.json). It is the shared contract
+for Pane, Latte, and Burro and can drive client generation and request/response
+validation. A route is not part of v1 unless it appears there.
 
 ## Protocol
 
@@ -15,28 +15,36 @@ objects, invitations, impersonation sessions, and audit events. Managed row
 keys are JSON strings because the connected table, rather than Pane, defines
 their scalar type.
 
-Latte sends its registered application UUID in `X-Pane-Application-Id` on every
-request. Pane also validates the request `Origin` against that registration.
+Pane derives the application from the browser's `Origin`; browser JavaScript
+does not send an application identifier. Every trusted origin is globally
+unique among active registrations in one Pane installation. Registration and
+origin updates reject a duplicate with `409 duplicate_resource`. Pane rejects a
+missing, opaque, `null`, or unregistered origin. Proxies preserve `Origin` and
+must remove any client-supplied application-identity header.
+
 Burro uses an installation-scoped registration without an organization. A
 Latte-derived registration has exactly one immutable `organization_id`.
-Neither a query parameter, cookie, callback value, request body, nor route value
-can select or change that organization.
+Changing that binding requires replacing the registration, and a registration
+cannot be deleted while it has active sessions. Neither a query parameter,
+cookie, callback value, request body, route value, nor browser-controlled header
+can select or change the application organization.
 
 Clients may send a UUID in `X-Request-Id`. Pane returns that value when valid or
 generates a UUID, returns it in the same response header, and includes it in
 `meta.request_id` or `error.request_id`. Invalid request IDs are replaced, not
 reflected.
 
-Browser requests use Pane's Laravel session cookie. Mutating requests also use
-the existing `X-XSRF-TOKEN` contract. Responses containing secrets are never
-defined: connection passwords and private certificate material are write-only.
+Browser requests use Pane's Laravel session cookie. `GET /csrf-cookie` issues
+the CSRF cookie; mutating authenticated requests use the existing
+`X-XSRF-TOKEN` contract. Responses containing secrets are never defined:
+connection passwords and private certificate material are write-only.
 
 ## Resolution order
 
 Pane performs these checks in order and stops at the first failure:
 
 1. establish or generate the request ID;
-2. validate the registered application and trusted origin;
+2. resolve the one active application registered for the trusted origin;
 3. authenticate the Pane session and apply CSRF validation when required;
 4. compare `{organization_id}` with the application's fixed organization;
 5. load the organization and require its active state;
@@ -54,13 +62,26 @@ organization that differs from the application's fixed organization returns
 
 Burro's `/installation/*` routes require a Pane administrator and do not accept
 an organization context. Pane administrators cannot use organization routes
-directly; they must create an impersonation session and then satisfy the same
-fixed-application and organization checks as the effective membership.
+directly. An active Burro impersonation fixes one target organization and
+effective membership in server-side session state. For a Burro request to an
+organization route, Pane compares the route organization with that immutable
+impersonation target before resolving the organization. A normal Latte-derived
+request instead compares it with the application's immutable organization.
+Impersonation cannot be initiated, retargeted, or renewed from an organization
+route and ends on explicit deletion, logout, expiry, target membership
+suspension, or organization suspension/closure.
 
 ## Route families
 
 ### Shared session
 
+- `GET /csrf-cookie` initializes CSRF protection for browser mutations.
+- `POST /auth/login-intents` stores redirect and optional invitation intent in
+  Pane's session and returns the WorkOS authorization URL and OAuth state.
+- `POST /auth/callback` completes WorkOS authentication. If the login intent
+  contains an invitation token, Pane atomically validates the token, verified
+  WorkOS email, application organization, and invitation state before creating
+  or reactivating the membership. The token is never returned or put in a URL.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` logs out and invalidates the Pane session.
@@ -96,7 +117,8 @@ fixed-application and organization checks as the effective membership.
 - `/organizations/{organization_id}/audit-events` lists organization-visible
   audit history.
 
-The exact method matrix and status codes are in the contract fixture.
+The exact parameters, request and response schemas, required headers, method
+matrix, and status codes are in the OpenAPI contract.
 
 ## Success, pagination, and concurrency
 
@@ -170,12 +192,22 @@ server-side discovered names. No endpoint accepts SQL, database credentials on
 read, physical table names as route parameters, arbitrary sort expressions, or
 browser-selected organization switching.
 
-Row list query parameters are limited to catalog column UUID filters,
-`page[cursor]`, `page[limit]`, and a catalog column UUID sort with `asc` or
-`desc`. Pane turns them into quoted allowlisted identifiers and parameterized
-values. Standard users see only rows whose immutable `pane_membership_id`
-matches their effective membership. Create ignores and rejects client-supplied
-ownership and server timestamp columns.
+Row list query parameters are limited to the structured `filter`, `sort`,
+`page[cursor]`, and `page[limit]` schemas in OpenAPI. Pane turns catalog column
+UUIDs into quoted allowlisted identifiers and uses parameterized values.
+Standard users see only rows whose immutable `pane_membership_id` matches their
+effective membership. Create rejects client-supplied ownership and server
+timestamp columns.
+
+Managed row keys use an RFC 4648 base64url encoding without padding in
+`{row_key}`. Pane decodes the value to the table's declared scalar primary-key
+type and never treats it as an identifier or SQL fragment.
+
+Connection create and update bodies contain a nested write-only `credentials`
+object. Response schemas omit that object entirely and expose only
+`credentials_configured`. Grants are individual idempotent membership
+resources at `.../grants/{membership_id}`; `PUT` sets one preset and `DELETE`
+removes it.
 
 ## Compatibility and removal policy
 
@@ -183,6 +215,14 @@ The existing `/{story}/{subject}` and `/{story}/{subject}/{key}` routes are
 unversioned transitional routes. They may coexist with `/api/v1` while v1
 services are implemented, but they are not aliases and v1 clients must never
 fall back to them.
+
+During migration, the current `/auth/login-url`, `/auth/callback`, and
+`/auth/user` routes remain compatibility endpoints for the current Latte
+client. Their v1 replacements are `/api/v1/auth/login-intents`,
+`/api/v1/auth/callback`, and `/api/v1/session`. New invitation activation is
+implemented only in v1. The compatibility endpoints follow the same origin,
+redirect, OAuth-state, safe-error, session, and CSRF invariants and are removed
+under the policy below after Latte migrates.
 
 Migration proceeds endpoint family by endpoint family:
 

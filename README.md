@@ -80,8 +80,9 @@ Pane keeps isolated unit tests under `tests/Unit` and database-backed integratio
 
 The exact versioned routes, verification order, envelopes, statuses, error
 codes, and migration policy are defined in the [Phase-One HTTP API](docs/api-v1.md).
-Frontend consumers can validate against the machine-readable
-[`contracts/pane-v1.json`](contracts/pane-v1.json) fixture.
+Frontend consumers can validate requests and responses or generate clients from
+the machine-readable OpenAPI 3.1
+[`contracts/pane-v1.json`](contracts/pane-v1.json) contract.
 
 ## Static analysis
 
