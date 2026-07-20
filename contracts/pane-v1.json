@@ -1,0 +1,101 @@
+{
+  "contract": "pane-http-api",
+  "version": "1.0.0",
+  "base_path": "/api/v1",
+  "media_type": "application/json",
+  "identifiers": {
+    "resources": "uuid",
+    "row_key": "string",
+    "request_id": "uuid"
+  },
+  "application": {
+    "header": "X-Pane-Application-Id",
+    "trusted_origin_required": true,
+    "organization_source": "registered_application",
+    "browser_organization_selection": false
+  },
+  "request_correlation": {
+    "header": "X-Request-Id",
+    "success_path": "meta.request_id",
+    "error_path": "error.request_id"
+  },
+  "organization_resolution_order": [
+    "request_id",
+    "application_and_origin",
+    "session_and_csrf",
+    "fixed_organization_match",
+    "active_organization",
+    "active_membership_and_role",
+    "organization_owned_resource",
+    "grant_catalog_operation_ownership_concurrency"
+  ],
+  "pagination": {
+    "cursor_parameter": "page[cursor]",
+    "limit_parameter": "page[limit]",
+    "default_limit": 25,
+    "maximum_limit": 100
+  },
+  "concurrency": {
+    "response_header": "ETag",
+    "request_header": "If-Match",
+    "required_status": 428,
+    "conflict_status": 412
+  },
+  "envelopes": {
+    "success": {"required": ["data", "meta.request_id"]},
+    "collection": {"required": ["data", "meta.request_id", "meta.page.next_cursor", "meta.page.has_more"]},
+    "error": {"required": ["error.code", "error.message", "error.request_id"], "optional": ["error.details"]}
+  },
+  "paths": {
+    "/session": {"GET": 200, "DELETE": 204},
+    "/installation/organizations": {"GET": 200, "POST": 201},
+    "/installation/organizations/{organization_id}": {"GET": 200, "PATCH": 200},
+    "/installation/applications": {"GET": 200, "POST": 201},
+    "/installation/applications/{application_id}": {"GET": 200, "PATCH": 200, "DELETE": 204},
+    "/installation/pane-admin-invitations": {"GET": 200, "POST": 201},
+    "/installation/pane-admin-invitations/{invitation_id}": {"DELETE": 204},
+    "/installation/impersonations": {"POST": 201},
+    "/installation/impersonations/{impersonation_id}": {"DELETE": 204},
+    "/installation/audit-events": {"GET": 200},
+    "/organizations/{organization_id}/memberships": {"GET": 200},
+    "/organizations/{organization_id}/memberships/{membership_id}": {"GET": 200, "PATCH": 200},
+    "/organizations/{organization_id}/invitations": {"GET": 200, "POST": 201},
+    "/organizations/{organization_id}/invitations/{invitation_id}": {"GET": 200, "DELETE": 204},
+    "/organizations/{organization_id}/invitations/{invitation_id}/resends": {"POST": 201},
+    "/organizations/{organization_id}/connections": {"GET": 200, "POST": 201},
+    "/organizations/{organization_id}/connections/{connection_id}": {"GET": 200, "PATCH": 200, "DELETE": 204},
+    "/organizations/{organization_id}/connections/{connection_id}/test": {"POST": 200},
+    "/organizations/{organization_id}/connections/{connection_id}/catalog-refreshes": {"POST": 202},
+    "/organizations/{organization_id}/connections/{connection_id}/grants": {"GET": 200, "PUT": 200},
+    "/organizations/{organization_id}/connections/{connection_id}/catalog": {"GET": 200},
+    "/organizations/{organization_id}/connections/{connection_id}/catalog/{catalog_object_id}": {"GET": 200, "PATCH": 200},
+    "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows": {"GET": 200, "POST": 201},
+    "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}": {"GET": 200, "PATCH": 200, "DELETE": 204},
+    "/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}/restore": {"POST": 200},
+    "/organizations/{organization_id}/audit-events": {"GET": 200}
+  },
+  "error_codes": {
+    "400": ["invalid_request", "invalid_cursor", "invalid_identifier"],
+    "401": ["authentication_required", "session_expired"],
+    "403": ["application_not_allowed", "organization_context_mismatch", "organization_inactive", "membership_required", "permission_denied", "csrf_failed", "impersonation_required"],
+    "404": ["resource_not_found"],
+    "409": ["quota_exceeded", "duplicate_resource", "table_contract_incompatible", "operation_conflict"],
+    "412": ["version_conflict"],
+    "422": ["validation_failed", "connection_policy_rejected", "connection_test_failed"],
+    "428": ["precondition_required"],
+    "429": ["rate_limited"],
+    "500": ["internal_error"],
+    "503": ["dependency_unavailable"]
+  },
+  "forbidden_inputs": [
+    "raw_sql",
+    "physical_identifier",
+    "connection_secret_response",
+    "browser_selected_organization"
+  ],
+  "legacy": {
+    "patterns": ["/{story}/{subject}", "/{story}/{subject}/{key}"],
+    "part_of_v1": false,
+    "new_capabilities_allowed": false
+  }
+}
