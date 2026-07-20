@@ -164,6 +164,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
                     }
                 },
                 "summary": "Get Session",
@@ -192,6 +195,9 @@
                             }
                         }
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
                     }
@@ -216,6 +222,12 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/OrganizationCollection"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
                     },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
@@ -247,6 +259,9 @@
                     "201": {
                         "$ref": "#/components/responses/Organization"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
                     },
@@ -271,6 +286,9 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Organization"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
                     },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
@@ -313,6 +331,9 @@
                     "200": {
                         "$ref": "#/components/responses/Organization"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
                     },
@@ -350,6 +371,12 @@
                     "200": {
                         "$ref": "#/components/responses/ApplicationCollection"
                     },
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
                     }
@@ -380,6 +407,12 @@
                     "201": {
                         "$ref": "#/components/responses/Application"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
                     },
@@ -401,6 +434,12 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Application"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -440,6 +479,15 @@
                     "200": {
                         "$ref": "#/components/responses/Application"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
                     },
@@ -476,6 +524,15 @@
                                 "$ref": "#/components/headers/RequestId"
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
@@ -515,6 +572,9 @@
                     "201": {
                         "$ref": "#/components/responses/Impersonation"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
                     },
@@ -548,6 +608,12 @@
                             }
                         }
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     }
@@ -573,7 +639,13 @@
                     "200": {
                         "$ref": "#/components/responses/InvitationCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
                     }
                 },
@@ -603,11 +675,20 @@
                     "201": {
                         "$ref": "#/components/responses/Invitation"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
                     }
                 },
                 "summary": "Create Pane Admin Invitation"
@@ -639,6 +720,15 @@
                             }
                         }
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -667,7 +757,13 @@
                     "200": {
                         "$ref": "#/components/responses/AuditEventCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
                     }
                 },
@@ -695,8 +791,17 @@
                     "200": {
                         "$ref": "#/components/responses/MembershipCollection"
                     },
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "List Memberships"
@@ -719,6 +824,12 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Membership"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -759,6 +870,15 @@
                     "200": {
                         "$ref": "#/components/responses/Membership"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
                     },
@@ -796,8 +916,17 @@
                     "200": {
                         "$ref": "#/components/responses/InvitationCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "List Organization Invitations"
@@ -829,11 +958,23 @@
                     "201": {
                         "$ref": "#/components/responses/Invitation"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
                     }
                 },
                 "summary": "Create Organization Invitation"
@@ -856,6 +997,12 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Invitation"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -891,6 +1038,15 @@
                             }
                         }
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -925,11 +1081,23 @@
                     "201": {
                         "$ref": "#/components/responses/Invitation"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
                     }
                 },
                 "summary": "Resend Organization Invitation"
@@ -956,8 +1124,17 @@
                     "200": {
                         "$ref": "#/components/responses/ConnectionCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "List Connections"
@@ -989,6 +1166,15 @@
                     "201": {
                         "$ref": "#/components/responses/Connection"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "409": {
                         "$ref": "#/components/responses/Conflict"
                     },
@@ -1016,6 +1202,12 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Connection"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1055,6 +1247,15 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Connection"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
@@ -1096,6 +1297,15 @@
                             }
                         }
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -1127,8 +1337,20 @@
                     "200": {
                         "$ref": "#/components/responses/ConnectionTest"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
                     }
                 },
                 "summary": "Test Connection"
@@ -1155,8 +1377,17 @@
                     "202": {
                         "$ref": "#/components/responses/CatalogRefresh"
                     },
-                    "4XX": {
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
                     }
                 },
                 "summary": "Refresh Catalog"
@@ -1196,6 +1427,15 @@
                     "200": {
                         "$ref": "#/components/responses/Grant"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
                     }
@@ -1230,8 +1470,14 @@
                             }
                         }
                     },
-                    "4XX": {
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "Delete Connection Grant"
@@ -1261,8 +1507,17 @@
                     "200": {
                         "$ref": "#/components/responses/CatalogObjectCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "Get Catalog"
@@ -1289,8 +1544,14 @@
                     "200": {
                         "$ref": "#/components/responses/CatalogObject"
                     },
-                    "4XX": {
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "Get Catalog Object"
@@ -1331,8 +1592,20 @@
                     "200": {
                         "$ref": "#/components/responses/CatalogObject"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
@@ -1374,8 +1647,17 @@
                     "200": {
                         "$ref": "#/components/responses/RowCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "List Rows"
@@ -1413,6 +1695,15 @@
                     "201": {
                         "$ref": "#/components/responses/Row"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
                     }
@@ -1443,6 +1734,12 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Row"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1488,6 +1785,15 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/Row"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
@@ -1535,6 +1841,15 @@
                             }
                         }
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -1575,6 +1890,15 @@
                     "200": {
                         "$ref": "#/components/responses/Row"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -1606,8 +1930,17 @@
                     "200": {
                         "$ref": "#/components/responses/AuditEventCollection"
                     },
-                    "4XX": {
+                    "400": {
+                        "$ref": "#/components/responses/InvalidRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "summary": "List Organization Audit Events"
@@ -1773,7 +2106,10 @@
                 "in": "header",
                 "required": false,
                 "schema": {
-                    "$ref": "#/components/schemas/Uuid"
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "A valid UUID is echoed; any other value is ignored and replaced with a generated UUID."
                 }
             }
         },
@@ -1826,68 +2162,6 @@
                 },
                 "additionalProperties": false
             },
-            "Error": {
-                "type": "object",
-                "required": [
-                    "error"
-                ],
-                "properties": {
-                    "error": {
-                        "type": "object",
-                        "required": [
-                            "code",
-                            "message",
-                            "request_id"
-                        ],
-                        "properties": {
-                            "code": {
-                                "$ref": "#/components/schemas/ErrorCode"
-                            },
-                            "message": {
-                                "type": "string"
-                            },
-                            "details": {
-                                "type": "object"
-                            },
-                            "request_id": {
-                                "$ref": "#/components/schemas/Uuid"
-                            }
-                        },
-                        "additionalProperties": false
-                    }
-                },
-                "additionalProperties": false
-            },
-            "ErrorCode": {
-                "type": "string",
-                "enum": [
-                    "invalid_request",
-                    "invalid_cursor",
-                    "invalid_identifier",
-                    "authentication_required",
-                    "session_expired",
-                    "application_not_allowed",
-                    "organization_context_mismatch",
-                    "organization_inactive",
-                    "membership_required",
-                    "permission_denied",
-                    "csrf_failed",
-                    "impersonation_required",
-                    "resource_not_found",
-                    "quota_exceeded",
-                    "duplicate_resource",
-                    "table_contract_incompatible",
-                    "operation_conflict",
-                    "version_conflict",
-                    "validation_failed",
-                    "connection_policy_rejected",
-                    "connection_test_failed",
-                    "precondition_required",
-                    "rate_limited",
-                    "internal_error",
-                    "dependency_unavailable"
-                ]
-            },
             "LoginIntentInput": {
                 "type": "object",
                 "required": [
@@ -1897,7 +2171,8 @@
                     "redirect_to": {
                         "type": "string",
                         "format": "uri",
-                        "maxLength": 2048
+                        "maxLength": 2048,
+                        "description": "Must exactly match a normalized redirect URI on the resolved active application registration."
                     },
                     "invitation_token": {
                         "type": "string",
@@ -2405,83 +2680,144 @@
                 "additionalProperties": false
             },
             "ApplicationResource": {
-                "type": "object",
-                "required": [
-                    "id",
-                    "type",
-                    "attributes"
-                ],
-                "properties": {
-                    "id": {
-                        "$ref": "#/components/schemas/Uuid"
-                    },
-                    "type": {
-                        "const": "application"
-                    },
-                    "attributes": {
+                "oneOf": [
+                    {
                         "type": "object",
                         "required": [
-                            "name",
-                            "kind",
-                            "organization_id",
-                            "trusted_origin",
-                            "redirect_uris",
-                            "status",
-                            "created_at",
-                            "updated_at"
+                            "id",
+                            "type",
+                            "attributes"
                         ],
                         "properties": {
-                            "name": {
-                                "type": "string"
+                            "id": {
+                                "$ref": "#/components/schemas/Uuid"
                             },
-                            "kind": {
-                                "type": "string",
-                                "enum": [
-                                    "latte",
-                                    "burro"
-                                ]
+                            "type": {
+                                "const": "application"
                             },
-                            "organization_id": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Uuid"
+                            "attributes": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "kind",
+                                    "organization_id",
+                                    "trusted_origin",
+                                    "redirect_uris",
+                                    "status",
+                                    "created_at",
+                                    "updated_at"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
                                     },
-                                    {
+                                    "trusted_origin": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    },
+                                    "redirect_uris": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uri"
+                                        }
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "active",
+                                            "disabled"
+                                        ]
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "kind": {
+                                        "const": "latte"
+                                    },
+                                    "organization_id": {
+                                        "$ref": "#/components/schemas/Uuid"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    {
+                        "type": "object",
+                        "required": [
+                            "id",
+                            "type",
+                            "attributes"
+                        ],
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/Uuid"
+                            },
+                            "type": {
+                                "const": "application"
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "kind",
+                                    "organization_id",
+                                    "trusted_origin",
+                                    "redirect_uris",
+                                    "status",
+                                    "created_at",
+                                    "updated_at"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "trusted_origin": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    },
+                                    "redirect_uris": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uri"
+                                        }
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "active",
+                                            "disabled"
+                                        ]
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "kind": {
+                                        "const": "burro"
+                                    },
+                                    "organization_id": {
                                         "type": "null"
                                     }
-                                ]
-                            },
-                            "trusted_origin": {
-                                "type": "string",
-                                "format": "uri"
-                            },
-                            "redirect_uris": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string",
-                                    "format": "uri"
-                                }
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": [
-                                    "active",
-                                    "disabled"
-                                ]
-                            },
-                            "created_at": {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            "updated_at": {
-                                "type": "string",
-                                "format": "date-time"
+                                },
+                                "additionalProperties": false
                             }
                         },
                         "additionalProperties": false
                     }
-                },
-                "additionalProperties": false
+                ]
             },
             "MembershipResource": {
                 "type": "object",
@@ -2543,87 +2879,146 @@
                 "additionalProperties": false
             },
             "InvitationResource": {
-                "type": "object",
-                "required": [
-                    "id",
-                    "type",
-                    "attributes"
-                ],
-                "properties": {
-                    "id": {
-                        "$ref": "#/components/schemas/Uuid"
-                    },
-                    "type": {
-                        "const": "invitation"
-                    },
-                    "attributes": {
+                "oneOf": [
+                    {
                         "type": "object",
                         "required": [
-                            "scope",
-                            "organization_id",
-                            "email",
-                            "role",
-                            "status",
-                            "expires_at",
-                            "created_at",
-                            "updated_at"
+                            "id",
+                            "type",
+                            "attributes"
                         ],
                         "properties": {
-                            "scope": {
-                                "type": "string",
-                                "enum": [
-                                    "installation",
-                                    "organization"
-                                ]
+                            "id": {
+                                "$ref": "#/components/schemas/Uuid"
                             },
-                            "organization_id": {
-                                "oneOf": [
-                                    {
+                            "type": {
+                                "const": "invitation"
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "required": [
+                                    "scope",
+                                    "organization_id",
+                                    "email",
+                                    "role",
+                                    "status",
+                                    "expires_at",
+                                    "created_at",
+                                    "updated_at"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "accepted",
+                                            "revoked",
+                                            "expired"
+                                        ]
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "scope": {
+                                        "const": "installation"
+                                    },
+                                    "organization_id": {
+                                        "type": "null"
+                                    },
+                                    "role": {
+                                        "const": "pane_administrator"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    {
+                        "type": "object",
+                        "required": [
+                            "id",
+                            "type",
+                            "attributes"
+                        ],
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/Uuid"
+                            },
+                            "type": {
+                                "const": "invitation"
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "required": [
+                                    "scope",
+                                    "organization_id",
+                                    "email",
+                                    "role",
+                                    "status",
+                                    "expires_at",
+                                    "created_at",
+                                    "updated_at"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "accepted",
+                                            "revoked",
+                                            "expired"
+                                        ]
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "scope": {
+                                        "const": "organization"
+                                    },
+                                    "organization_id": {
                                         "$ref": "#/components/schemas/Uuid"
                                     },
-                                    {
-                                        "type": "null"
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "organization_administrator",
+                                            "organization_user"
+                                        ]
                                     }
-                                ]
-                            },
-                            "email": {
-                                "type": "string",
-                                "format": "email"
-                            },
-                            "role": {
-                                "type": "string",
-                                "enum": [
-                                    "pane_administrator",
-                                    "organization_administrator",
-                                    "organization_user"
-                                ]
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": [
-                                    "pending",
-                                    "accepted",
-                                    "revoked",
-                                    "expired"
-                                ]
-                            },
-                            "expires_at": {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            "created_at": {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            "updated_at": {
-                                "type": "string",
-                                "format": "date-time"
+                                },
+                                "additionalProperties": false
                             }
                         },
                         "additionalProperties": false
                     }
-                },
-                "additionalProperties": false
+                ]
             },
             "ImpersonationResource": {
                 "type": "object",
@@ -3485,137 +3880,440 @@
                 }
             },
             "InvalidRequest": {
-                "description": "Invalid request",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 400",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "invalid_request",
+                                                "invalid_cursor",
+                                                "invalid_identifier"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "Unauthenticated": {
-                "description": "Authentication required",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 401",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "authentication_required",
+                                                "session_expired"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "Forbidden": {
-                "description": "Forbidden",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 403",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "organization_context_mismatch",
+                                                "organization_inactive",
+                                                "membership_required",
+                                                "permission_denied",
+                                                "csrf_failed",
+                                                "impersonation_required"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "NotFound": {
-                "description": "Resource not found",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 404",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "resource_not_found"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "Conflict": {
-                "description": "Conflict",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 409",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "quota_exceeded",
+                                                "duplicate_resource",
+                                                "table_contract_incompatible",
+                                                "operation_conflict"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "VersionConflict": {
-                "description": "ETag mismatch",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 412",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "version_conflict"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "ValidationFailed": {
-                "description": "Validation failed",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 422",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "validation_failed",
+                                                "connection_policy_rejected",
+                                                "connection_test_failed",
+                                                "redirect_not_allowed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "PreconditionRequired": {
-                "description": "If-Match required",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 428",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "precondition_required"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
             "RateLimited": {
-                "description": "Rate limited",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                },
+                "description": "HTTP 429",
                 "headers": {
                     "X-Request-Id": {
                         "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "rate_limited"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
                     }
                 }
             },
@@ -4074,5 +4772,21 @@
         "connection_secret_response",
         "browser_selected_application",
         "browser_selected_organization"
-    ]
+    ],
+    "x-pane-redirect-validation": {
+        "source": "active_application_redirect_uris",
+        "match": "exact_after_normalization",
+        "normalization": [
+            "lowercase_scheme_and_host",
+            "remove_default_port",
+            "empty_path_becomes_slash",
+            "preserve_path_and_query"
+        ],
+        "credentials_allowed": false,
+        "fragment_allowed": false,
+        "https_required": true,
+        "http_allowed_for_local_and_testing": true,
+        "mismatch_status": 422,
+        "mismatch_code": "redirect_not_allowed"
+    }
 }

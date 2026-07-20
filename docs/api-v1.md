@@ -40,7 +40,8 @@ can select or change the application organization.
 Clients may send a UUID in `X-Request-Id`. Pane returns that value when valid or
 generates a UUID, returns it in the same response header, and includes it in
 `meta.request_id` or `error.request_id`. Invalid request IDs are replaced, not
-reflected.
+reflected. The request header accepts a bounded string so middleware can apply
+that replacement rule; response request IDs are always UUIDs.
 
 Browser requests use Pane's Laravel session cookie. `POST /csrf-cookie` issues
 the CSRF cookie from an Origin-validated request; mutating authenticated requests use the existing
@@ -131,6 +132,13 @@ suspension, or organization suspension/closure.
 The exact parameters, request and response schemas, required headers, method
 matrix, and status codes are in the OpenAPI contract.
 
+`redirect_to` must exactly match a URI on the active application's redirect
+allowlist after lowercasing scheme and host, removing a default port, and
+normalizing an empty path to `/`. Path and query remain significant. Credentials
+and fragments are forbidden. HTTPS is required outside local/test environments.
+A mismatch returns `422 redirect_not_allowed`; Pane never redirects to a
+partially matched origin, suffix, wildcard, or caller-derived fallback.
+
 Invitation creation never accepts a caller-selected expiry. Pane-admin
 invitations resolve the installation setting; organization invitations resolve
 the organization override, then installation setting, then versioned default.
@@ -181,7 +189,9 @@ Errors have one stable shape:
 }
 ```
 
-`details` is optional and machine-readable. Production messages are safe and
+`details` is optional and machine-readable. Each OpenAPI operation declares its
+exact error statuses, and each status constrains the allowed machine codes.
+Production messages are safe and
 do not contain SQL, credentials, internal hosts, source paths, stack traces, or
 unfiltered upstream errors. Stable v1 codes are:
 
@@ -193,7 +203,7 @@ unfiltered upstream errors. Stable v1 codes are:
 | 404 | `resource_not_found` |
 | 409 | `quota_exceeded`, `duplicate_resource`, `table_contract_incompatible`, `operation_conflict` |
 | 412 | `version_conflict` |
-| 422 | `validation_failed`, `connection_policy_rejected`, `connection_test_failed` |
+| 422 | `validation_failed`, `connection_policy_rejected`, `connection_test_failed`, `redirect_not_allowed` |
 | 428 | `precondition_required` |
 | 429 | `rate_limited` |
 | 500 | `internal_error` |

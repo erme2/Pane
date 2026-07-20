@@ -176,6 +176,35 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
+    public function test_application_and_invitation_responses_are_discriminated(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+
+        $this->assertCount(2, $schemas['ApplicationResource']['oneOf']);
+        $this->assertSame(
+            'latte',
+            $schemas['ApplicationResource']['oneOf'][0]['properties']['attributes']['properties']['kind']['const'],
+        );
+        $this->assertSame(
+            '#/components/schemas/Uuid',
+            $schemas['ApplicationResource']['oneOf'][0]['properties']['attributes']['properties']['organization_id']['$ref'],
+        );
+        $this->assertSame(
+            'null',
+            $schemas['ApplicationResource']['oneOf'][1]['properties']['attributes']['properties']['organization_id']['type'],
+        );
+
+        $this->assertCount(2, $schemas['InvitationResource']['oneOf']);
+        $this->assertSame(
+            'pane_administrator',
+            $schemas['InvitationResource']['oneOf'][0]['properties']['attributes']['properties']['role']['const'],
+        );
+        $this->assertSame(
+            ['organization_administrator', 'organization_user'],
+            $schemas['InvitationResource']['oneOf'][1]['properties']['attributes']['properties']['role']['enum'],
+        );
+    }
+
     public function test_create_schemas_reject_invalid_application_invitation_and_empty_resources(): void
     {
         $schemas = $this->contract['components']['schemas'];
@@ -201,6 +230,78 @@ class PaneV1ContractTest extends TestCase
         $this->assertArrayNotHasKey('expires_in_seconds', $schemas['PaneAdminInvitationCreate']['properties']);
         $this->assertArrayNotHasKey('expires_in_seconds', $schemas['OrganizationInvitationCreate']['properties']);
         $this->assertStringContainsString('never accepts a caller-selected expiry', $this->documentation);
+    }
+
+    public function test_errors_use_exact_statuses_and_status_specific_codes(): void
+    {
+        $responseByStatus = [
+            '400' => 'InvalidRequest',
+            '401' => 'Unauthenticated',
+            '403' => 'Forbidden',
+            '404' => 'NotFound',
+            '409' => 'Conflict',
+            '412' => 'VersionConflict',
+            '422' => 'ValidationFailed',
+            '428' => 'PreconditionRequired',
+            '429' => 'RateLimited',
+        ];
+
+        foreach ($this->contract['paths'] as $path => $pathItem) {
+            foreach ($pathItem as $method => $operation) {
+                if (! in_array($method, ['get', 'post', 'put', 'patch', 'delete'], true)) {
+                    continue;
+                }
+
+                $this->assertArrayNotHasKey('4XX', $operation['responses'], $path.' '.$method.' must use exact errors');
+
+                foreach ($operation['responses'] as $status => $response) {
+                    if (! isset($responseByStatus[$status])) {
+                        continue;
+                    }
+
+                    $this->assertSame(
+                        '#/components/responses/'.$responseByStatus[$status],
+                        $response['$ref'],
+                        $path.' '.$method.' '.$status.' must use its status-specific error schema',
+                    );
+                }
+            }
+        }
+
+        $responses = $this->contract['components']['responses'];
+        $this->assertSame(
+            ['resource_not_found'],
+            $responses['NotFound']['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
+        );
+        $this->assertContains(
+            'redirect_not_allowed',
+            $responses['ValidationFailed']['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
+        );
+    }
+
+    public function test_request_id_input_allows_replacement_but_output_is_uuid(): void
+    {
+        $input = $this->contract['components']['parameters']['RequestId']['schema'];
+        $output = $this->contract['components']['headers']['RequestId']['schema'];
+
+        $this->assertSame('string', $input['type']);
+        $this->assertSame(128, $input['maxLength']);
+        $this->assertArrayNotHasKey('format', $input);
+        $this->assertStringContainsString('replaced', $input['description']);
+        $this->assertSame('#/components/schemas/Uuid', $output['$ref']);
+    }
+
+    public function test_login_redirect_requires_normalized_exact_allowlist_match(): void
+    {
+        $redirect = $this->contract['x-pane-redirect-validation'];
+
+        $this->assertSame('active_application_redirect_uris', $redirect['source']);
+        $this->assertSame('exact_after_normalization', $redirect['match']);
+        $this->assertFalse($redirect['credentials_allowed']);
+        $this->assertFalse($redirect['fragment_allowed']);
+        $this->assertSame(422, $redirect['mismatch_status']);
+        $this->assertSame('redirect_not_allowed', $redirect['mismatch_code']);
+        $this->assertStringContainsString('exactly match', $this->documentation);
     }
 
     public function test_pagination_concurrency_row_keys_and_grants_are_exact(): void
