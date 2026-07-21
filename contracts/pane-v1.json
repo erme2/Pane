@@ -2552,9 +2552,9 @@
                 "in": "header",
                 "required": true,
                 "schema": {
-                    "type": "string",
-                    "minLength": 3
-                }
+                    "$ref": "#/components/schemas/StrongEtag"
+                },
+                "description": "The exact strong ETag returned by the current resource representation. Missing, malformed, wildcard, and weak validators have distinct outcomes defined by x-pane-etag."
             },
             "PageCursor": {
                 "name": "page[cursor]",
@@ -2622,7 +2622,7 @@
                 "in": "header",
                 "required": true,
                 "schema": {
-                    "$ref": "#/components/schemas/TrustedOrigin"
+                    "$ref": "#/components/schemas/OriginTransport"
                 },
                 "description": "Browser-controlled serialized origin preserved by the trusted proxy. Before authentication it resolves the application; after server-side session binding it may only be compared with the session application and never selects a different application."
             },
@@ -2631,7 +2631,7 @@
                 "in": "header",
                 "required": false,
                 "schema": {
-                    "$ref": "#/components/schemas/TrustedOrigin"
+                    "$ref": "#/components/schemas/OriginTransport"
                 },
                 "description": "Validated against the immutable server-session application when supplied. Its absence on a same-origin read is allowed and never changes application context."
             }
@@ -4463,6 +4463,18 @@
                     }
                 },
                 "additionalProperties": false
+            },
+            "OriginTransport": {
+                "type": "string",
+                "description": "Raw transport header inspected by application-resolution middleware before OpenAPI parameter validation. It is never used directly as an application identifier."
+            },
+            "StrongEtag": {
+                "type": "string",
+                "pattern": "^\"[A-Za-z0-9._~-]{1,128}\"$",
+                "description": "Quoted strong opaque validator. Weak validators and wildcard preconditions are forbidden in v1.",
+                "examples": [
+                    "\"v1-01J2ABCDEF\""
+                ]
             }
         },
         "responses": {
@@ -6362,8 +6374,9 @@
             "ETag": {
                 "required": true,
                 "schema": {
-                    "type": "string"
-                }
+                    "$ref": "#/components/schemas/StrongEtag"
+                },
+                "description": "Strong validator for the returned mutable resource representation."
             }
         }
     },
@@ -7793,6 +7806,146 @@
             {
                 "input": "http://example.test/callback",
                 "reason": "http_requires_loopback"
+            }
+        ]
+    },
+    "x-pane-origin-validation": {
+        "order": [
+            "request_id_middleware",
+            "origin_transport_middleware",
+            "openapi_parameter_validation",
+            "session_authentication",
+            "authorization"
+        ],
+        "required_parameter": "OriginRequired",
+        "optional_parameter": "OriginOptional",
+        "parser": "canonical_serialized_origin",
+        "required_failures": {
+            "missing": {
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            "opaque_null": {
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            "malformed": {
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            "unregistered": {
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            "session_mismatch": {
+                "status": 403,
+                "code": "application_not_allowed"
+            }
+        },
+        "optional_read": {
+            "missing": "continue_with_server_session_application",
+            "supplied_invalid_or_mismatched": {
+                "status": 403,
+                "code": "application_not_allowed"
+            }
+        },
+        "examples": [
+            {
+                "operation": "createLoginIntent",
+                "value": null,
+                "case": "missing",
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            {
+                "operation": "createLoginIntent",
+                "value": "null",
+                "case": "opaque_null",
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            {
+                "operation": "createLoginIntent",
+                "value": "not an origin",
+                "case": "malformed",
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            {
+                "operation": "createLoginIntent",
+                "value": "https://unknown.example.test",
+                "case": "unregistered",
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            {
+                "operation": "deleteSession",
+                "value": "https://other.example.test",
+                "case": "session_mismatch",
+                "status": 403,
+                "code": "application_not_allowed"
+            },
+            {
+                "operation": "getSession",
+                "value": null,
+                "case": "optional_missing",
+                "status": 200
+            }
+        ]
+    },
+    "x-pane-etag": {
+        "schema": "#/components/schemas/StrongEtag",
+        "comparison": "strong",
+        "wildcard_allowed": false,
+        "weak_allowed": false,
+        "outcomes": {
+            "missing": {
+                "status": 428,
+                "code": "precondition_required"
+            },
+            "malformed": {
+                "status": 400,
+                "code": "invalid_request"
+            },
+            "wildcard": {
+                "status": 400,
+                "code": "invalid_request"
+            },
+            "weak": {
+                "status": 400,
+                "code": "invalid_request"
+            },
+            "syntactically_valid_stale": {
+                "status": 412,
+                "code": "version_conflict"
+            },
+            "current": "continue"
+        },
+        "accepted": [
+            "\"v1-01J2ABCDEF\"",
+            "\"revision_42\"",
+            "\"a.b~c\""
+        ],
+        "rejected": [
+            {
+                "value": "abc",
+                "reason": "unquoted"
+            },
+            {
+                "value": "\"\"",
+                "reason": "empty"
+            },
+            {
+                "value": "W/\"revision_42\"",
+                "reason": "weak"
+            },
+            {
+                "value": "*",
+                "reason": "wildcard"
+            },
+            {
+                "value": "\"contains space\"",
+                "reason": "unsupported_character"
             }
         ]
     }

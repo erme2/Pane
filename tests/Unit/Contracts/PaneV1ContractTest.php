@@ -162,8 +162,30 @@ class PaneV1ContractTest extends TestCase
         $parameters = $this->contract['components']['parameters'];
         $this->assertTrue($parameters['OriginRequired']['required']);
         $this->assertFalse($parameters['OriginOptional']['required']);
-        $this->assertSame('#/components/schemas/TrustedOrigin', $parameters['OriginRequired']['schema']['$ref']);
+        $this->assertSame('#/components/schemas/OriginTransport', $parameters['OriginRequired']['schema']['$ref']);
         $this->assertStringContainsString('server-side session', $parameters['OriginRequired']['description']);
+
+        $validation = $this->contract['x-pane-origin-validation'];
+        $this->assertSame('origin_transport_middleware', $validation['order'][1]);
+        $this->assertSame('openapi_parameter_validation', $validation['order'][2]);
+
+        foreach (['missing', 'opaque_null', 'malformed', 'unregistered', 'session_mismatch'] as $case) {
+            $this->assertSame(403, $validation['required_failures'][$case]['status']);
+            $this->assertSame('application_not_allowed', $validation['required_failures'][$case]['code']);
+        }
+
+        $this->assertSame(
+            'continue_with_server_session_application',
+            $validation['optional_read']['missing'],
+        );
+
+        foreach ($validation['examples'] as $example) {
+            $operation = $this->contract['x-pane-operation-errors'][$example['operation']];
+
+            if ($example['status'] === 403) {
+                $this->assertContains($example['code'], $operation['403']);
+            }
+        }
     }
 
     public function test_connection_secrets_are_write_only_and_absent_from_responses(): void
@@ -422,6 +444,46 @@ class PaneV1ContractTest extends TestCase
         $this->assertTrue($lifecycle['disable']['release_canonical_origin_for_active_uniqueness']);
         $this->assertSame(409, $lifecycle['enable']['conflict_status']);
         $this->assertSame('duplicate_resource', $lifecycle['enable']['conflict_code']);
+    }
+
+    public function test_etag_and_if_match_share_one_strong_validator_contract(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $parameters = $this->contract['components']['parameters'];
+        $headers = $this->contract['components']['headers'];
+        $etag = $this->contract['x-pane-etag'];
+        $pattern = '#'.$schemas['StrongEtag']['pattern'].'#D';
+
+        $this->assertSame('#/components/schemas/StrongEtag', $parameters['IfMatch']['schema']['$ref']);
+        $this->assertSame('#/components/schemas/StrongEtag', $headers['ETag']['schema']['$ref']);
+        $this->assertSame('strong', $etag['comparison']);
+        $this->assertFalse($etag['wildcard_allowed']);
+        $this->assertFalse($etag['weak_allowed']);
+
+        foreach ($etag['accepted'] as $value) {
+            $this->assertSame(1, preg_match($pattern, $value), $value.' must be accepted');
+        }
+
+        foreach ($etag['rejected'] as $example) {
+            $this->assertSame(0, preg_match($pattern, $example['value']), $example['reason']);
+        }
+
+        $this->assertSame(['status' => 428, 'code' => 'precondition_required'], $etag['outcomes']['missing']);
+        $this->assertSame(['status' => 400, 'code' => 'invalid_request'], $etag['outcomes']['malformed']);
+        $this->assertSame(['status' => 412, 'code' => 'version_conflict'], $etag['outcomes']['syntactically_valid_stale']);
+
+        foreach ($this->contract['paths'] as $path => $pathItem) {
+            foreach ($pathItem as $method => $operation) {
+                if (! in_array('#/components/parameters/IfMatch', array_column($operation['parameters'] ?? [], '$ref'), true)) {
+                    continue;
+                }
+
+                $matrix = $this->contract['x-pane-operation-errors'][$operation['operationId']];
+                $this->assertContains('invalid_request', $matrix['400'], $path.' '.$method.' malformed If-Match');
+                $this->assertSame(['version_conflict'], $matrix['412'], $path.' '.$method.' stale If-Match');
+                $this->assertSame(['precondition_required'], $matrix['428'], $path.' '.$method.' missing If-Match');
+            }
+        }
     }
 
     public function test_login_redirect_requires_normalized_exact_allowlist_match(): void

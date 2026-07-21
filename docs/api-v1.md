@@ -28,9 +28,16 @@ OpenAPI represents this trust input explicitly. `Origin` is required on the
 CSRF bootstrap, login intent, callback, and every authenticated mutation, and
 optional on authenticated reads. The browser controls this forbidden header and
 the trusted proxy preserves it; generated clients document it but browser code
-does not synthesize it. Before authentication it resolves the application.
-After Pane binds an application UUID into the server-side session, `Origin` is
-comparison-only and can never select a different application.
+does not synthesize it. Origin middleware receives the raw transport string
+before OpenAPI parameter validation. On a required operation, a missing,
+opaque `null`, malformed, unregistered, or session-mismatched value returns
+`403 application_not_allowed`. On a read, absence continues with the immutable
+server-session application, while an invalid or mismatched supplied value
+returns the same 403. Before authentication a valid registered origin resolves
+the application. After Pane binds an application UUID into the server-side
+session, `Origin` is comparison-only and can never select another application.
+The structured order, outcomes, and examples are normative in
+`x-pane-origin-validation`.
 
 Every trusted origin is globally unique among active registrations in one Pane
 installation. Registration and origin updates reject a duplicate with
@@ -209,10 +216,13 @@ Collections use opaque cursor pagination with `page[cursor]` and
 must not parse or construct cursors.
 
 Mutable resources return an `ETag`. Update, delete, restore, role, description,
-and lifecycle operations require that value in `If-Match`. A missing precondition
-returns `428 precondition_required`; a stale value returns
-`412 version_conflict`. Create operations and action requests that do not update
-an existing resource do not require `If-Match`.
+and lifecycle operations require that value in `If-Match`. V1 uses one quoted
+strong opaque-tag grammar for both headers; weak validators and `*` are
+forbidden. A missing precondition returns `428 precondition_required`, malformed,
+weak, or wildcard input returns `400 invalid_request`, and a syntactically valid
+stale value returns `412 version_conflict`. `x-pane-etag` publishes normative
+accepted/rejected vectors. Create operations and action requests that do not
+update an existing resource do not require `If-Match`.
 
 `POST` creates a resource or starts an auditable action and returns `201` or
 `202` as declared by the fixture. `PATCH` returns `200`, `DELETE` returns `204`,
