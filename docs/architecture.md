@@ -491,10 +491,16 @@ own presentation and recovery UI. Pane owns HTTP status, validation details,
 authorization decisions, and request correlation IDs. Secrets, SQL, internal
 host details, source paths, and stack traces never appear in production errors.
 
-The exact route prefix, organization identifier form, and API versioning are
-unresolved. Future route work must preserve the explicit organization segment
-and verify it against the application's fixed organization before resolving an
-organization-owned resource.
+The phase-one contract uses `/api/v1`, UUID organization identifiers, explicit
+`/organizations/{organization_id}` route scope, and a globally unique trusted
+browser origin to bind the registered application into Pane's server-side
+session at login. Authenticated requests reload that active registration from
+the session, while mutations revalidate the origin. The exact route matrix,
+verification order, schemas, envelopes, statuses, errors, and legacy migration policy are defined in
+[Pane Phase-One HTTP API](api-v1.md) and its machine-readable
+[`contracts/pane-v1.json`](../contracts/pane-v1.json) fixture. Pane verifies the
+application and fixed organization before resolving an organization-owned
+resource.
 
 ## Impersonation and auditing
 
@@ -578,7 +584,8 @@ that the current behavior matches the target.
 
 ## Known constraints and deferred decisions
 
-- Exact target API paths and versioning are unresolved.
+- Versioned phase-one API paths are fixed by `contracts/pane-v1.json`; later
+  versions require a new contract and explicit compatibility policy.
 - The implementation migration strategy for Story/Action/Mapper and `map_*`
   tables is unresolved and must be ticketed explicitly.
 - Phase one excludes arbitrary third-party databases and ownership inference.

@@ -76,6 +76,14 @@ The script creates `nginx/certs/localhost.pem` and `nginx/certs/localhost-key.pe
 
 Pane keeps isolated unit tests under `tests/Unit` and database-backed integration or request tests under `tests/Feature`. See [Testing](docs/testing.md) for the suite contract, testing environment, and database refresh workflow.
 
+## Phase-one API contract
+
+The exact versioned routes, verification order, envelopes, statuses, error
+codes, and migration policy are defined in the [Phase-One HTTP API](docs/api-v1.md).
+Frontend consumers can validate requests and responses or generate clients from
+the machine-readable OpenAPI 3.1
+[`contracts/pane-v1.json`](contracts/pane-v1.json) contract.
+
 ## Static analysis
 
 Pane uses Larastan, PHPStan's Laravel extension, to complement the test suite. Tests verify expected behavior; static analysis catches incorrect type assumptions and code paths the tests may not cover.
