@@ -36,6 +36,10 @@ path, query, or fragment. HTTPS is mandatory except for loopback local/test
 registrations. Global uniqueness is checked after lowercasing scheme and host
 and removing a default port. Registered redirects use the normalization and
 validation rules below when they are written, not only when they are used.
+OpenAPI separates permissive registration/candidate inputs from canonical
+stored outputs. Inputs may contain an uppercase scheme or host, an explicit
+default port, or an empty path; Pane normalizes them before validation and
+storage. Responses expose only the canonical schemas.
 
 Burro uses an installation-scoped registration without an organization. A
 Latte-derived registration has exactly one immutable `organization_id`.
@@ -43,6 +47,14 @@ Changing that binding requires replacing the registration, and a registration
 cannot be deleted while it has active sessions. Neither a query parameter,
 cookie, callback value, request body, route value, nor browser-controlled header
 can select or change the application organization.
+
+`PATCH /installation/applications/{application_id}` changes registration status
+between `active` and `disabled` under `If-Match`. Disabling atomically
+invalidates the application's sessions and impersonations and releases its
+canonical origin from active-registration uniqueness. Re-enabling reloads and
+validates the complete registration, requires the canonical origin to remain
+available, and returns `409 duplicate_resource` on a conflict. Disabled-session
+cookies never become valid again after re-enabling.
 
 Clients may send any transport-valid value in `X-Request-Id`. Pane returns it
 only when it is a valid UUID; every other value is ignored and replaced with a
@@ -140,15 +152,16 @@ suspension, or organization suspension/closure.
 The exact parameters, request and response schemas, required headers, method
 matrix, and status codes are in the OpenAPI contract.
 
-`GET /session` has three discriminated modes. A `latte` session always returns
-its fixed organization and the actor's membership, has no impersonation, and
-uses the actor as effective user. A `burro_installation` session has null
-organization, membership, and impersonation and also uses the actor as
-effective user. A `burro_impersonation` session returns an organization,
-membership, and impersonation whose identifiers must agree; its actor matches
-the impersonation actor and its effective user owns the effective membership.
-All nullable context keys are present in every mode so consumers never infer
-state from an omitted field.
+`GET /session` has three discriminated modes and avoids repeating relational
+identifiers that could disagree. A `latte` session returns one `user`, its
+application projection, fixed organization, and membership projection. A
+`burro_installation` session returns one `user` and its application. A
+`burro_impersonation` session returns actor, effective user, application,
+organization, membership projection, and impersonation projection. The
+session-only application, membership, and impersonation projections omit the
+organization/user/actor identifiers already fixed by their enclosing variant;
+the enclosing structure is authoritative and therefore cannot encode a
+cross-context mismatch.
 
 Every registered redirect and `redirect_to` value must be an absolute URI with
 no credentials or fragment. HTTPS is required except for loopback local/test
@@ -212,7 +225,9 @@ Errors have one stable shape:
 
 `details` is optional and machine-readable. Each OpenAPI operation declares its
 exact error statuses and references a response schema whose machine-code enum is
-limited to that operation. The shared `500 internal_error` and
+limited to that operation. The top-level `x-pane-operation-errors` matrix is the
+machine-readable source of truth and contract tests require every response enum
+to match it exactly. The shared `500 internal_error` and
 `503 dependency_unavailable` responses are declared on every operation; Pane
 may return them only after request correlation has been established and always
 uses the safe error envelope.

@@ -184,7 +184,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowed"
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalError"
@@ -223,7 +223,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrCsrfFailed"
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalError"
@@ -613,7 +613,7 @@
                         "$ref": "#/components/responses/NotFound"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Error409DuplicateResourceOrOperationConflict"
+                        "$ref": "#/components/responses/Error409OperationConflict"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
@@ -918,7 +918,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -955,7 +955,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1006,7 +1006,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1061,7 +1061,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1106,7 +1106,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1152,7 +1152,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1198,7 +1198,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1247,7 +1247,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1344,7 +1344,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1438,7 +1438,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1493,7 +1493,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1539,7 +1539,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1585,7 +1585,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1641,13 +1641,13 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "422": {
-                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalError"
@@ -1690,7 +1690,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1830,7 +1830,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -1839,7 +1839,7 @@
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
@@ -1945,13 +1945,13 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
                     "422": {
-                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalError"
@@ -2048,7 +2048,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -2057,7 +2057,7 @@
                         "$ref": "#/components/responses/VersionConflict"
                     },
                     "422": {
-                        "$ref": "#/components/responses/Error422ValidationFailedOrConnectionPolicyRejected"
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
@@ -2109,7 +2109,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -2164,7 +2164,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -2213,7 +2213,7 @@
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
                     },
                     "403": {
-                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied"
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
@@ -2449,7 +2449,7 @@
                 ],
                 "properties": {
                     "redirect_to": {
-                        "$ref": "#/components/schemas/RedirectUri"
+                        "$ref": "#/components/schemas/RedirectUriInput"
                     },
                     "invitation_token": {
                         "type": "string",
@@ -2563,14 +2563,14 @@
                                 "maxLength": 200
                             },
                             "trusted_origin": {
-                                "$ref": "#/components/schemas/TrustedOrigin"
+                                "$ref": "#/components/schemas/TrustedOriginInput"
                             },
                             "redirect_uris": {
                                 "type": "array",
                                 "minItems": 1,
                                 "uniqueItems": true,
                                 "items": {
-                                    "$ref": "#/components/schemas/RedirectUri"
+                                    "$ref": "#/components/schemas/RedirectUriInput"
                                 }
                             },
                             "kind": {
@@ -2597,14 +2597,14 @@
                                 "maxLength": 200
                             },
                             "trusted_origin": {
-                                "$ref": "#/components/schemas/TrustedOrigin"
+                                "$ref": "#/components/schemas/TrustedOriginInput"
                             },
                             "redirect_uris": {
                                 "type": "array",
                                 "minItems": 1,
                                 "uniqueItems": true,
                                 "items": {
-                                    "$ref": "#/components/schemas/RedirectUri"
+                                    "$ref": "#/components/schemas/RedirectUriInput"
                                 }
                             },
                             "kind": {
@@ -2625,15 +2625,22 @@
                         "maxLength": 200
                     },
                     "trusted_origin": {
-                        "$ref": "#/components/schemas/TrustedOrigin"
+                        "$ref": "#/components/schemas/TrustedOriginInput"
                     },
                     "redirect_uris": {
                         "type": "array",
                         "minItems": 1,
                         "uniqueItems": true,
                         "items": {
-                            "$ref": "#/components/schemas/RedirectUri"
+                            "$ref": "#/components/schemas/RedirectUriInput"
                         }
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "disabled"
+                        ]
                     }
                 },
                 "additionalProperties": false
@@ -3805,26 +3812,16 @@
             "TrustedOrigin": {
                 "type": "string",
                 "format": "uri",
-                "pattern": "^(?:https://[^/?#@]+|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[1-9][0-9]{0,4})?)$",
-                "description": "A normalized serialized origin: scheme, host, and optional non-default port only. HTTP is limited to loopback local/test registrations.",
-                "x-pane-normalization": [
-                    "lowercase_scheme_and_host",
-                    "remove_default_port"
-                ],
-                "x-pane-uniqueness": "globally_unique_normalized_active_registration"
+                "pattern": "^(?:https://(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\\[[0-9a-f:.]+\\])(?::(?!443$)[1-9][0-9]{0,4})?|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::(?!80$)[1-9][0-9]{0,4})?)$",
+                "description": "Canonical stored serialized origin with lowercase scheme/host and no default port, credentials, path, query, or fragment.",
+                "x-pane-uniqueness": "globally_unique_canonical_active_registration"
             },
             "RedirectUri": {
                 "type": "string",
                 "format": "uri",
                 "maxLength": 2048,
-                "pattern": "^(?:https://[^/?#@]+|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[1-9][0-9]{0,4})?)(?:/[^#]*)?$",
-                "description": "An absolute HTTPS redirect without credentials or a fragment. HTTP is limited to loopback local/test registrations.",
-                "x-pane-normalization": [
-                    "lowercase_scheme_and_host",
-                    "remove_default_port",
-                    "empty_path_becomes_slash",
-                    "preserve_path_and_query"
-                ]
+                "pattern": "^(?:https://(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\\[[0-9a-f:.]+\\])(?::(?!443(?=/|$))[1-9][0-9]{0,4})?|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::(?!80(?=/|$))[1-9][0-9]{0,4})?)/[^#]*$",
+                "description": "Canonical stored redirect with lowercase scheme/host, no default port, a non-empty slash-prefixed path, and no credentials or fragment."
             },
             "LatteApplicationResource": {
                 "type": "object",
@@ -3962,82 +3959,49 @@
                 "type": "object",
                 "required": [
                     "mode",
-                    "actor",
-                    "effective_user",
+                    "user",
                     "application",
                     "organization",
-                    "membership",
-                    "impersonation"
+                    "membership"
                 ],
                 "properties": {
                     "mode": {
                         "const": "latte"
                     },
-                    "actor": {
-                        "$ref": "#/components/schemas/UserResource"
-                    },
-                    "effective_user": {
+                    "user": {
                         "$ref": "#/components/schemas/UserResource"
                     },
                     "application": {
-                        "$ref": "#/components/schemas/LatteApplicationResource"
+                        "$ref": "#/components/schemas/SessionLatteApplicationResource"
                     },
                     "organization": {
                         "$ref": "#/components/schemas/OrganizationResource"
                     },
                     "membership": {
-                        "$ref": "#/components/schemas/MembershipResource"
-                    },
-                    "impersonation": {
-                        "type": "null"
+                        "$ref": "#/components/schemas/SessionMembershipResource"
                     }
                 },
-                "additionalProperties": false,
-                "x-pane-equality-invariants": [
-                    "organization.id == application.attributes.organization_id",
-                    "membership.attributes.organization_id == organization.id",
-                    "effective_user.id == actor.id",
-                    "membership.attributes.user_id == effective_user.id"
-                ]
+                "additionalProperties": false
             },
             "BurroInstallationSessionData": {
                 "type": "object",
                 "required": [
                     "mode",
-                    "actor",
-                    "effective_user",
-                    "application",
-                    "organization",
-                    "membership",
-                    "impersonation"
+                    "user",
+                    "application"
                 ],
                 "properties": {
                     "mode": {
                         "const": "burro_installation"
                     },
-                    "actor": {
-                        "$ref": "#/components/schemas/UserResource"
-                    },
-                    "effective_user": {
+                    "user": {
                         "$ref": "#/components/schemas/UserResource"
                     },
                     "application": {
                         "$ref": "#/components/schemas/BurroApplicationResource"
-                    },
-                    "organization": {
-                        "type": "null"
-                    },
-                    "membership": {
-                        "type": "null"
-                    },
-                    "impersonation": {
-                        "type": "null"
                     }
                 },
-                "additionalProperties": false,
-                "x-pane-equality-invariants": [
-                    "effective_user.id == actor.id"
-                ]
+                "additionalProperties": false
             },
             "BurroImpersonationSessionData": {
                 "type": "object",
@@ -4067,20 +4031,195 @@
                         "$ref": "#/components/schemas/OrganizationResource"
                     },
                     "membership": {
-                        "$ref": "#/components/schemas/MembershipResource"
+                        "$ref": "#/components/schemas/SessionMembershipResource"
                     },
                     "impersonation": {
-                        "$ref": "#/components/schemas/ImpersonationResource"
+                        "$ref": "#/components/schemas/SessionImpersonationResource"
                     }
                 },
-                "additionalProperties": false,
-                "x-pane-equality-invariants": [
-                    "organization.id == impersonation.attributes.organization_id",
-                    "membership.id == impersonation.attributes.effective_membership_id",
-                    "membership.attributes.organization_id == organization.id",
-                    "membership.attributes.user_id == effective_user.id",
-                    "actor.id == impersonation.attributes.actor_user_id"
+                "additionalProperties": false
+            },
+            "TrustedOriginInput": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^(?:[Hh][Tt][Tt][Pp][Ss]://[^/?#@]+|[Hh][Tt][Tt][Pp]://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[1-9][0-9]{0,4})?)$",
+                "description": "Registration input normalized before storage. It contains only scheme, host, and optional port; HTTP is limited to loopback local/test registrations.",
+                "x-pane-normalization": [
+                    "lowercase_scheme_and_host",
+                    "remove_default_port"
                 ]
+            },
+            "RedirectUriInput": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 2048,
+                "pattern": "^(?:[Hh][Tt][Tt][Pp][Ss]://[^/?#@]+|[Hh][Tt][Tt][Pp]://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[1-9][0-9]{0,4})?)(?:/[^#]*|\\?[^#]*)?$",
+                "description": "Registration or login input normalized before comparison. Credentials and fragments are forbidden; HTTP is limited to loopback local/test registrations.",
+                "x-pane-normalization": [
+                    "lowercase_scheme_and_host",
+                    "remove_default_port",
+                    "empty_path_becomes_slash",
+                    "preserve_path_and_query"
+                ]
+            },
+            "SessionLatteApplicationResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "application"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "kind",
+                            "trusted_origin",
+                            "redirect_uris",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "trusted_origin": {
+                                "$ref": "#/components/schemas/TrustedOrigin"
+                            },
+                            "redirect_uris": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/RedirectUri"
+                                }
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "active",
+                                    "disabled"
+                                ]
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "kind": {
+                                "const": "latte"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "SessionMembershipResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "membership"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "role",
+                            "status",
+                            "created_at",
+                            "updated_at"
+                        ],
+                        "properties": {
+                            "role": {
+                                "type": "string",
+                                "enum": [
+                                    "organization_administrator",
+                                    "organization_user"
+                                ]
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "active",
+                                    "suspended"
+                                ]
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "SessionImpersonationResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "impersonation"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "reason",
+                            "started_at",
+                            "expires_at"
+                        ],
+                        "properties": {
+                            "reason": {
+                                "type": "string"
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "expires_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "ended_at": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "date-time"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "responses": {
@@ -5192,6 +5331,101 @@
                     }
                 }
             },
+            "Error403ApplicationNotAllowedOrCsrfFailed": {
+                "description": "HTTP 403",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "application_not_allowed",
+                                                "csrf_failed"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "Error400InvalidCursor": {
+                "description": "HTTP 400",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "invalid_cursor"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
             "Error403ApplicationNotAllowedOrPermissionDenied": {
                 "description": "HTTP 403",
                 "headers": {
@@ -5269,53 +5503,6 @@
                                                 "application_not_allowed",
                                                 "permission_denied",
                                                 "csrf_failed"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
-            "Error400InvalidCursor": {
-                "description": "HTTP 400",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "invalid_cursor"
                                             ]
                                         },
                                         "message": {
@@ -5526,109 +5713,6 @@
                     }
                 }
             },
-            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDenied": {
-                "description": "HTTP 403",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "application_not_allowed",
-                                                "organization_context_mismatch",
-                                                "organization_inactive",
-                                                "membership_required",
-                                                "permission_denied"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
-            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailed": {
-                "description": "HTTP 403",
-                "headers": {
-                    "X-Request-Id": {
-                        "$ref": "#/components/headers/RequestId"
-                    }
-                },
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "required": [
-                                "error"
-                            ],
-                            "properties": {
-                                "error": {
-                                    "type": "object",
-                                    "required": [
-                                        "code",
-                                        "message",
-                                        "request_id"
-                                    ],
-                                    "properties": {
-                                        "code": {
-                                            "type": "string",
-                                            "enum": [
-                                                "application_not_allowed",
-                                                "organization_context_mismatch",
-                                                "organization_inactive",
-                                                "membership_required",
-                                                "permission_denied",
-                                                "csrf_failed"
-                                            ]
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "details": {
-                                            "type": "object"
-                                        },
-                                        "request_id": {
-                                            "$ref": "#/components/schemas/Uuid"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    }
-                }
-            },
             "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired": {
                 "description": "HTTP 403",
                 "headers": {
@@ -5681,7 +5765,7 @@
                     }
                 }
             },
-            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrCsrfFailedOrImpersonationRequired": {
+            "Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed": {
                 "description": "HTTP 403",
                 "headers": {
                     "X-Request-Id": {
@@ -5712,8 +5796,8 @@
                                                 "organization_inactive",
                                                 "membership_required",
                                                 "permission_denied",
-                                                "csrf_failed",
-                                                "impersonation_required"
+                                                "impersonation_required",
+                                                "csrf_failed"
                                             ]
                                         },
                                         "message": {
@@ -5995,5 +6079,1219 @@
         "http_allowed_for_local_and_testing": true,
         "mismatch_status": 422,
         "mismatch_code": "redirect_not_allowed"
+    },
+    "x-pane-application-lifecycle": {
+        "field": "ApplicationUpdate.status",
+        "transitions": {
+            "active": [
+                "disabled"
+            ],
+            "disabled": [
+                "active"
+            ]
+        },
+        "if_match_required": true,
+        "disable": {
+            "invalidate_sessions": true,
+            "terminate_impersonations": true,
+            "release_canonical_origin_for_active_uniqueness": true
+        },
+        "enable": {
+            "reload_and_validate_registration": true,
+            "require_canonical_origin_available": true,
+            "conflict_status": 409,
+            "conflict_code": "duplicate_resource",
+            "sessions_remain_invalidated": true
+        }
+    },
+    "x-pane-operation-errors": {
+        "issueCsrfCookie": {
+            "403": [
+                "application_not_allowed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createLoginIntent": {
+            "403": [
+                "application_not_allowed"
+            ],
+            "422": [
+                "validation_failed",
+                "redirect_not_allowed"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "completeAuthCallback": {
+            "400": [
+                "invalid_request"
+            ],
+            "403": [
+                "application_not_allowed"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getSession": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteSession": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "csrf_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listOrganizations": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createOrganization": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "409": [
+                "quota_exceeded",
+                "duplicate_resource"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getOrganization": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateOrganization": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listApplications": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createApplication": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "409": [
+                "duplicate_resource"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getApplication": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateApplication": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "409": [
+                "duplicate_resource",
+                "operation_conflict"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteApplication": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "409": [
+                "operation_conflict"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createImpersonation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteImpersonation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listPaneAdminInvitations": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createPaneAdminInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "409": [
+                "operation_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "revokePaneAdminInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listInstallationAuditEvents": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listMemberships": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getMembership": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateMembership": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "409": [
+                "operation_conflict"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listOrganizationInvitations": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createOrganizationInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "409": [
+                "duplicate_resource",
+                "operation_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getOrganizationInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "revokeOrganizationInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "resendOrganizationInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listConnections": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createConnection": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "409": [
+                "quota_exceeded",
+                "duplicate_resource",
+                "table_contract_incompatible",
+                "operation_conflict"
+            ],
+            "422": [
+                "validation_failed",
+                "connection_policy_rejected"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getConnection": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateConnection": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed",
+                "connection_policy_rejected"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteConnection": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "testConnection": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "422": [
+                "connection_test_failed"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "refreshCatalog": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "putConnectionGrant": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteConnectionGrant": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getCatalog": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getCatalogObject": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateCatalogDescription": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listRows": {
+            "400": [
+                "invalid_cursor",
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createRow": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getRow": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateRow": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteRow": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "restoreRow": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listOrganizationAuditEvents": {
+            "400": [
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        }
     }
 }

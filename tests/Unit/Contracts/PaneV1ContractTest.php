@@ -235,6 +235,7 @@ class PaneV1ContractTest extends TestCase
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void
     {
         $responses = $this->contract['components']['responses'];
+        $matrix = $this->contract['x-pane-operation-errors'];
 
         foreach ($this->contract['paths'] as $path => $pathItem) {
             foreach ($pathItem as $method => $operation) {
@@ -247,15 +248,18 @@ class PaneV1ContractTest extends TestCase
                 $this->assertSame('#/components/responses/DependencyUnavailable', $operation['responses']['503']['$ref']);
 
                 foreach ($operation['responses'] as $status => $response) {
-                    if (! in_array($status, ['400', '401', '403', '409', '422'], true)) {
+                    if (! str_starts_with((string) $status, '4') && ! str_starts_with((string) $status, '5')) {
                         continue;
                     }
 
                     $name = basename($response['$ref']);
                     $codes = $responses[$name]['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'];
 
-                    $this->assertNotEmpty($codes, $path.' '.$method.' '.$status.' needs exact machine codes');
-                    $this->assertStringStartsWith('Error'.$status, $name);
+                    $this->assertSame(
+                        $matrix[$operation['operationId']][(string) $status],
+                        $codes,
+                        $path.' '.$method.' '.$status.' must match the operation error matrix',
+                    );
                 }
             }
         }
@@ -268,6 +272,11 @@ class PaneV1ContractTest extends TestCase
             ['validation_failed', 'redirect_not_allowed'],
             $responses[basename($this->contract['paths']['/auth/login-intents']['post']['responses']['422']['$ref'])]['content']['application/json']['schema']['properties']['error']['properties']['code']['enum'],
         );
+        $this->assertSame(['validation_failed'], $matrix['putConnectionGrant']['422']);
+        $this->assertSame(['validation_failed'], $matrix['updateCatalogDescription']['422']);
+        $this->assertSame(['validation_failed'], $matrix['createRow']['422']);
+        $this->assertSame(['application_not_allowed'], $matrix['getSession']['403']);
+        $this->assertContains('impersonation_required', $matrix['listOrganizationInvitations']['403']);
     }
 
     public function test_request_id_input_allows_replacement_but_output_is_uuid(): void
@@ -288,15 +297,28 @@ class PaneV1ContractTest extends TestCase
         $schemas = $this->contract['components']['schemas'];
         $latte = $schemas['ApplicationCreate']['oneOf'][0]['properties'];
 
-        $this->assertSame('#/components/schemas/TrustedOrigin', $latte['trusted_origin']['$ref']);
-        $this->assertSame('#/components/schemas/RedirectUri', $latte['redirect_uris']['items']['$ref']);
-        $this->assertStringContainsString('[^/?#@]+', $schemas['TrustedOrigin']['pattern']);
+        $this->assertSame('#/components/schemas/TrustedOriginInput', $latte['trusted_origin']['$ref']);
+        $this->assertSame('#/components/schemas/RedirectUriInput', $latte['redirect_uris']['items']['$ref']);
         $this->assertSame(
-            'globally_unique_normalized_active_registration',
+            'globally_unique_canonical_active_registration',
             $schemas['TrustedOrigin']['x-pane-uniqueness'],
         );
-        $this->assertStringContainsString('[^#]*', $schemas['RedirectUri']['pattern']);
-        $this->assertStringContainsString('loopback', $schemas['RedirectUri']['description']);
+        $this->assertSame(
+            '#/components/schemas/TrustedOrigin',
+            $schemas['LatteApplicationResource']['properties']['attributes']['properties']['trusted_origin']['$ref'],
+        );
+
+        $inputRedirect = '~'.$schemas['RedirectUriInput']['pattern'].'~D';
+        $storedRedirect = '~'.$schemas['RedirectUri']['pattern'].'~D';
+        $storedOrigin = '~'.$schemas['TrustedOrigin']['pattern'].'~D';
+
+        $this->assertSame(1, preg_match($inputRedirect, 'https://EXAMPLE.test:443?next=1'));
+        $this->assertSame(1, preg_match($storedRedirect, 'https://example.test/?next=1'));
+        $this->assertSame(0, preg_match($storedRedirect, 'https://EXAMPLE.test:443/?next=1'));
+        $this->assertSame(1, preg_match($storedOrigin, 'https://example.test'));
+        $this->assertSame(0, preg_match($storedOrigin, 'https://example.test:443'));
+        $this->assertSame(0, preg_match($inputRedirect, 'https://user@example.test/callback'));
+        $this->assertSame(0, preg_match($inputRedirect, 'https://example.test/callback#fragment'));
     }
 
     public function test_session_response_discriminates_all_authorization_contexts(): void
@@ -306,19 +328,49 @@ class PaneV1ContractTest extends TestCase
 
         $this->assertSame('mode', $data['discriminator']['propertyName']);
         $this->assertCount(3, $data['oneOf']);
-
-        foreach (['LatteSessionData', 'BurroInstallationSessionData', 'BurroImpersonationSessionData'] as $name) {
-            $this->assertContains('organization', $schemas[$name]['required']);
-            $this->assertContains('membership', $schemas[$name]['required']);
-            $this->assertContains('impersonation', $schemas[$name]['required']);
-            $this->assertNotEmpty($schemas[$name]['x-pane-equality-invariants']);
-        }
-
-        $this->assertSame('null', $schemas['BurroInstallationSessionData']['properties']['organization']['type']);
         $this->assertSame(
-            '#/components/schemas/ImpersonationResource',
+            ['mode', 'user', 'application', 'organization', 'membership'],
+            $schemas['LatteSessionData']['required'],
+        );
+        $this->assertSame(
+            ['mode', 'user', 'application'],
+            $schemas['BurroInstallationSessionData']['required'],
+        );
+        $this->assertSame(
+            '#/components/schemas/SessionImpersonationResource',
             $schemas['BurroImpersonationSessionData']['properties']['impersonation']['$ref'],
         );
+        $this->assertArrayNotHasKey(
+            'organization_id',
+            $schemas['SessionLatteApplicationResource']['properties']['attributes']['properties'],
+        );
+        $this->assertArrayNotHasKey(
+            'organization_id',
+            $schemas['SessionMembershipResource']['properties']['attributes']['properties'],
+        );
+        $this->assertArrayNotHasKey(
+            'user_id',
+            $schemas['SessionMembershipResource']['properties']['attributes']['properties'],
+        );
+        $this->assertArrayNotHasKey(
+            'effective_membership_id',
+            $schemas['SessionImpersonationResource']['properties']['attributes']['properties'],
+        );
+    }
+
+    public function test_application_status_has_an_exact_concurrent_lifecycle(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $lifecycle = $this->contract['x-pane-application-lifecycle'];
+
+        $this->assertSame(['active', 'disabled'], $schemas['ApplicationUpdate']['properties']['status']['enum']);
+        $this->assertTrue($lifecycle['if_match_required']);
+        $this->assertSame(['disabled'], $lifecycle['transitions']['active']);
+        $this->assertSame(['active'], $lifecycle['transitions']['disabled']);
+        $this->assertTrue($lifecycle['disable']['invalidate_sessions']);
+        $this->assertTrue($lifecycle['disable']['release_canonical_origin_for_active_uniqueness']);
+        $this->assertSame(409, $lifecycle['enable']['conflict_status']);
+        $this->assertSame('duplicate_resource', $lifecycle['enable']['conflict_code']);
     }
 
     public function test_login_redirect_requires_normalized_exact_allowlist_match(): void
