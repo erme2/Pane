@@ -139,6 +139,33 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
+    public function test_origin_is_required_on_mutations_and_optional_on_reads(): void
+    {
+        foreach ($this->contract['paths'] as $path => $pathItem) {
+            foreach ($pathItem as $method => $operation) {
+                if (! in_array($method, ['get', 'post', 'put', 'patch', 'delete'], true)) {
+                    continue;
+                }
+
+                $expected = $method === 'get'
+                    ? '#/components/parameters/OriginOptional'
+                    : '#/components/parameters/OriginRequired';
+
+                $this->assertContains(
+                    $expected,
+                    array_column($operation['parameters'] ?? [], '$ref'),
+                    $path.' '.$method.' needs the correct Origin trust input',
+                );
+            }
+        }
+
+        $parameters = $this->contract['components']['parameters'];
+        $this->assertTrue($parameters['OriginRequired']['required']);
+        $this->assertFalse($parameters['OriginOptional']['required']);
+        $this->assertSame('#/components/schemas/TrustedOrigin', $parameters['OriginRequired']['schema']['$ref']);
+        $this->assertStringContainsString('server-side session', $parameters['OriginRequired']['description']);
+    }
+
     public function test_connection_secrets_are_write_only_and_absent_from_responses(): void
     {
         $schemas = $this->contract['components']['schemas'];
@@ -277,6 +304,14 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame(['validation_failed'], $matrix['createRow']['422']);
         $this->assertSame(['application_not_allowed'], $matrix['getSession']['403']);
         $this->assertContains('impersonation_required', $matrix['listOrganizationInvitations']['403']);
+        $this->assertSame(['invalid_request', 'invalid_cursor'], $matrix['listOrganizations']['400']);
+        $this->assertSame(['invalid_identifier'], $matrix['getOrganization']['400']);
+        $this->assertSame(['invalid_request', 'invalid_identifier'], $matrix['updateOrganization']['400']);
+        $this->assertSame(
+            ['invalid_request', 'invalid_cursor', 'invalid_identifier'],
+            $matrix['listRows']['400'],
+        );
+        $this->assertSame(['invalid_identifier'], $matrix['getRow']['400']);
     }
 
     public function test_request_id_input_allows_replacement_but_output_is_uuid(): void
@@ -319,6 +354,22 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame(0, preg_match($storedOrigin, 'https://example.test:443'));
         $this->assertSame(0, preg_match($inputRedirect, 'https://user@example.test/callback'));
         $this->assertSame(0, preg_match($inputRedirect, 'https://example.test/callback#fragment'));
+
+        $vectors = $this->contract['x-pane-uri-normalization-examples'];
+        $inputOrigin = '~'.$schemas['TrustedOriginInput']['pattern'].'~D';
+
+        foreach ($vectors['accepted'] as $example) {
+            $inputPattern = $example['kind'] === 'origin' ? $inputOrigin : $inputRedirect;
+            $storedPattern = $example['kind'] === 'origin' ? $storedOrigin : $storedRedirect;
+
+            $this->assertSame(1, preg_match($inputPattern, $example['input']), $example['input'].' must be accepted');
+            $this->assertSame(1, preg_match($storedPattern, $example['canonical']), $example['canonical'].' must be canonical');
+        }
+
+        foreach ($vectors['rejected'] as $example) {
+            $this->assertSame(0, preg_match($inputOrigin, $example['input']), $example['reason'].' origin');
+            $this->assertSame(0, preg_match($inputRedirect, $example['input']), $example['reason'].' redirect');
+        }
     }
 
     public function test_session_response_discriminates_all_authorization_contexts(): void

@@ -24,6 +24,14 @@ validate it when present because browsers do not guarantee `Origin` on
 same-origin `GET` or `HEAD` requests. Browser JavaScript never supplies an
 application identifier.
 
+OpenAPI represents this trust input explicitly. `Origin` is required on the
+CSRF bootstrap, login intent, callback, and every authenticated mutation, and
+optional on authenticated reads. The browser controls this forbidden header and
+the trusted proxy preserves it; generated clients document it but browser code
+does not synthesize it. Before authentication it resolves the application.
+After Pane binds an application UUID into the server-side session, `Origin` is
+comparison-only and can never select a different application.
+
 Every trusted origin is globally unique among active registrations in one Pane
 installation. Registration and origin updates reject a duplicate with
 `409 duplicate_resource`. Login intents reject a missing, opaque, `null`, or
@@ -39,7 +47,9 @@ validation rules below when they are written, not only when they are used.
 OpenAPI separates permissive registration/candidate inputs from canonical
 stored outputs. Inputs may contain an uppercase scheme or host, an explicit
 default port, or an empty path; Pane normalizes them before validation and
-storage. Responses expose only the canonical schemas.
+storage. Ports must be integers from 1 through 65535. Responses expose only the
+canonical schemas. `x-pane-uri-normalization-examples` contains normative
+accepted, rejected, and canonical vectors shared by Pane and Latte.
 
 Burro uses an installation-scoped registration without an organization. A
 Latte-derived registration has exactly one immutable `organization_id`.
@@ -250,6 +260,14 @@ unfiltered upstream errors. Stable v1 codes are:
 | 503 | `dependency_unavailable` |
 
 Clients may branch on `error.code`; they must not branch on `message`.
+
+Schema and parameter parsing failures are normalized before handler execution.
+Malformed pagination limits, filter/sort syntax, and `If-Match` values return
+`400 invalid_request`; malformed cursors return `400 invalid_cursor`; malformed
+UUID path values, catalog identifiers, and base64url row keys return
+`400 invalid_identifier`. An operation declares the union of only the codes its
+parameters can produce. A syntactically valid but absent or deliberately
+concealed resource remains `404 resource_not_found`.
 
 ## Identifier and data rules
 
