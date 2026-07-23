@@ -281,6 +281,34 @@ class PaneV1ContractTest extends TestCase
         $this->assertStringContainsString('never accepts a caller-selected expiry', $this->documentation);
     }
 
+    public function test_auth_callback_exposes_safe_invitation_acceptance_codes(): void
+    {
+        $operation = $this->contract['paths']['/auth/callback']['post'];
+        $matrix = $this->contract['x-pane-operation-errors']['completeAuthCallback'];
+        $response = $this->contract['components']['responses'][basename($operation['responses']['422']['$ref'])];
+        $error = $response['content']['application/json']['schema']['properties']['error'];
+        $codes = $error['properties']['code']['enum'];
+        $expected = [
+            'validation_failed',
+            'invitation_invalid',
+            'invitation_expired',
+            'invitation_revoked',
+            'invitation_already_accepted',
+            'invitation_email_mismatch',
+            'invitation_organization_mismatch',
+        ];
+
+        $this->assertSame('#/components/responses/Error422AuthCallbackRejected', $operation['responses']['422']['$ref']);
+        $this->assertSame($expected, $matrix['422']);
+        $this->assertSame($expected, $codes);
+        $this->assertNotContains('details', $error['required']);
+        $this->assertArrayNotHasKey('details', $error['properties']);
+        $this->assertStringContainsString('invitation_email_mismatch', $this->documentation);
+        $this->assertStringContainsString('Generic malformed callback input remains', $this->documentation);
+        $this->assertStringContainsString('Clients render invitation outcomes from `error.code`', $this->documentation);
+        $this->assertStringContainsString('callback rejection responses omit `error.details`', $this->documentation);
+    }
+
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void
     {
         $responses = $this->contract['components']['responses'];

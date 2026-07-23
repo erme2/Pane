@@ -147,7 +147,7 @@
                         "$ref": "#/components/responses/Error403ApplicationNotAllowed"
                     },
                     "422": {
-                        "$ref": "#/components/responses/Error422ValidationFailed"
+                        "$ref": "#/components/responses/Error422AuthCallbackRejected"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
@@ -5539,6 +5539,56 @@
                     }
                 }
             },
+            "Error422AuthCallbackRejected": {
+                "description": "HTTP 422",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "error"
+                            ],
+                            "properties": {
+                                "error": {
+                                    "type": "object",
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "request_id"
+                                    ],
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "validation_failed",
+                                                "invitation_invalid",
+                                                "invitation_expired",
+                                                "invitation_revoked",
+                                                "invitation_already_accepted",
+                                                "invitation_email_mismatch",
+                                                "invitation_organization_mismatch"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "request_id": {
+                                            "$ref": "#/components/schemas/Uuid"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
             "Error403ApplicationNotAllowedOrCsrfFailed": {
                 "description": "HTTP 403",
                 "headers": {
@@ -6495,7 +6545,13 @@
                 "application_not_allowed"
             ],
             "422": [
-                "validation_failed"
+                "validation_failed",
+                "invitation_invalid",
+                "invitation_expired",
+                "invitation_revoked",
+                "invitation_already_accepted",
+                "invitation_email_mismatch",
+                "invitation_organization_mismatch"
             ],
             "429": [
                 "rate_limited"
