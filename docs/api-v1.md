@@ -131,6 +131,11 @@ suspension, or organization suspension/closure.
   contains an invitation token, Pane atomically validates the token, verified
   WorkOS email, application organization, and invitation state before creating
   or reactivating the membership. The token is never returned or put in a URL.
+  Invitation acceptance failures return safe public `422` codes:
+  `invitation_invalid`, `invitation_expired`, `invitation_revoked`,
+  `invitation_already_accepted`, `invitation_email_mismatch`, or
+  `invitation_organization_mismatch`. Generic malformed callback input remains
+  `validation_failed`.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` logs out and invalidates the Pane session.
@@ -263,7 +268,7 @@ unfiltered upstream errors. Stable v1 codes are:
 | 404 | `resource_not_found` |
 | 409 | `quota_exceeded`, `duplicate_resource`, `table_contract_incompatible`, `operation_conflict` |
 | 412 | `version_conflict` |
-| 422 | `validation_failed`, `connection_policy_rejected`, `connection_test_failed`, `redirect_not_allowed` |
+| 422 | `validation_failed`, `connection_policy_rejected`, `connection_test_failed`, `redirect_not_allowed`, `invitation_invalid`, `invitation_expired`, `invitation_revoked`, `invitation_already_accepted`, `invitation_email_mismatch`, `invitation_organization_mismatch` |
 | 428 | `precondition_required` |
 | 429 | `rate_limited` |
 | 500 | `internal_error` |
