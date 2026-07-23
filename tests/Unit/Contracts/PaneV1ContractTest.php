@@ -288,7 +288,6 @@ class PaneV1ContractTest extends TestCase
         $response = $this->contract['components']['responses'][basename($operation['responses']['422']['$ref'])];
         $error = $response['content']['application/json']['schema']['properties']['error'];
         $codes = $error['properties']['code']['enum'];
-        $details = $error['properties']['details'];
         $expected = [
             'validation_failed',
             'invitation_invalid',
@@ -303,12 +302,11 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame($expected, $matrix['422']);
         $this->assertSame($expected, $codes);
         $this->assertNotContains('details', $error['required']);
-        $this->assertSame('object', $details['type']);
-        $this->assertFalse($details['additionalProperties']);
-        $this->assertArrayNotHasKey('properties', $details);
+        $this->assertArrayNotHasKey('details', $error['properties']);
         $this->assertStringContainsString('invitation_email_mismatch', $this->documentation);
         $this->assertStringContainsString('Generic malformed callback input remains', $this->documentation);
         $this->assertStringContainsString('Clients render invitation outcomes from `error.code`', $this->documentation);
+        $this->assertStringContainsString('callback rejection responses omit `error.details`', $this->documentation);
     }
 
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void

@@ -136,8 +136,9 @@ suspension, or organization suspension/closure.
   `invitation_already_accepted`, `invitation_email_mismatch`, or
   `invitation_organization_mismatch`. Generic malformed callback input remains
   `validation_failed`. Clients render invitation outcomes from `error.code`;
-  callback rejection details are absent or empty and must not expose invitation
-  tokens, organization identifiers, target emails, or identity-provider data.
+  callback rejection responses omit `error.details` and must not expose
+  invitation tokens, organization identifiers, target emails, or
+  identity-provider data.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` logs out and invalidates the Pane session.
