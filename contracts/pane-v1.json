@@ -5578,7 +5578,8 @@
                                             "type": "string"
                                         },
                                         "details": {
-                                            "type": "object"
+                                            "type": "object",
+                                            "additionalProperties": false
                                         },
                                         "request_id": {
                                             "$ref": "#/components/schemas/Uuid"
