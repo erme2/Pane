@@ -22,6 +22,41 @@ class WorkOsAuthController extends Controller
 
     public function loginUrl(Request $request): JsonResponse
     {
+        return $this->loginIntentResponse($request, false);
+    }
+
+    public function csrfCookie(Request $request): Response
+    {
+        $request->session()->regenerateToken();
+
+        return response()->noContent();
+    }
+
+    public function loginIntent(Request $request): JsonResponse
+    {
+        return $this->loginIntentResponse($request, true);
+    }
+
+    public function session(Request $request): JsonResponse
+    {
+        return $this->versionedAuthenticatedResponse($request);
+    }
+
+    public function destroySession(Request $request): JsonResponse
+    {
+        Auth::guard()->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json([
+            'data' => null,
+            'meta' => ['request_id' => (string) Str::uuid()],
+        ]);
+    }
+
+    private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
+    {
         $this->workOs->ensureConfigured();
 
         $state = $this->workOs->makeState();
@@ -29,10 +64,16 @@ class WorkOsAuthController extends Controller
         $request->session()->put('workos_state', $state);
         $request->session()->put('workos_intended_url', $this->intendedRedirectUrl($request));
 
-        return response()->json([
+        $intent = [
             'authorization_url' => $this->workOs->authorizationUrl($state),
             'state' => $state,
-        ])->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
+        ];
+        $payload = $versioned
+            ? ['data' => $intent, 'meta' => ['request_id' => (string) Str::uuid()]]
+            : $intent;
+
+        return response()->json($payload)
+            ->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
     }
 
     public function login(Request $request): RedirectResponse
@@ -60,6 +101,16 @@ class WorkOsAuthController extends Controller
 
     public function completeCallback(Request $request): JsonResponse
     {
+        return $this->completeCallbackResponse($request, false);
+    }
+
+    public function completeV1Callback(Request $request): JsonResponse
+    {
+        return $this->completeCallbackResponse($request, true);
+    }
+
+    private function completeCallbackResponse(Request $request, bool $versioned): JsonResponse
+    {
         if ($request->filled('error')) {
             return response()->json([
                 'message' => $request->input('error_description', $request->input('error')),
@@ -84,7 +135,9 @@ class WorkOsAuthController extends Controller
                 (string) $request->session()->get('workos_completed_state'),
                 $state
             )) {
-                return $this->authenticatedResponse($request);
+                return $versioned
+                    ? $this->versionedAuthenticatedResponse($request)
+                    : $this->authenticatedResponse($request);
             }
 
             return response()->json(['message' => 'Invalid WorkOS state.'], Response::HTTP_BAD_REQUEST);
@@ -114,7 +167,9 @@ class WorkOsAuthController extends Controller
 
         Cookie::queue(Cookie::forget(self::STATE_COOKIE));
 
-        return $this->authenticatedResponse($request);
+        return $versioned
+            ? $this->versionedAuthenticatedResponse($request)
+            : $this->authenticatedResponse($request);
     }
 
     public function user(Request $request): JsonResponse
@@ -130,10 +185,71 @@ class WorkOsAuthController extends Controller
         ]);
     }
 
+    private function versionedAuthenticatedResponse(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $now = now()->toJSON();
+        $frontendUrl = rtrim((string) config('services.workos.return_to'), '/') ?: 'https://latte.localhost';
+        $applicationId = (string) config('services.latte.application_id');
+        $organizationId = (string) config('services.latte.organization_id');
+
+        return response()->json([
+            'data' => [
+                'mode' => 'latte',
+                'user' => [
+                    'id' => (string) $user->getKey(),
+                    'type' => 'user',
+                    'attributes' => [
+                        'email' => (string) $user->email,
+                        'name' => (string) ($user->name ?: $user->email),
+                    ],
+                ],
+                'application' => [
+                    'id' => $applicationId,
+                    'type' => 'application',
+                    'attributes' => [
+                        'kind' => 'latte',
+                        'name' => config('app.name', 'Latte'),
+                        'trusted_origin' => $frontendUrl,
+                        'redirect_uris' => [$frontendUrl.'/auth/callback'],
+                        'status' => 'active',
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                ],
+                'organization' => [
+                    'id' => $organizationId,
+                    'type' => 'organization',
+                    'attributes' => [
+                        'name' => 'Latte Local',
+                        'slug' => 'latte-local',
+                        'status' => 'active',
+                        'database_limit' => 1,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                ],
+                'membership' => [
+                    'id' => (string) $user->getKey(),
+                    'type' => 'membership',
+                    'attributes' => [
+                        'role' => ((int) $user->user_type_id) === 1
+                            ? 'organization_administrator'
+                            : 'organization_user',
+                        'status' => 'active',
+                        'created_at' => optional($user->created_at)->toJSON() ?: $now,
+                        'updated_at' => optional($user->updated_at)->toJSON() ?: $now,
+                    ],
+                ],
+            ],
+            'meta' => ['request_id' => (string) Str::uuid()],
+        ]);
+    }
+
     private function intendedRedirectUrl(Request $request): string
     {
         $fallback = config('services.workos.return_to') ?: url('/');
-        $redirectTo = $request->query('redirect_to');
+        $redirectTo = $request->input('redirect_to', $request->query('redirect_to'));
 
         if (! is_string($redirectTo) || blank($redirectTo)) {
             return $fallback;

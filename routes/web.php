@@ -18,6 +18,20 @@ use Illuminate\Support\Facades\Route;
 // index
 Route::get('/', [Controller::class, 'index']);
 
+// Versioned browser session API used by Latte.
+Route::prefix('/api/v1')->name('api.v1.')->group(function () {
+    Route::post('/csrf-cookie', [WorkOsAuthController::class, 'csrfCookie'])->name('csrf-cookie');
+    Route::post('/auth/login-intents', [WorkOsAuthController::class, 'loginIntent'])->name('auth.login-intents');
+    Route::post('/auth/callback', [WorkOsAuthController::class, 'completeV1Callback'])
+        ->block(10, 10)
+        ->name('auth.callback');
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/session', [WorkOsAuthController::class, 'session'])->name('session.show');
+        Route::delete('/session', [WorkOsAuthController::class, 'destroySession'])->name('session.destroy');
+    });
+});
+
 // WorkOS auth
 Route::get('/auth/login-url', [WorkOsAuthController::class, 'loginUrl'])->name('auth.login-url');
 Route::post('/auth/callback', [WorkOsAuthController::class, 'completeCallback'])

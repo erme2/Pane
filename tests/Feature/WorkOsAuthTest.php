@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -74,6 +75,79 @@ class WorkOsAuthTest extends TestCase
         $response
             ->assertOk()
             ->assertSessionHas('workos_intended_url', '/dashboard');
+    }
+
+    public function test_v1_csrf_cookie_bootstrap_accepts_post_without_existing_token(): void
+    {
+        $response = $this->postJson('/api/v1/csrf-cookie');
+
+        $response->assertNoContent();
+    }
+
+    public function test_v1_login_intent_returns_versioned_payload(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
+        config()->set('services.workos.return_to', 'https://latte.test');
+        config()->set('services.workos.provider', 'authkit');
+
+        $response = $this->postJson('/api/v1/auth/login-intents', [
+            'redirect_to' => 'https://latte.test/dashboard',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => ['authorization_url', 'state'],
+                'meta' => ['request_id'],
+            ])
+            ->assertSessionHas('workos_state')
+            ->assertSessionHas('workos_intended_url', 'https://latte.test/dashboard');
+
+        $this->assertStringStartsWith(
+            'https://api.workos.com/user_management/authorize?',
+            $response->json('data.authorization_url')
+        );
+    }
+
+    public function test_v1_session_returns_latte_session_payload(): void
+    {
+        config()->set('services.workos.return_to', 'https://latte.test');
+        config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000101');
+        config()->set('services.latte.organization_id', '00000000-0000-4000-8000-000000000102');
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/v1/session');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.mode', 'latte')
+            ->assertJsonPath('data.application.id', '00000000-0000-4000-8000-000000000101')
+            ->assertJsonPath('data.application.attributes.kind', 'latte')
+            ->assertJsonPath('data.application.attributes.trusted_origin', 'https://latte.test')
+            ->assertJsonPath('data.organization.id', '00000000-0000-4000-8000-000000000102')
+            ->assertJsonPath('data.membership.attributes.role', 'organization_administrator')
+            ->assertJsonStructure([
+                'data' => [
+                    'user' => ['id', 'type', 'attributes' => ['email', 'name']],
+                    'application' => ['id', 'type', 'attributes' => ['redirect_uris', 'status']],
+                    'organization' => ['id', 'type', 'attributes' => ['name', 'slug', 'status', 'database_limit']],
+                    'membership' => ['id', 'type', 'attributes' => ['role', 'status']],
+                ],
+                'meta' => ['request_id'],
+            ]);
     }
 
     public function test_callback_rejects_invalid_state(): void
