@@ -9,9 +9,9 @@ long-term design. Future changes should move deliberately toward the target
 without silently weakening current security contracts.
 
 The corresponding frontend product decisions are recorded in the
-[Pane, Latte, and Burro product architecture](https://github.com/erme2/Burro/blob/main/docs/product-architecture.md).
-The current Burro repository is planned to become Latte; a new Burro will be
-created from Latte as Pane's private administrator console.
+[Pane, Latte, and Burro product architecture](https://github.com/erme2/Latte/blob/main/docs/product-architecture.md).
+A separate Burro application is planned to be created from Latte as Pane's
+private administrator console.
 
 ## Architectural status labels
 
@@ -27,12 +27,12 @@ This document uses three labels:
 
 Pane is a Laravel application that exposes WorkOS-backed browser authentication
 and metadata-driven CRUD over its one configured default database. The current
-Burro React application owns the browser login experience and proxies requests
+Latte React application owns the browser login experience and proxies requests
 to Pane.
 
 ```mermaid
 flowchart LR
-    Browser[Burro browser app] -->|/pane proxy| Web[Pane web routes]
+    Browser[Latte browser app] -->|/pane proxy| Web[Pane web routes]
     Web --> Auth[WorkOsAuthController]
     Auth --> WorkOS[WorkOS AuthKit]
     Web --> Controller[Controller::runStory]
@@ -129,7 +129,7 @@ and organization-admin UI, but Pane remains the authorization authority.
 | Response shape | `app/Helpers/ResponseHelper.php`, `app/Exceptions/Handler.php` | Success and exception response envelopes |
 | Browser security | `app/Http/Kernel.php`, `VerifyCsrfToken.php`, `TrustHosts.php` | Sessions, cookies, CSRF, CORS integration, trusted hosts |
 | Configuration | `config/database.php`, `auth.php`, `session.php`, `cors.php`, `services.php`, `app.php` | Static environment-backed runtime configuration |
-| Local runtime | `docker-compose.yml`, `Dockerfile`, `nginx/default.conf`, `.env.docker` | PHP-FPM, Nginx, and one MariaDB service |
+| Local runtime | `docker-compose.yml`, `Dockerfile`, `.env.docker` | PHP-FPM backend service and one MariaDB service |
 | Tests | `tests/Unit`, `tests/Feature`, `.github/workflows/pr-tests.yml` | Isolated contracts, database-backed behavior, static analysis, PR validation |
 
 ## Current request flows
@@ -137,14 +137,14 @@ and organization-admin UI, but Pane remains the authorization authority.
 ### WorkOS login and session creation
 
 The complete verified browser sequence is in
-[WorkOS and Burro Authentication](workos-burro-auth.md).
+[WorkOS and Latte Authentication](workos-latte-auth.md).
 
-1. Burro requests `GET /auth/login-url` through its Pane proxy.
+1. Latte requests `GET /auth/login-url` through its Pane proxy.
 2. `WorkOsAuthController::loginUrl()` creates OAuth state and stores it in the
    Laravel session and a short-lived HTTP-only cookie.
 3. `WorkOsService::authorizationUrl()` constructs the WorkOS AuthKit URL.
-4. WorkOS returns the browser to Burro.
-5. Burro posts the code and state to `POST /auth/callback`.
+4. WorkOS returns the browser to Latte.
+5. Latte posts the code and state to `POST /auth/callback`.
 6. `WorkOsAuthController::completeCallback()` validates state and calls
    `WorkOsService::authenticateWithCode()`.
 7. `WorkOsAuthController::syncUser()` finds or creates a local user by WorkOS ID
@@ -160,7 +160,7 @@ are no organization memberships.
 
 ```mermaid
 sequenceDiagram
-    participant B as Burro
+    participant B as Latte
     participant R as routes/web.php
     participant C as Controller
     participant S as CrudStory
@@ -227,11 +227,12 @@ WorkOS, frontend, database, session, host, and cookie configuration comes from
 environment variables mapped through Laravel config. The authoritative list is
 in [Environment Configuration](environment.md).
 
-The local Docker stack in `docker-compose.yml` runs Nginx, PHP-FPM, and one
-MariaDB service on one Docker network. It is a development topology, not the
-target dynamic managed-database design. `bash/refresh.sh` can destructively
-recreate the configured development or test database; it is not a managed
-data-source lifecycle operation.
+The local Docker stack in `docker-compose.yml` runs Pane's PHP-FPM backend and
+one MariaDB service on one Docker network. Browser-facing Nginx/TLS and
+`/pane` proxying are owned by each Latte-derived frontend. This is a
+development topology, not the target dynamic managed-database design.
+`bash/refresh.sh` can destructively recreate the configured development or test
+database; it is not a managed data-source lifecycle operation.
 
 ## Current security and trust boundaries
 
@@ -241,7 +242,7 @@ data-source lifecycle operation.
 - `auth` middleware protects CRUD routes.
 - Laravel web middleware applies session and CSRF protection. Only
   `POST /auth/callback` is CSRF-exempt because Pane validates OAuth state.
-- Burro must forward cookies and the encrypted `XSRF-TOKEN` value as
+- Latte must forward cookies and the encrypted `XSRF-TOKEN` value as
   `X-XSRF-TOKEN` for mutating requests.
 - `TrustHosts` validates request hosts outside local/test environments.
 - CORS allows one environment-configured frontend origin and credentials.
@@ -599,7 +600,8 @@ that the current behavior matches the target.
   configurable audit retention are deferred.
 - Invitation expiry bounds are controlled by Pane administrators but their
   exact minimum and maximum values are unresolved.
-- The Burro-to-Latte repository transition requires its own migration plan.
+- The Latte repository transition is complete; the future Burro admin console
+  split requires its own migration plan.
 
 ## Invariants and forbidden dependencies
 

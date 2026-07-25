@@ -17,12 +17,12 @@ class BashScriptsDocumentationTest extends TestCase
 
         self::assertStringContainsString('docs/bash.md', $readme);
         self::assertStringContainsString('bash/clear.sh', $doc);
-        self::assertStringContainsString('bash/generate-certs.sh', $doc);
         self::assertStringContainsString('bash/refresh.sh', $doc);
         self::assertStringContainsString('bash/test.sh', $doc);
+        self::assertStringNotContainsString('bash/generate-certs.sh', $doc);
         self::assertStringContainsString('This script is destructive when database deletion is enabled.', $doc);
         self::assertStringContainsString('./bash/test.sh -o no -f no', $doc);
-        self::assertStringContainsString('nginx/certs/localhost.pem', $doc);
+        self::assertStringNotContainsString('nginx/certs/localhost.pem', $doc);
         self::assertStringContainsString('database/migrations/test', $doc);
         self::assertStringContainsString('TestTableSeeder', $doc);
         self::assertStringContainsString('cp .env.testing .env', $doc);
