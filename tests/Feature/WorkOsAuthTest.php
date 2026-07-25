@@ -117,6 +117,7 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000101');
         config()->set('services.latte.organization_id', '00000000-0000-4000-8000-000000000102');
+        config()->set('services.latte.frontend_url', 'https://latte.test');
 
         $user = new User;
         $user->forceFill([
@@ -152,6 +153,31 @@ class WorkOsAuthTest extends TestCase
 
         $this->assertTrue(Str::isUuid($response->json('data.user.id')));
         $this->assertTrue(Str::isUuid($response->json('data.membership.id')));
+    }
+
+    public function test_v1_session_uses_normalized_latte_origin_for_application_projection(): void
+    {
+        config()->set('services.workos.return_to', 'https://latte.test/dashboard');
+        config()->set('services.latte.frontend_url', 'https://LATTE.test:443/app');
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/v1/session');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.application.attributes.trusted_origin', 'https://latte.test')
+            ->assertJsonPath('data.application.attributes.redirect_uris.0', 'https://latte.test/auth/callback');
     }
 
     public function test_v1_destroy_session_returns_no_content(): void

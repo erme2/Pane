@@ -187,7 +187,7 @@ class WorkOsAuthController extends Controller
     {
         $user = $request->user();
         $now = now()->toJSON();
-        $frontendUrl = rtrim((string) config('services.workos.return_to'), '/') ?: 'https://latte.localhost';
+        $frontendOrigin = $this->frontendOrigin();
         $applicationId = (string) config('services.latte.application_id');
         $organizationId = (string) config('services.latte.organization_id');
         $email = (string) $user->getAttribute('email');
@@ -215,8 +215,8 @@ class WorkOsAuthController extends Controller
                     'attributes' => [
                         'kind' => 'latte',
                         'name' => config('app.name', 'Latte'),
-                        'trusted_origin' => $frontendUrl,
-                        'redirect_uris' => [$frontendUrl.'/auth/callback'],
+                        'trusted_origin' => $frontendOrigin,
+                        'redirect_uris' => [$frontendOrigin.'/auth/callback'],
                         'status' => 'active',
                         'created_at' => $now,
                         'updated_at' => $now,
@@ -260,6 +260,37 @@ class WorkOsAuthController extends Controller
             Uuid::NAMESPACE_URL,
             'pane:membership:'.$organizationId.':'.$user->getKey()
         );
+    }
+
+    private function frontendOrigin(): string
+    {
+        return $this->originFromUrl((string) config('services.latte.frontend_url'))
+            ?? 'https://latte.localhost';
+    }
+
+    private function originFromUrl(string $url): ?string
+    {
+        $parts = parse_url(trim($url));
+
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+            return null;
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        $host = strtolower($parts['host']);
+
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        if (str_contains($host, ':') && ! str_starts_with($host, '[')) {
+            $host = '['.$host.']';
+        }
+
+        $port = $this->originPort($parts);
+        $defaultPort = $this->originPort(['scheme' => $scheme]);
+
+        return $scheme.'://'.$host.($port !== null && $port !== $defaultPort ? ':'.$port : '');
     }
 
     private function intendedRedirectUrl(Request $request): string

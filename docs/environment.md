@@ -51,7 +51,7 @@ TRUSTED_HOSTS=pane.staging.example.com,pane.internal.example.com
 ## WorkOS And Latte
 
 - `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_PROVIDER`, `WORKOS_ORGANIZATION_ID`, and `WORKOS_CONNECTION_ID` configure WorkOS AuthKit for Pane.
-- `FRONTEND_URL` is the trusted Latte origin Pane may return users to after authentication.
+- `FRONTEND_URL` is the trusted Latte origin Pane uses for v1 session application projection and CORS.
 - `WORKOS_REDIRECT_URI` should point to Latte's callback route in the Latte/Pane browser flow, for example `https://latte.localhost/auth/callback`.
 - `WORKOS_RETURN_TO` is the post-login return origin or URL used by WorkOS/Pane.
 
