@@ -192,6 +192,11 @@ class WorkOsAuthController extends Controller
         $frontendUrl = rtrim((string) config('services.workos.return_to'), '/') ?: 'https://latte.localhost';
         $applicationId = (string) config('services.latte.application_id');
         $organizationId = (string) config('services.latte.organization_id');
+        $email = (string) $user->getAttribute('email');
+        $name = (string) ($user->getAttribute('name') ?: $email);
+        $role = ((int) $user->getAttribute('user_type_id')) === 1
+            ? 'organization_administrator'
+            : 'organization_user';
 
         return response()->json([
             'data' => [
@@ -200,8 +205,8 @@ class WorkOsAuthController extends Controller
                     'id' => (string) $user->getKey(),
                     'type' => 'user',
                     'attributes' => [
-                        'email' => (string) $user->email,
-                        'name' => (string) ($user->name ?: $user->email),
+                        'email' => $email,
+                        'name' => $name,
                     ],
                 ],
                 'application' => [
@@ -233,12 +238,10 @@ class WorkOsAuthController extends Controller
                     'id' => (string) $user->getKey(),
                     'type' => 'membership',
                     'attributes' => [
-                        'role' => ((int) $user->user_type_id) === 1
-                            ? 'organization_administrator'
-                            : 'organization_user',
+                        'role' => $role,
                         'status' => 'active',
-                        'created_at' => optional($user->created_at)->toJSON() ?: $now,
-                        'updated_at' => optional($user->updated_at)->toJSON() ?: $now,
+                        'created_at' => optional($user->getAttribute('created_at'))->toJSON() ?: $now,
+                        'updated_at' => optional($user->getAttribute('updated_at'))->toJSON() ?: $now,
                     ],
                 ],
             ],
