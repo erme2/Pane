@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class WorkOsAuthTest extends TestCase
@@ -148,6 +149,28 @@ class WorkOsAuthTest extends TestCase
                 ],
                 'meta' => ['request_id'],
             ]);
+
+        $this->assertTrue(Str::isUuid($response->json('data.user.id')));
+        $this->assertTrue(Str::isUuid($response->json('data.membership.id')));
+    }
+
+    public function test_v1_destroy_session_returns_no_content(): void
+    {
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->withCsrfToken()->actingAs($user);
+
+        $response = $this->deleteJson('/api/v1/session');
+
+        $response->assertNoContent();
     }
 
     public function test_callback_rejects_invalid_state(): void

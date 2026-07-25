@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 
 class WorkOsAuthController extends Controller
 {
@@ -42,17 +43,14 @@ class WorkOsAuthController extends Controller
         return $this->versionedAuthenticatedResponse($request);
     }
 
-    public function destroySession(Request $request): JsonResponse
+    public function destroySession(Request $request): Response
     {
         Auth::guard()->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json([
-            'data' => null,
-            'meta' => ['request_id' => (string) Str::uuid()],
-        ]);
+        return response()->noContent();
     }
 
     private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
@@ -197,12 +195,14 @@ class WorkOsAuthController extends Controller
         $role = ((int) $user->getAttribute('user_type_id')) === 1
             ? 'organization_administrator'
             : 'organization_user';
+        $userId = $this->versionedUserId($user);
+        $membershipId = $this->versionedMembershipId($organizationId, $user);
 
         return response()->json([
             'data' => [
                 'mode' => 'latte',
                 'user' => [
-                    'id' => (string) $user->getKey(),
+                    'id' => $userId,
                     'type' => 'user',
                     'attributes' => [
                         'email' => $email,
@@ -235,7 +235,7 @@ class WorkOsAuthController extends Controller
                     ],
                 ],
                 'membership' => [
-                    'id' => (string) $user->getKey(),
+                    'id' => $membershipId,
                     'type' => 'membership',
                     'attributes' => [
                         'role' => $role,
@@ -247,6 +247,19 @@ class WorkOsAuthController extends Controller
             ],
             'meta' => ['request_id' => (string) Str::uuid()],
         ]);
+    }
+
+    private function versionedUserId(User $user): string
+    {
+        return (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'pane:user:'.$user->getKey());
+    }
+
+    private function versionedMembershipId(string $organizationId, User $user): string
+    {
+        return (string) Uuid::uuid5(
+            Uuid::NAMESPACE_URL,
+            'pane:membership:'.$organizationId.':'.$user->getKey()
+        );
     }
 
     private function intendedRedirectUrl(Request $request): string
