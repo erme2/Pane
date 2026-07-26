@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Mappers\AbstractMapper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -11,10 +12,17 @@ use Illuminate\Notifications\Notifiable;
  * Class User
  * This is the user model, it is here because it is the default model for the authentication
  * system that comes with Laravel. I am not sure what we will do with it yet.
+ *
+ * @property int $user_type_id
+ * @property bool $is_active
  */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
+
+    public const int PANE_ADMINISTRATOR_USER_TYPE_ID = 1;
+
+    public const int STANDARD_USER_TYPE_ID = 2;
 
     protected $primaryKey = 'user_id';
 
@@ -66,4 +74,26 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'last_login_at' => 'datetime',
     ];
+
+    /**
+     * @return HasMany<OrganizationMembership, $this>
+     */
+    public function organizationMemberships(): HasMany
+    {
+        return $this->hasMany(OrganizationMembership::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * @return HasMany<OrganizationMembership, $this>
+     */
+    public function activeOrganizationMemberships(): HasMany
+    {
+        return $this->organizationMemberships()->where('status', OrganizationMembership::STATUS_ACTIVE);
+    }
+
+    public function isPaneAdministrator(): bool
+    {
+        return (int) $this->user_type_id === self::PANE_ADMINISTRATOR_USER_TYPE_ID
+            && (bool) $this->is_active;
+    }
 }

@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Support;
+
+use App\Mappers\AbstractMapper;
+
+class PaneTable
+{
+    public const string ORGANIZATIONS = 'organizations';
+
+    public const string ORGANIZATION_MEMBERSHIPS = 'organization_memberships';
+
+    public static function name(string $table): string
+    {
+        return (string) config('database.table_prefix', 'pane_').AbstractMapper::MAP_TABLES_PREFIX.$table;
+    }
+}
