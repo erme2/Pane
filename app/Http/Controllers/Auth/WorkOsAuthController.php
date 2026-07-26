@@ -384,7 +384,21 @@ class WorkOsAuthController extends Controller
 
     private function versionedIntendedRedirectUrl(Request $request): string|JsonResponse
     {
-        $redirectTo = $request->input('redirect_to');
+        $body = $this->requestBody($request);
+        $unsupportedFields = array_values(array_diff(array_keys($body), ['redirect_to']));
+
+        if ($unsupportedFields !== []) {
+            sort($unsupportedFields);
+
+            return $this->versionedErrorResponse(
+                $request,
+                'validation_failed',
+                'The '.$unsupportedFields[0].' field is not supported.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        $redirectTo = $body['redirect_to'] ?? null;
 
         if (! is_string($redirectTo) || blank($redirectTo)) {
             return $this->versionedErrorResponse(
@@ -416,6 +430,16 @@ class WorkOsAuthController extends Controller
         }
 
         return $normalizedRedirectTo;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function requestBody(Request $request): array
+    {
+        return $request->isJson()
+            ? $request->json()->all()
+            : $request->request->all();
     }
 
     private function sameOrigin(string $url, string $allowedOrigin): bool

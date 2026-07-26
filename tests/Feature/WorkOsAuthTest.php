@@ -252,6 +252,27 @@ class WorkOsAuthTest extends TestCase
         $this->assertNull($response->json('message'));
     }
 
+    public function test_v1_login_intent_rejects_invitation_token_until_activation_is_supported(): void
+    {
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => 'https://latte.test/dashboard',
+                'invitation_token' => str_repeat('a', 32),
+            ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonPath('error.message', 'The invitation_token field is not supported.')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']])
+            ->assertSessionMissing('workos_state')
+            ->assertSessionMissing('workos_intended_url');
+    }
+
     public function test_v1_session_returns_latte_session_payload(): void
     {
         $requestId = (string) Str::uuid();
