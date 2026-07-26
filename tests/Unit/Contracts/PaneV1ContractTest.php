@@ -117,9 +117,15 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame(['error'], $providerError['required']);
         $this->assertTrue($providerError['properties']['error']['writeOnly']);
         $this->assertTrue($providerError['properties']['error_description']['writeOnly']);
+        $this->assertTrue($providerError['properties']['state']['writeOnly']);
+        $this->assertSame(
+            $success['properties']['state'],
+            $providerError['properties']['state'],
+        );
         $this->assertFalse($providerError['additionalProperties']);
 
-        $this->assertStringContainsString('Provider rejection callbacks send `error`', $this->documentation);
+        $this->assertStringContainsString('Provider rejection callbacks send `error`, optional `error_description`, and', $this->documentation);
+        $this->assertStringContainsString('the forwarded `state` when present', $this->documentation);
     }
 
     public function test_every_operation_has_an_id_and_declares_responses(): void

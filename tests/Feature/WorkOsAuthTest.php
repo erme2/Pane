@@ -517,6 +517,7 @@ class WorkOsAuthTest extends TestCase
             ->postJson('/api/v1/auth/callback', [
                 'error' => 'access_denied',
                 'error_description' => 'Connection conn_123 failed for private@example.test',
+                'state' => str_repeat('s', 32),
             ]);
 
         $response

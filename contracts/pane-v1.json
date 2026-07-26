@@ -2773,6 +2773,11 @@
                         "type": "string",
                         "minLength": 1,
                         "writeOnly": true
+                    },
+                    "state": {
+                        "type": "string",
+                        "minLength": 32,
+                        "writeOnly": true
                     }
                 },
                 "additionalProperties": false
