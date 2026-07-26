@@ -92,6 +92,49 @@ class WorkOsAuthTest extends TestCase
             ->assertHeader('X-Request-Id', $requestId);
     }
 
+    public function test_v1_routes_are_covered_by_cors_preflight(): void
+    {
+        config()->set('cors.allowed_origins', ['https://latte.localhost']);
+
+        $response = $this->withHeaders([
+            'Origin' => 'https://latte.localhost',
+            'Access-Control-Request-Method' => 'POST',
+            'Access-Control-Request-Headers' => 'Content-Type, X-XSRF-TOKEN, X-Request-Id',
+        ])->options('/api/v1/auth/login-intents');
+
+        $response
+            ->assertNoContent()
+            ->assertHeader('Access-Control-Allow-Origin', 'https://latte.localhost')
+            ->assertHeader('Access-Control-Allow-Credentials', 'true');
+
+        $this->assertStringContainsString(
+            'X-Request-Id',
+            $response->headers->get('Access-Control-Allow-Headers') ?? ''
+        );
+    }
+
+    public function test_v1_cors_response_exposes_request_id_header(): void
+    {
+        $requestId = (string) Str::uuid();
+
+        config()->set('cors.allowed_origins', ['https://latte.localhost']);
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->withHeader('X-Request-Id', $requestId)
+            ->getJson('/api/v1/session');
+
+        $response
+            ->assertUnauthorized()
+            ->assertHeader('X-Request-Id', $requestId)
+            ->assertHeader('Access-Control-Allow-Origin', 'https://latte.localhost');
+
+        $this->assertStringContainsString(
+            'X-Request-Id',
+            $response->headers->get('Access-Control-Expose-Headers') ?? ''
+        );
+    }
+
     public function test_v1_login_intent_returns_versioned_payload(): void
     {
         $requestId = (string) Str::uuid();

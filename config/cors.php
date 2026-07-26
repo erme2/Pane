@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'paths' => ['auth/*'],
+    'paths' => ['auth/*', 'api/v1/*'],
 
     'allowed_methods' => ['*'],
 
@@ -27,7 +27,7 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-Request-Id'],
 
     'max_age' => 0,
 
