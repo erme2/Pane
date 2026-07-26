@@ -30,7 +30,7 @@ class WorkOsAuthController extends Controller
     {
         $request->session()->regenerateToken();
 
-        return response()->noContent();
+        return $this->versionedNoContentResponse($request);
     }
 
     public function loginIntent(Request $request): JsonResponse
@@ -50,7 +50,7 @@ class WorkOsAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->noContent();
+        return $this->versionedNoContentResponse($request);
     }
 
     private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
@@ -333,6 +333,12 @@ class WorkOsAuthController extends Controller
         return is_string($requestId) && Str::isUuid($requestId)
             ? $requestId
             : (string) Str::uuid();
+    }
+
+    private function versionedNoContentResponse(Request $request): Response
+    {
+        return response()->noContent()
+            ->header('X-Request-Id', $this->requestId($request));
     }
 
     private function frontendOrigin(): string

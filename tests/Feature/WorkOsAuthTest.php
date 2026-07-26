@@ -80,9 +80,15 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_csrf_cookie_bootstrap_accepts_post_without_existing_token(): void
     {
-        $response = $this->postJson('/api/v1/csrf-cookie');
+        $requestId = (string) Str::uuid();
 
-        $response->assertNoContent();
+        $response = $this
+            ->withHeader('X-Request-Id', $requestId)
+            ->postJson('/api/v1/csrf-cookie');
+
+        $response
+            ->assertNoContent()
+            ->assertHeader('X-Request-Id', $requestId);
     }
 
     public function test_v1_login_intent_returns_versioned_payload(): void
@@ -234,6 +240,8 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_destroy_session_returns_no_content(): void
     {
+        $requestId = (string) Str::uuid();
+
         $user = new User;
         $user->forceFill([
             'user_id' => 123,
@@ -246,9 +254,13 @@ class WorkOsAuthTest extends TestCase
 
         $this->withCsrfToken()->actingAs($user);
 
-        $response = $this->deleteJson('/api/v1/session');
+        $response = $this
+            ->withHeader('X-Request-Id', $requestId)
+            ->deleteJson('/api/v1/session');
 
-        $response->assertNoContent();
+        $response
+            ->assertNoContent()
+            ->assertHeader('X-Request-Id', $requestId);
     }
 
     public function test_callback_rejects_invalid_state(): void
