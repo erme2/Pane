@@ -84,6 +84,7 @@ class WorkOsAuthTest extends TestCase
 
         $response = $this
             ->withHeader('X-Request-Id', $requestId)
+            ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/csrf-cookie');
 
         $response
@@ -100,9 +101,12 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
         config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.workos.provider', 'authkit');
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
         $response = $this
             ->withHeader('X-Request-Id', $requestId)
+            ->withHeader('Origin', 'https://latte.test')
             ->postJson('/api/v1/auth/login-intents', [
                 'redirect_to' => 'https://latte.test/dashboard',
             ]);
@@ -128,9 +132,11 @@ class WorkOsAuthTest extends TestCase
     {
         config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
         $response = $this
             ->withHeader('X-Request-Id', 'not-a-uuid')
+            ->withHeader('Origin', 'https://latte.test')
             ->postJson('/api/v1/auth/login-intents', [
                 'redirect_to' => 'https://evil.test/dashboard',
             ]);
@@ -147,11 +153,34 @@ class WorkOsAuthTest extends TestCase
         $this->assertNull($response->json('message'));
     }
 
+    public function test_v1_login_intent_rejects_unregistered_redirect_path_on_allowed_origin(): void
+    {
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => 'https://latte.test/settings',
+            ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'redirect_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']])
+            ->assertSessionMissing('workos_state')
+            ->assertSessionMissing('workos_intended_url');
+    }
+
     public function test_v1_login_intent_rejects_malformed_redirect(): void
     {
-        $response = $this->postJson('/api/v1/auth/login-intents', [
-            'redirect_to' => '/dashboard',
-        ]);
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => '/dashboard',
+            ]);
 
         $response
             ->assertUnprocessable()
@@ -213,10 +242,42 @@ class WorkOsAuthTest extends TestCase
         $this->assertTrue(Str::isUuid($response->json('data.membership.id')));
     }
 
+    public function test_v1_csrf_cookie_rejects_missing_origin(): void
+    {
+        $response = $this->postJson('/api/v1/csrf-cookie');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
+
+        $this->assertTrue(Str::isUuid($response->headers->get('X-Request-Id')));
+        $this->assertSame($response->headers->get('X-Request-Id'), $response->json('error.request_id'));
+    }
+
+    public function test_v1_login_intent_rejects_unregistered_origin(): void
+    {
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+
+        $response = $this
+            ->withHeader('Origin', 'https://evil.test')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => 'https://latte.test/dashboard',
+            ]);
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']])
+            ->assertSessionMissing('workos_state')
+            ->assertSessionMissing('workos_intended_url');
+    }
+
     public function test_v1_session_uses_normalized_latte_origin_for_application_projection(): void
     {
         config()->set('services.workos.return_to', 'https://latte.test/dashboard');
         config()->set('services.latte.frontend_url', 'https://LATTE.test:443/app');
+        config()->set('services.latte.redirect_uris', ['https://LATTE.test:443/auth/callback']);
 
         $user = new User;
         $user->forceFill([
@@ -236,6 +297,32 @@ class WorkOsAuthTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.application.attributes.trusted_origin', 'https://latte.test')
             ->assertJsonPath('data.application.attributes.redirect_uris.0', 'https://latte.test/auth/callback');
+    }
+
+    public function test_v1_session_rejects_mismatched_origin_when_supplied(): void
+    {
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this
+            ->withHeader('Origin', 'https://other.test')
+            ->getJson('/api/v1/session');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
     }
 
     public function test_v1_session_returns_error_envelope_when_not_authenticated(): void
@@ -275,11 +362,34 @@ class WorkOsAuthTest extends TestCase
 
         $response = $this
             ->withHeader('X-Request-Id', $requestId)
+            ->withHeader('Origin', 'https://latte.localhost')
             ->deleteJson('/api/v1/session');
 
         $response
             ->assertNoContent()
             ->assertHeader('X-Request-Id', $requestId);
+    }
+
+    public function test_v1_destroy_session_rejects_missing_origin_before_csrf(): void
+    {
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this->deleteJson('/api/v1/session');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
     }
 
     public function test_callback_rejects_invalid_state(): void
@@ -311,6 +421,7 @@ class WorkOsAuthTest extends TestCase
 
         $response = $this
             ->withHeader('X-Request-Id', $requestId)
+            ->withHeader('Origin', 'https://latte.localhost')
             ->withSession(['workos_state' => 'expected_state'])
             ->postJson('/api/v1/auth/callback', [
                 'code' => 'code_123',
@@ -342,6 +453,7 @@ class WorkOsAuthTest extends TestCase
         ]);
 
         $response = $this
+            ->withHeader('Origin', 'https://latte.localhost')
             ->withSession(['workos_state' => 'expected_state'])
             ->postJson('/api/v1/auth/callback', [
                 'code' => 'code_123',

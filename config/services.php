@@ -45,6 +45,7 @@ return [
         'application_id' => env('LATTE_APPLICATION_ID', '00000000-0000-4000-8000-000000000001'),
         'organization_id' => env('LATTE_ORGANIZATION_ID', '00000000-0000-4000-8000-000000000002'),
         'frontend_url' => env('FRONTEND_URL', 'https://latte.localhost'),
+        'redirect_uris' => env('LATTE_REDIRECT_URIS'),
     ],
 
 ];

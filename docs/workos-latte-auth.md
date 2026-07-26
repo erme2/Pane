@@ -15,6 +15,8 @@ Pane reads WorkOS settings from `config/services.php`:
 ```dotenv
 WORKOS_API_KEY=sk_test_...
 WORKOS_CLIENT_ID=client_...
+FRONTEND_URL=https://latte.localhost
+LATTE_REDIRECT_URIS=https://latte.localhost/auth/callback,https://latte.localhost/dashboard
 WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback
 WORKOS_RETURN_TO=https://latte.localhost
 WORKOS_PROVIDER=authkit
@@ -22,7 +24,7 @@ WORKOS_ORGANIZATION_ID=
 WORKOS_CONNECTION_ID=
 ```
 
-`WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, and `WORKOS_REDIRECT_URI` are required before Pane can generate a login URL. `WORKOS_RETURN_TO` controls the fallback return URL and the allowed redirect origin for Latte. `WORKOS_PROVIDER` defaults to `authkit`; if it is blank, Pane can use `WORKOS_ORGANIZATION_ID` or `WORKOS_CONNECTION_ID` instead.
+`WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, and `WORKOS_REDIRECT_URI` are required before Pane can generate a login URL. `FRONTEND_URL` controls the trusted Latte origin for v1 browser requests, `LATTE_REDIRECT_URIS` controls the exact v1 `redirect_to` allowlist, and `WORKOS_RETURN_TO` controls the legacy fallback return URL. `WORKOS_PROVIDER` defaults to `authkit`; if it is blank, Pane can use `WORKOS_ORGANIZATION_ID` or `WORKOS_CONNECTION_ID` instead.
 
 The WorkOS application must include `WORKOS_REDIRECT_URI` in its allowed redirect URLs. For the Docker/local HTTPS setup, that URI should point to Latte, not Pane, because Latte receives the browser callback first.
 
@@ -105,7 +107,9 @@ In the local HTTPS Docker setup:
   `/pane/*` to Pane's backend service on the shared Docker network.
 - Pane does not own a concrete Latte hostname or frontend vhost.
 - Pane should use `WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback`.
-- Pane should use `WORKOS_RETURN_TO=https://latte.localhost` or another allowed Latte origin.
+- Pane should use `FRONTEND_URL=https://latte.localhost`.
+- Pane should include every allowed Latte post-login return URL in `LATTE_REDIRECT_URIS`.
+- Pane should use `WORKOS_RETURN_TO=https://latte.localhost` or another legacy fallback return URL.
 Latte's local runtime owns certificate generation, browser host entries, and
 the concrete proxy target configuration.
 

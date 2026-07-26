@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\WorkOsService;
+use App\Support\LatteApplicationConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -222,7 +223,7 @@ class WorkOsAuthController extends Controller
     {
         $user = $request->user();
         $now = now()->toJSON();
-        $frontendOrigin = $this->frontendOrigin();
+        $frontendOrigin = LatteApplicationConfig::trustedOrigin();
         $applicationId = (string) config('services.latte.application_id');
         $organizationId = (string) config('services.latte.organization_id');
         $email = (string) $user->getAttribute('email');
@@ -252,7 +253,7 @@ class WorkOsAuthController extends Controller
                         'kind' => 'latte',
                         'name' => config('app.name', 'Latte'),
                         'trusted_origin' => $frontendOrigin,
-                        'redirect_uris' => [$frontendOrigin.'/auth/callback'],
+                        'redirect_uris' => LatteApplicationConfig::redirectUris(),
                         'status' => 'active',
                         'created_at' => $now,
                         'updated_at' => $now,
@@ -341,37 +342,6 @@ class WorkOsAuthController extends Controller
             ->header('X-Request-Id', $this->requestId($request));
     }
 
-    private function frontendOrigin(): string
-    {
-        return $this->originFromUrl((string) config('services.latte.frontend_url'))
-            ?? 'https://latte.localhost';
-    }
-
-    private function originFromUrl(string $url): ?string
-    {
-        $parts = parse_url(trim($url));
-
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
-            return null;
-        }
-
-        $scheme = strtolower($parts['scheme']);
-        $host = strtolower($parts['host']);
-
-        if (! in_array($scheme, ['http', 'https'], true)) {
-            return null;
-        }
-
-        if (str_contains($host, ':') && ! str_starts_with($host, '[')) {
-            $host = '['.$host.']';
-        }
-
-        $port = $this->originPort($parts);
-        $defaultPort = $this->originPort(['scheme' => $scheme]);
-
-        return $scheme.'://'.$host.($port !== null && $port !== $defaultPort ? ':'.$port : '');
-    }
-
     private function intendedRedirectUrl(Request $request): string
     {
         $fallback = config('services.workos.return_to') ?: url('/');
@@ -416,7 +386,9 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        if (! $this->isValidRedirectUrl($redirectTo)) {
+        $normalizedRedirectTo = LatteApplicationConfig::normalizeRedirectUri($redirectTo);
+
+        if ($normalizedRedirectTo === null) {
             return $this->versionedErrorResponse(
                 $request,
                 'validation_failed',
@@ -425,7 +397,7 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        if (! $this->isAllowedRedirectUrl($redirectTo)) {
+        if (! in_array($normalizedRedirectTo, LatteApplicationConfig::redirectUris(), true)) {
             return $this->versionedErrorResponse(
                 $request,
                 'redirect_not_allowed',
@@ -434,51 +406,7 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        return $redirectTo;
-    }
-
-    private function isValidRedirectUrl(string $url): bool
-    {
-        if (! filter_var($url, FILTER_VALIDATE_URL)) {
-            return false;
-        }
-
-        $parts = parse_url($url);
-
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
-            return false;
-        }
-
-        if (isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
-            return false;
-        }
-
-        $scheme = strtolower($parts['scheme']);
-        $host = strtolower($parts['host']);
-
-        if (! in_array($scheme, ['http', 'https'], true)) {
-            return false;
-        }
-
-        return $scheme === 'https'
-            || in_array($host, ['localhost', '127.0.0.1', '[::1]', '::1'], true);
-    }
-
-    private function isAllowedRedirectUrl(string $redirectTo): bool
-    {
-        $allowedOrigins = array_filter(array_merge([
-            config('services.latte.frontend_url'),
-            config('services.workos.return_to'),
-            config('app.url'),
-        ], config('cors.allowed_origins', [])));
-
-        foreach ($allowedOrigins as $allowedOrigin) {
-            if ($this->sameOrigin($redirectTo, $allowedOrigin)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $normalizedRedirectTo;
     }
 
     private function sameOrigin(string $url, string $allowedOrigin): bool
