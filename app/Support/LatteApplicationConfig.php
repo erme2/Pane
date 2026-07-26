@@ -6,8 +6,13 @@ class LatteApplicationConfig
 {
     public static function trustedOrigin(): string
     {
-        return self::originFromUrl((string) config('services.latte.frontend_url'), true)
+        return self::trustedOriginFromUrl((string) config('services.latte.frontend_url'))
             ?? 'https://latte.localhost';
+    }
+
+    public static function trustedOriginFromUrl(string $url): ?string
+    {
+        return self::originFromUrl($url, true);
     }
 
     /**

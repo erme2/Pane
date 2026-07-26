@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\LatteApplicationConfig;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -133,6 +134,21 @@ class WorkOsAuthTest extends TestCase
             'X-Request-Id',
             $response->headers->get('Access-Control-Expose-Headers') ?? ''
         );
+    }
+
+    public function test_v1_cors_uses_normalized_latte_frontend_origin(): void
+    {
+        config()->set('services.latte.frontend_url', 'https://LATTE.test:443/app');
+        config()->set('cors.allowed_origins', [LatteApplicationConfig::trustedOrigin()]);
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.test')
+            ->withHeader('Access-Control-Request-Method', 'POST')
+            ->options('/api/v1/auth/login-intents');
+
+        $response
+            ->assertNoContent()
+            ->assertHeader('Access-Control-Allow-Origin', 'https://latte.test');
     }
 
     public function test_v1_login_intent_returns_versioned_payload(): void

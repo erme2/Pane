@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\LatteApplicationConfig;
+
 return [
 
     /*
@@ -20,7 +22,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_filter([
-        env('FRONTEND_URL', 'http://localhost:5173'),
+        LatteApplicationConfig::trustedOriginFromUrl((string) env('FRONTEND_URL', 'https://latte.localhost'))
+            ?? 'https://latte.localhost',
     ]),
 
     'allowed_origins_patterns' => [],
