@@ -132,11 +132,13 @@ suspension, or organization suspension/closure.
 - `POST /auth/callback` completes WorkOS authentication, synchronizes the user,
   and starts the server-side session from a successful `code`/`state` callback.
   Provider rejection callbacks send `error`, optional `error_description`, and
-  the forwarded `state` when present; Pane returns a safe `invalid_request`
-  response and does not echo provider details. Malformed callback input returns
-  `validation_failed`; callback rejection responses omit `error.details` and
-  must not expose organization identifiers, target emails, or
-  identity-provider data.
+  the forwarded `state` when present; Pane returns a safe `400 invalid_request`
+  response and does not echo provider details. Malformed callback input and
+  invalid state also return `400 invalid_request`. A completed WorkOS exchange
+  whose returned user payload fails Pane validation, such as a missing email,
+  returns `422 validation_failed`. Callback rejection responses omit
+  `error.details` and must not expose organization identifiers, target emails,
+  or identity-provider data.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` logs out and invalidates the Pane session.

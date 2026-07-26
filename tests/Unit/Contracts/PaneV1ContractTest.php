@@ -338,7 +338,11 @@ class PaneV1ContractTest extends TestCase
         $this->assertArrayNotHasKey('details', $error['properties']);
         $this->assertStringNotContainsString('optional invitation intent', $this->documentation);
         $this->assertStringNotContainsString('New invitation activation is implemented only in v1', $this->documentation);
-        $this->assertStringContainsString('rejection responses omit `error.details`', $this->documentation);
+        $this->assertStringContainsString('Malformed callback input and', $this->documentation);
+        $this->assertStringContainsString('invalid state also return `400 invalid_request`', $this->documentation);
+        $this->assertStringContainsString('returns `422 validation_failed`', $this->documentation);
+        $this->assertStringContainsString('rejection responses omit', $this->documentation);
+        $this->assertStringContainsString('`error.details`', $this->documentation);
     }
 
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void
