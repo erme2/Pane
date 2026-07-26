@@ -19,7 +19,7 @@ use Ramsey\Uuid\Uuid;
 class WorkOsAuthController extends Controller
 {
     private const STATE_COOKIE = 'pane_workos_state';
-    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application';
+    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
     public function __construct(private readonly WorkOsService $workOs) {}
 
@@ -73,7 +73,7 @@ class WorkOsAuthController extends Controller
         $request->session()->put('workos_intended_url', $intendedRedirectUrl);
 
         if ($versioned) {
-            $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $this->currentLatteApplication());
+            $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $this->currentLatteApplicationId());
         }
 
         $intent = [
@@ -228,7 +228,12 @@ class WorkOsAuthController extends Controller
     {
         $user = $request->user();
         $now = now()->toJSON();
-        $application = $this->sessionLatteApplication($request) ?? $this->currentLatteApplication();
+        $application = $this->activeSessionLatteApplication($request);
+
+        if ($application instanceof JsonResponse) {
+            return $application;
+        }
+
         $applicationId = $application['id'];
         $organizationId = $application['organization_id'];
         $email = (string) $user->getAttribute('email');
@@ -304,13 +309,18 @@ class WorkOsAuthController extends Controller
         );
     }
 
+    private function currentLatteApplicationId(): string
+    {
+        return (string) config('services.latte.application_id');
+    }
+
     /**
      * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}
      */
     private function currentLatteApplication(): array
     {
         return [
-            'id' => (string) config('services.latte.application_id'),
+            'id' => $this->currentLatteApplicationId(),
             'name' => (string) config('app.name', 'Latte'),
             'trusted_origin' => LatteApplicationConfig::trustedOrigin(),
             'redirect_uris' => LatteApplicationConfig::redirectUris(),
@@ -322,37 +332,28 @@ class WorkOsAuthController extends Controller
     }
 
     /**
-     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}|null
+     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}|JsonResponse
      */
-    private function sessionLatteApplication(Request $request): ?array
+    private function activeSessionLatteApplication(Request $request): array|JsonResponse
     {
-        $application = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
+        $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
 
-        if (! is_array($application)
-            || ! is_string($application['id'] ?? null)
-            || ! is_string($application['name'] ?? null)
-            || ! is_string($application['trusted_origin'] ?? null)
-            || ! is_array($application['redirect_uris'] ?? null)
-            || ! is_string($application['organization_id'] ?? null)
-            || ! is_string($application['organization_name'] ?? null)
-            || ! is_string($application['organization_slug'] ?? null)
-            || ! is_int($application['organization_database_limit'] ?? null)
-        ) {
-            return null;
+        if (! is_string($sessionApplicationId)) {
+            return $this->currentLatteApplication();
         }
 
-        $redirectUris = array_values(array_filter($application['redirect_uris'], is_string(...)));
+        $application = $this->currentLatteApplication();
 
-        return [
-            'id' => $application['id'],
-            'name' => $application['name'],
-            'trusted_origin' => $application['trusted_origin'],
-            'redirect_uris' => $redirectUris,
-            'organization_id' => $application['organization_id'],
-            'organization_name' => $application['organization_name'],
-            'organization_slug' => $application['organization_slug'],
-            'organization_database_limit' => $application['organization_database_limit'],
-        ];
+        if (! hash_equals($application['id'], $sessionApplicationId)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'application_not_allowed',
+                'The application origin is not allowed.',
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        return $application;
     }
 
     private function versionedErrorResponse(Request $request, string $code, string $message, int $status): JsonResponse

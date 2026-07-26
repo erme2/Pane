@@ -180,9 +180,8 @@ class WorkOsAuthTest extends TestCase
             ])
             ->assertSessionHas('workos_state')
             ->assertSessionHas('workos_intended_url', 'https://latte.test/dashboard')
-            ->assertSessionHas('pane_v1_application.id', config('services.latte.application_id'))
-            ->assertSessionHas('pane_v1_application.trusted_origin', 'https://latte.test')
-            ->assertSessionHas('pane_v1_application.organization_id', config('services.latte.organization_id'));
+            ->assertSessionHas('pane_v1_application_id', config('services.latte.application_id'))
+            ->assertSessionMissing('pane_v1_application');
 
         $this->assertStringStartsWith(
             'https://api.workos.com/user_management/authorize?',
@@ -325,23 +324,12 @@ class WorkOsAuthTest extends TestCase
         $this->assertTrue(Str::isUuid($response->json('data.membership.id')));
     }
 
-    public function test_v1_session_uses_application_bound_during_login(): void
+    public function test_v1_session_reloads_application_bound_during_login(): void
     {
-        $application = [
-            'id' => '00000000-0000-4000-8000-000000000201',
-            'name' => 'Bound Latte',
-            'trusted_origin' => 'https://bound-latte.test',
-            'redirect_uris' => ['https://bound-latte.test/dashboard'],
-            'organization_id' => '00000000-0000-4000-8000-000000000202',
-            'organization_name' => 'Latte Local',
-            'organization_slug' => 'latte-local',
-            'organization_database_limit' => 1,
-        ];
-
-        config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000301');
-        config()->set('services.latte.organization_id', '00000000-0000-4000-8000-000000000302');
-        config()->set('services.latte.frontend_url', 'https://current-latte.test');
-        config()->set('services.latte.redirect_uris', ['https://current-latte.test/dashboard']);
+        config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000201');
+        config()->set('services.latte.organization_id', '00000000-0000-4000-8000-000000000202');
+        config()->set('services.latte.frontend_url', 'https://updated-latte.test/app');
+        config()->set('services.latte.redirect_uris', ['https://updated-latte.test/dashboard']);
 
         $user = new User;
         $user->forceFill([
@@ -356,31 +344,20 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $response = $this
-            ->withSession(['pane_v1_application' => $application])
+            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
             ->getJson('/api/v1/session');
 
         $response
             ->assertOk()
             ->assertJsonPath('data.application.id', '00000000-0000-4000-8000-000000000201')
-            ->assertJsonPath('data.application.attributes.name', 'Bound Latte')
-            ->assertJsonPath('data.application.attributes.trusted_origin', 'https://bound-latte.test')
-            ->assertJsonPath('data.application.attributes.redirect_uris.0', 'https://bound-latte.test/dashboard')
+            ->assertJsonPath('data.application.attributes.trusted_origin', 'https://updated-latte.test')
+            ->assertJsonPath('data.application.attributes.redirect_uris.0', 'https://updated-latte.test/dashboard')
             ->assertJsonPath('data.organization.id', '00000000-0000-4000-8000-000000000202');
     }
 
-    public function test_v1_session_origin_validation_uses_bound_application(): void
+    public function test_v1_session_rejects_stale_bound_application(): void
     {
-        $application = [
-            'id' => '00000000-0000-4000-8000-000000000201',
-            'name' => 'Bound Latte',
-            'trusted_origin' => 'https://bound-latte.test',
-            'redirect_uris' => ['https://bound-latte.test/dashboard'],
-            'organization_id' => '00000000-0000-4000-8000-000000000202',
-            'organization_name' => 'Latte Local',
-            'organization_slug' => 'latte-local',
-            'organization_database_limit' => 1,
-        ];
-
+        config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000301');
         config()->set('services.latte.frontend_url', 'https://current-latte.test');
 
         $user = new User;
@@ -396,15 +373,39 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $this
-            ->withSession(['pane_v1_application' => $application])
-            ->withHeader('Origin', 'https://current-latte.test')
+            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->getJson('/api/v1/session')
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed');
+    }
+
+    public function test_v1_session_origin_validation_reloads_bound_application(): void
+    {
+        config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000201');
+        config()->set('services.latte.frontend_url', 'https://current-latte.test');
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $this
+            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->withHeader('Origin', 'https://previous-latte.test')
             ->getJson('/api/v1/session')
             ->assertForbidden()
             ->assertJsonPath('error.code', 'application_not_allowed');
 
         $this
-            ->withSession(['pane_v1_application' => $application])
-            ->withHeader('Origin', 'https://bound-latte.test')
+            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->withHeader('Origin', 'https://current-latte.test')
             ->getJson('/api/v1/session')
             ->assertOk()
             ->assertJsonPath('data.application.id', '00000000-0000-4000-8000-000000000201');

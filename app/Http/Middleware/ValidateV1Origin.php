@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ValidateV1Origin
 {
-    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application';
+    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -35,24 +35,22 @@ class ValidateV1Origin
 
     private function originMatchesRequestApplication(Request $request, string $origin): bool
     {
-        $trustedOrigin = $this->sessionTrustedOrigin($request);
+        $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
 
-        if ($trustedOrigin === null) {
+        if ($sessionApplicationId === null) {
             return LatteApplicationConfig::isAllowedOrigin($origin);
         }
 
-        return LatteApplicationConfig::normalizeOrigin($origin) === $trustedOrigin;
-    }
-
-    private function sessionTrustedOrigin(Request $request): ?string
-    {
-        $application = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
-
-        if (! is_array($application) || ! is_string($application['trusted_origin'] ?? null)) {
-            return null;
+        if (! is_string($sessionApplicationId) || ! hash_equals($this->currentLatteApplicationId(), $sessionApplicationId)) {
+            return false;
         }
 
-        return LatteApplicationConfig::normalizeOrigin($application['trusted_origin']);
+        return LatteApplicationConfig::isAllowedOrigin($origin);
+    }
+
+    private function currentLatteApplicationId(): string
+    {
+        return (string) config('services.latte.application_id');
     }
 
     private function applicationNotAllowed(Request $request): Response
