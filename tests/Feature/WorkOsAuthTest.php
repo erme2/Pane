@@ -238,6 +238,25 @@ class WorkOsAuthTest extends TestCase
             ->assertJsonPath('data.application.attributes.redirect_uris.0', 'https://latte.test/auth/callback');
     }
 
+    public function test_v1_session_returns_error_envelope_when_not_authenticated(): void
+    {
+        $requestId = (string) Str::uuid();
+
+        $response = $this
+            ->withHeader('X-Request-Id', $requestId)
+            ->getJson('/api/v1/session');
+
+        $response
+            ->assertUnauthorized()
+            ->assertHeader('X-Request-Id', $requestId)
+            ->assertJsonPath('error.code', 'authentication_required')
+            ->assertJsonPath('error.request_id', $requestId)
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
+
+        $this->assertNull($response->json('status'));
+        $this->assertNull($response->json('data'));
+    }
+
     public function test_v1_destroy_session_returns_no_content(): void
     {
         $requestId = (string) Str::uuid();
