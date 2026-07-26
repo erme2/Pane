@@ -127,7 +127,7 @@ class WorkOsAuthController extends Controller
             return $this->callbackErrorResponse(
                 $request,
                 $versioned,
-                (string) $request->input('error_description', $request->input('error')),
+                $this->providerCallbackErrorMessage($request, $versioned),
                 Response::HTTP_BAD_REQUEST,
                 'invalid_request'
             );
@@ -325,6 +325,15 @@ class WorkOsAuthController extends Controller
         }
 
         return response()->json(['message' => $message], $status);
+    }
+
+    private function providerCallbackErrorMessage(Request $request, bool $versioned): string
+    {
+        if ($versioned) {
+            return 'The WorkOS callback was rejected.';
+        }
+
+        return (string) $request->input('error_description', $request->input('error'));
     }
 
     private function requestId(Request $request): string

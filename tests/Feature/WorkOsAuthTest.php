@@ -474,6 +474,43 @@ class WorkOsAuthTest extends TestCase
             ->assertJson(['message' => 'Invalid WorkOS state.']);
     }
 
+    public function test_json_callback_preserves_provider_error_description_for_legacy_route(): void
+    {
+        $response = $this->postJson('/auth/callback', [
+            'error' => 'access_denied',
+            'error_description' => 'Connection conn_123 failed for private@example.test',
+        ]);
+
+        $response
+            ->assertBadRequest()
+            ->assertJson(['message' => 'Connection conn_123 failed for private@example.test']);
+    }
+
+    public function test_v1_json_callback_uses_safe_message_for_provider_errors(): void
+    {
+        $requestId = (string) Str::uuid();
+
+        $response = $this
+            ->withHeader('X-Request-Id', $requestId)
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->postJson('/api/v1/auth/callback', [
+                'error' => 'access_denied',
+                'error_description' => 'Connection conn_123 failed for private@example.test',
+            ]);
+
+        $response
+            ->assertBadRequest()
+            ->assertHeader('X-Request-Id', $requestId)
+            ->assertJsonPath('error.code', 'invalid_request')
+            ->assertJsonPath('error.message', 'The WorkOS callback was rejected.')
+            ->assertJsonPath('error.request_id', $requestId);
+
+        $this->assertStringNotContainsString('conn_123', $response->getContent());
+        $this->assertStringNotContainsString('private@example.test', $response->getContent());
+        $this->assertNull($response->json('error.details'));
+        $this->assertNull($response->json('message'));
+    }
+
     public function test_v1_json_callback_rejects_invalid_state_with_error_envelope(): void
     {
         $requestId = (string) Str::uuid();
