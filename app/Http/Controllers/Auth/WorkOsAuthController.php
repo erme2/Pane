@@ -55,12 +55,20 @@ class WorkOsAuthController extends Controller
 
     private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
     {
+        $intendedRedirectUrl = $versioned
+            ? $this->versionedIntendedRedirectUrl($request)
+            : $this->intendedRedirectUrl($request);
+
+        if ($intendedRedirectUrl instanceof JsonResponse) {
+            return $intendedRedirectUrl;
+        }
+
         $this->workOs->ensureConfigured();
 
         $state = $this->workOs->makeState();
 
         $request->session()->put('workos_state', $state);
-        $request->session()->put('workos_intended_url', $this->intendedRedirectUrl($request));
+        $request->session()->put('workos_intended_url', $intendedRedirectUrl);
 
         $intent = [
             'authorization_url' => $this->workOs->authorizationUrl($state),
@@ -110,13 +118,21 @@ class WorkOsAuthController extends Controller
     private function completeCallbackResponse(Request $request, bool $versioned): JsonResponse
     {
         if ($request->filled('error')) {
-            return response()->json([
-                'message' => $request->input('error_description', $request->input('error')),
-            ], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $versioned,
+                (string) $request->input('error_description', $request->input('error')),
+                Response::HTTP_BAD_REQUEST,
+                'invalid_request'
+            );
         }
 
         if (! $request->filled('code')) {
-            return response()->json(['message' => 'Missing WorkOS authorization code.'], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $versioned,
+                'Missing WorkOS authorization code.',
+                Response::HTTP_BAD_REQUEST,
+                'invalid_request'
+            );
         }
 
         $state = (string) $request->input('state');
@@ -138,7 +154,12 @@ class WorkOsAuthController extends Controller
                     : $this->authenticatedResponse($request);
             }
 
-            return response()->json(['message' => 'Invalid WorkOS state.'], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $versioned,
+                'Invalid WorkOS state.',
+                Response::HTTP_BAD_REQUEST,
+                'invalid_request'
+            );
         }
 
         $authentication = $this->workOs->authenticateWithCode(
@@ -148,7 +169,12 @@ class WorkOsAuthController extends Controller
         );
 
         if (! filled($authentication['user']['email'] ?? null)) {
-            return response()->json(['message' => 'WorkOS did not return a user email.'], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $versioned,
+                'WorkOS did not return a user email.',
+                $versioned ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_BAD_REQUEST,
+                'validation_failed'
+            );
         }
 
         $user = $this->syncUser($authentication);
@@ -262,6 +288,28 @@ class WorkOsAuthController extends Controller
         );
     }
 
+    private function versionedErrorResponse(string $code, string $message, int $status): JsonResponse
+    {
+        $requestId = (string) Str::uuid();
+
+        return response()->json([
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+                'request_id' => $requestId,
+            ],
+        ], $status)->header('X-Request-Id', $requestId);
+    }
+
+    private function callbackErrorResponse(bool $versioned, string $message, int $status, string $code): JsonResponse
+    {
+        if ($versioned) {
+            return $this->versionedErrorResponse($code, $message, $status);
+        }
+
+        return response()->json(['message' => $message], $status);
+    }
+
     private function frontendOrigin(): string
     {
         return $this->originFromUrl((string) config('services.latte.frontend_url'))
@@ -322,6 +370,81 @@ class WorkOsAuthController extends Controller
         }
 
         return $fallback;
+    }
+
+    private function versionedIntendedRedirectUrl(Request $request): string|JsonResponse
+    {
+        $redirectTo = $request->input('redirect_to');
+
+        if (! is_string($redirectTo) || blank($redirectTo)) {
+            return $this->versionedErrorResponse(
+                'validation_failed',
+                'The redirect_to field is required.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        if (! $this->isValidRedirectUrl($redirectTo)) {
+            return $this->versionedErrorResponse(
+                'validation_failed',
+                'The redirect_to field must be a valid redirect URI.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        if (! $this->isAllowedRedirectUrl($redirectTo)) {
+            return $this->versionedErrorResponse(
+                'redirect_not_allowed',
+                'The redirect_to URL is not allowed.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        return $redirectTo;
+    }
+
+    private function isValidRedirectUrl(string $url): bool
+    {
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+            return false;
+        }
+
+        if (isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
+            return false;
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        $host = strtolower($parts['host']);
+
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        return $scheme === 'https'
+            || in_array($host, ['localhost', '127.0.0.1', '[::1]', '::1'], true);
+    }
+
+    private function isAllowedRedirectUrl(string $redirectTo): bool
+    {
+        $allowedOrigins = array_filter(array_merge([
+            config('services.latte.frontend_url'),
+            config('services.workos.return_to'),
+            config('app.url'),
+        ], config('cors.allowed_origins', [])));
+
+        foreach ($allowedOrigins as $allowedOrigin) {
+            if ($this->sameOrigin($redirectTo, $allowedOrigin)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function sameOrigin(string $url, string $allowedOrigin): bool

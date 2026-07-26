@@ -112,6 +112,43 @@ class WorkOsAuthTest extends TestCase
         );
     }
 
+    public function test_v1_login_intent_rejects_untrusted_redirect(): void
+    {
+        config()->set('services.workos.return_to', 'https://latte.test');
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+
+        $response = $this->postJson('/api/v1/auth/login-intents', [
+            'redirect_to' => 'https://evil.test/dashboard',
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'redirect_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']])
+            ->assertSessionMissing('workos_state')
+            ->assertSessionMissing('workos_intended_url');
+
+        $this->assertTrue(Str::isUuid($response->json('error.request_id')));
+        $this->assertNull($response->json('message'));
+    }
+
+    public function test_v1_login_intent_rejects_malformed_redirect(): void
+    {
+        $response = $this->postJson('/api/v1/auth/login-intents', [
+            'redirect_to' => '/dashboard',
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']])
+            ->assertSessionMissing('workos_state')
+            ->assertSessionMissing('workos_intended_url');
+
+        $this->assertTrue(Str::isUuid($response->json('error.request_id')));
+        $this->assertNull($response->json('message'));
+    }
+
     public function test_v1_session_returns_latte_session_payload(): void
     {
         config()->set('services.workos.return_to', 'https://latte.test');
@@ -220,6 +257,57 @@ class WorkOsAuthTest extends TestCase
         $response
             ->assertStatus(Response::HTTP_BAD_REQUEST)
             ->assertJson(['message' => 'Invalid WorkOS state.']);
+    }
+
+    public function test_v1_json_callback_rejects_invalid_state_with_error_envelope(): void
+    {
+        $response = $this
+            ->withSession(['workos_state' => 'expected_state'])
+            ->postJson('/api/v1/auth/callback', [
+                'code' => 'code_123',
+                'state' => 'wrong_state',
+            ]);
+
+        $response
+            ->assertBadRequest()
+            ->assertJsonPath('error.code', 'invalid_request')
+            ->assertJsonPath('error.message', 'Invalid WorkOS state.')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
+
+        $this->assertTrue(Str::isUuid($response->json('error.request_id')));
+        $this->assertNull($response->json('message'));
+    }
+
+    public function test_v1_json_callback_rejects_missing_workos_email_with_error_envelope(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
+
+        Http::fake([
+            'api.workos.com/user_management/authenticate' => Http::response([
+                'user' => [],
+            ]),
+        ]);
+
+        $response = $this
+            ->withSession(['workos_state' => 'expected_state'])
+            ->postJson('/api/v1/auth/callback', [
+                'code' => 'code_123',
+                'state' => 'expected_state',
+            ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonPath('error.message', 'WorkOS did not return a user email.')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
+
+        $this->assertTrue(Str::isUuid($response->json('error.request_id')));
+        $this->assertNull($response->json('error.details'));
+        $this->assertNull($response->json('message'));
+
+        Http::assertSentCount(1);
     }
 
     public function test_user_endpoint_returns_unauthorized_when_not_authenticated(): void
