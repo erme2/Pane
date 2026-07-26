@@ -179,7 +179,10 @@ class WorkOsAuthTest extends TestCase
                 'meta' => ['request_id'],
             ])
             ->assertSessionHas('workos_state')
-            ->assertSessionHas('workos_intended_url', 'https://latte.test/dashboard');
+            ->assertSessionHas('workos_intended_url', 'https://latte.test/dashboard')
+            ->assertSessionHas('pane_v1_application.id', config('services.latte.application_id'))
+            ->assertSessionHas('pane_v1_application.trusted_origin', 'https://latte.test')
+            ->assertSessionHas('pane_v1_application.organization_id', config('services.latte.organization_id'));
 
         $this->assertStringStartsWith(
             'https://api.workos.com/user_management/authorize?',
@@ -320,6 +323,91 @@ class WorkOsAuthTest extends TestCase
 
         $this->assertTrue(Str::isUuid($response->json('data.user.id')));
         $this->assertTrue(Str::isUuid($response->json('data.membership.id')));
+    }
+
+    public function test_v1_session_uses_application_bound_during_login(): void
+    {
+        $application = [
+            'id' => '00000000-0000-4000-8000-000000000201',
+            'name' => 'Bound Latte',
+            'trusted_origin' => 'https://bound-latte.test',
+            'redirect_uris' => ['https://bound-latte.test/dashboard'],
+            'organization_id' => '00000000-0000-4000-8000-000000000202',
+            'organization_name' => 'Latte Local',
+            'organization_slug' => 'latte-local',
+            'organization_database_limit' => 1,
+        ];
+
+        config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000301');
+        config()->set('services.latte.organization_id', '00000000-0000-4000-8000-000000000302');
+        config()->set('services.latte.frontend_url', 'https://current-latte.test');
+        config()->set('services.latte.redirect_uris', ['https://current-latte.test/dashboard']);
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this
+            ->withSession(['pane_v1_application' => $application])
+            ->getJson('/api/v1/session');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.application.id', '00000000-0000-4000-8000-000000000201')
+            ->assertJsonPath('data.application.attributes.name', 'Bound Latte')
+            ->assertJsonPath('data.application.attributes.trusted_origin', 'https://bound-latte.test')
+            ->assertJsonPath('data.application.attributes.redirect_uris.0', 'https://bound-latte.test/dashboard')
+            ->assertJsonPath('data.organization.id', '00000000-0000-4000-8000-000000000202');
+    }
+
+    public function test_v1_session_origin_validation_uses_bound_application(): void
+    {
+        $application = [
+            'id' => '00000000-0000-4000-8000-000000000201',
+            'name' => 'Bound Latte',
+            'trusted_origin' => 'https://bound-latte.test',
+            'redirect_uris' => ['https://bound-latte.test/dashboard'],
+            'organization_id' => '00000000-0000-4000-8000-000000000202',
+            'organization_name' => 'Latte Local',
+            'organization_slug' => 'latte-local',
+            'organization_database_limit' => 1,
+        ];
+
+        config()->set('services.latte.frontend_url', 'https://current-latte.test');
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $this
+            ->withSession(['pane_v1_application' => $application])
+            ->withHeader('Origin', 'https://current-latte.test')
+            ->getJson('/api/v1/session')
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed');
+
+        $this
+            ->withSession(['pane_v1_application' => $application])
+            ->withHeader('Origin', 'https://bound-latte.test')
+            ->getJson('/api/v1/session')
+            ->assertOk()
+            ->assertJsonPath('data.application.id', '00000000-0000-4000-8000-000000000201');
     }
 
     public function test_v1_csrf_cookie_rejects_missing_origin(): void

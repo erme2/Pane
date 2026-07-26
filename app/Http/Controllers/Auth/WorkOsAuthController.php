@@ -19,6 +19,7 @@ use Ramsey\Uuid\Uuid;
 class WorkOsAuthController extends Controller
 {
     private const STATE_COOKIE = 'pane_workos_state';
+    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application';
 
     public function __construct(private readonly WorkOsService $workOs) {}
 
@@ -70,6 +71,10 @@ class WorkOsAuthController extends Controller
 
         $request->session()->put('workos_state', $state);
         $request->session()->put('workos_intended_url', $intendedRedirectUrl);
+
+        if ($versioned) {
+            $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $this->currentLatteApplication());
+        }
 
         $intent = [
             'authorization_url' => $this->workOs->authorizationUrl($state),
@@ -223,9 +228,9 @@ class WorkOsAuthController extends Controller
     {
         $user = $request->user();
         $now = now()->toJSON();
-        $frontendOrigin = LatteApplicationConfig::trustedOrigin();
-        $applicationId = (string) config('services.latte.application_id');
-        $organizationId = (string) config('services.latte.organization_id');
+        $application = $this->sessionLatteApplication($request) ?? $this->currentLatteApplication();
+        $applicationId = $application['id'];
+        $organizationId = $application['organization_id'];
         $email = (string) $user->getAttribute('email');
         $name = (string) ($user->getAttribute('name') ?: $email);
         $role = ((int) $user->getAttribute('user_type_id')) === 1
@@ -251,9 +256,9 @@ class WorkOsAuthController extends Controller
                     'type' => 'application',
                     'attributes' => [
                         'kind' => 'latte',
-                        'name' => config('app.name', 'Latte'),
-                        'trusted_origin' => $frontendOrigin,
-                        'redirect_uris' => LatteApplicationConfig::redirectUris(),
+                        'name' => $application['name'],
+                        'trusted_origin' => $application['trusted_origin'],
+                        'redirect_uris' => $application['redirect_uris'],
                         'status' => 'active',
                         'created_at' => $now,
                         'updated_at' => $now,
@@ -263,10 +268,10 @@ class WorkOsAuthController extends Controller
                     'id' => $organizationId,
                     'type' => 'organization',
                     'attributes' => [
-                        'name' => 'Latte Local',
-                        'slug' => 'latte-local',
+                        'name' => $application['organization_name'],
+                        'slug' => $application['organization_slug'],
                         'status' => 'active',
-                        'database_limit' => 1,
+                        'database_limit' => $application['organization_database_limit'],
                         'created_at' => $now,
                         'updated_at' => $now,
                     ],
@@ -297,6 +302,57 @@ class WorkOsAuthController extends Controller
             Uuid::NAMESPACE_URL,
             'pane:membership:'.$organizationId.':'.$user->getKey()
         );
+    }
+
+    /**
+     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}
+     */
+    private function currentLatteApplication(): array
+    {
+        return [
+            'id' => (string) config('services.latte.application_id'),
+            'name' => (string) config('app.name', 'Latte'),
+            'trusted_origin' => LatteApplicationConfig::trustedOrigin(),
+            'redirect_uris' => LatteApplicationConfig::redirectUris(),
+            'organization_id' => (string) config('services.latte.organization_id'),
+            'organization_name' => 'Latte Local',
+            'organization_slug' => 'latte-local',
+            'organization_database_limit' => 1,
+        ];
+    }
+
+    /**
+     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}|null
+     */
+    private function sessionLatteApplication(Request $request): ?array
+    {
+        $application = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
+
+        if (! is_array($application)
+            || ! is_string($application['id'] ?? null)
+            || ! is_string($application['name'] ?? null)
+            || ! is_string($application['trusted_origin'] ?? null)
+            || ! is_array($application['redirect_uris'] ?? null)
+            || ! is_string($application['organization_id'] ?? null)
+            || ! is_string($application['organization_name'] ?? null)
+            || ! is_string($application['organization_slug'] ?? null)
+            || ! is_int($application['organization_database_limit'] ?? null)
+        ) {
+            return null;
+        }
+
+        $redirectUris = array_values(array_filter($application['redirect_uris'], is_string(...)));
+
+        return [
+            'id' => $application['id'],
+            'name' => $application['name'],
+            'trusted_origin' => $application['trusted_origin'],
+            'redirect_uris' => $redirectUris,
+            'organization_id' => $application['organization_id'],
+            'organization_name' => $application['organization_name'],
+            'organization_slug' => $application['organization_slug'],
+            'organization_database_limit' => $application['organization_database_limit'],
+        ];
     }
 
     private function versionedErrorResponse(Request $request, string $code, string $message, int $status): JsonResponse

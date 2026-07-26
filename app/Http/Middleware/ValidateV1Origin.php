@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ValidateV1Origin
 {
+    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application';
+
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->is('api/v1/*')) {
@@ -24,11 +26,33 @@ class ValidateV1Origin
 
         $origin = $request->headers->get('Origin');
 
-        if (! is_string($origin) || ! LatteApplicationConfig::isAllowedOrigin($origin)) {
+        if (! is_string($origin) || ! $this->originMatchesRequestApplication($request, $origin)) {
             return $this->applicationNotAllowed($request);
         }
 
         return $next($request);
+    }
+
+    private function originMatchesRequestApplication(Request $request, string $origin): bool
+    {
+        $trustedOrigin = $this->sessionTrustedOrigin($request);
+
+        if ($trustedOrigin === null) {
+            return LatteApplicationConfig::isAllowedOrigin($origin);
+        }
+
+        return LatteApplicationConfig::normalizeOrigin($origin) === $trustedOrigin;
+    }
+
+    private function sessionTrustedOrigin(Request $request): ?string
+    {
+        $application = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
+
+        if (! is_array($application) || ! is_string($application['trusted_origin'] ?? null)) {
+            return null;
+        }
+
+        return LatteApplicationConfig::normalizeOrigin($application['trusted_origin']);
     }
 
     private function applicationNotAllowed(Request $request): Response
