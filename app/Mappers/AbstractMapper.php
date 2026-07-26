@@ -32,6 +32,8 @@ abstract class AbstractMapper
         'validation_types' => 'validation_types',
         'users' => 'users',
         'user_types' => 'user_types',
+        'organizations' => 'organizations',
+        'organization_memberships' => 'organization_memberships',
         'test_table' => 'test_table',
     ];
     const array FIELD_TYPES = [

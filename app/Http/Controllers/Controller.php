@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
 use App\Mappers\AbstractMapper;
+use App\Models\User;
 use App\Stories\StoryPlot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,8 +16,6 @@ class Controller extends BaseController
 {
     use ResponseHelper, StoryHelper;
 
-    private const ADMINISTRATOR_USER_TYPE_ID = 1;
-
     private const PROTECTED_CRUD_SUBJECTS = [
         AbstractMapper::TABLES['tables'],
         AbstractMapper::TABLES['fields'],
@@ -25,6 +24,8 @@ class Controller extends BaseController
         AbstractMapper::TABLES['validation_types'],
         AbstractMapper::TABLES['users'],
         AbstractMapper::TABLES['user_types'],
+        AbstractMapper::TABLES['organizations'],
+        AbstractMapper::TABLES['organization_memberships'],
     ];
 
     /**
@@ -67,7 +68,7 @@ class Controller extends BaseController
         }
 
         $user = $request->user();
-        $isAdministrator = (int) $user?->user_type_id === self::ADMINISTRATOR_USER_TYPE_ID;
+        $isAdministrator = (int) $user?->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID;
 
         if (in_array($subject, self::PROTECTED_CRUD_SUBJECTS, true) && ! $isAdministrator) {
             throw new SystemException("Forbidden CRUD subject ($subject)", Response::HTTP_FORBIDDEN);

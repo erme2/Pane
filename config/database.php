@@ -17,6 +17,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'mysql'),
 
+    'table_prefix' => env('DB_TABLE_PREFIX', 'pane_'),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections
