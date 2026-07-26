@@ -2693,12 +2693,6 @@
                 "properties": {
                     "redirect_to": {
                         "$ref": "#/components/schemas/RedirectUriInput"
-                    },
-                    "invitation_token": {
-                        "type": "string",
-                        "minLength": 32,
-                        "maxLength": 512,
-                        "writeOnly": true
                     }
                 },
                 "additionalProperties": false
@@ -2735,6 +2729,16 @@
                 "additionalProperties": false
             },
             "AuthCallbackInput": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/AuthCallbackSuccessInput"
+                    },
+                    {
+                        "$ref": "#/components/schemas/AuthCallbackProviderErrorInput"
+                    }
+                ]
+            },
+            "AuthCallbackSuccessInput": {
                 "type": "object",
                 "required": [
                     "code",
@@ -2742,6 +2746,30 @@
                 ],
                 "properties": {
                     "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "writeOnly": true
+                    },
+                    "state": {
+                        "type": "string",
+                        "minLength": 32,
+                        "writeOnly": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "AuthCallbackProviderErrorInput": {
+                "type": "object",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "minLength": 1,
+                        "writeOnly": true
+                    },
+                    "error_description": {
                         "type": "string",
                         "minLength": 1,
                         "writeOnly": true
@@ -5565,13 +5593,7 @@
                                         "code": {
                                             "type": "string",
                                             "enum": [
-                                                "validation_failed",
-                                                "invitation_invalid",
-                                                "invitation_expired",
-                                                "invitation_revoked",
-                                                "invitation_already_accepted",
-                                                "invitation_email_mismatch",
-                                                "invitation_organization_mismatch"
+                                                "validation_failed"
                                             ]
                                         },
                                         "message": {
@@ -6545,13 +6567,7 @@
                 "application_not_allowed"
             ],
             "422": [
-                "validation_failed",
-                "invitation_invalid",
-                "invitation_expired",
-                "invitation_revoked",
-                "invitation_already_accepted",
-                "invitation_email_mismatch",
-                "invitation_organization_mismatch"
+                "validation_failed"
             ],
             "429": [
                 "rate_limited"

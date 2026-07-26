@@ -13,7 +13,6 @@ cp .env.testing .env
 | Script | Purpose |
 | --- | --- |
 | `bash/clear.sh` | Clears Laravel caches and compiled framework artifacts for one environment. |
-| `bash/generate-certs.sh` | Creates locally trusted HTTPS certificates for Pane and Burro development hosts. |
 | `bash/refresh.sh` | Rebuilds the configured database, runs migrations, and optionally loads test schema and seed data. |
 | `bash/test.sh` | Runs the Laravel test suite, optionally refreshing the database before the run. |
 
@@ -30,26 +29,6 @@ Options:
 - `-f`: Laravel environment name; defaults to `testing`.
 
 Use this when cached configuration, routes, or views are stale during local development or testing.
-
-## `bash/generate-certs.sh`
-
-Installs the local `mkcert` certificate authority when necessary and generates a shared local development certificate for Pane and Burro.
-
-```bash
-./bash/generate-certs.sh
-```
-
-Requirements:
-
-- `mkcert` must be installed.
-- Firefox users should also install `nss` so Firefox trusts the local certificate authority.
-
-Outputs:
-
-- `nginx/certs/localhost.pem`
-- `nginx/certs/localhost-key.pem`
-
-The generated certificate covers `pane.localhost`, `burro.localhost`, `localhost`, `127.0.0.1`, and `::1`. The `nginx/certs` directory is ignored by Git because it contains local private key material.
 
 ## `bash/refresh.sh`
 
@@ -110,12 +89,6 @@ The CI-friendly full-suite command is:
 Use `-r no` only when the database has already been refreshed and you intentionally want to reuse it while iterating locally without invoking `bash/refresh.sh`.
 
 ## Common Workflows
-
-Regenerate local HTTPS certificates:
-
-```bash
-./bash/generate-certs.sh
-```
 
 Refresh the default SQLite test database with test migrations and seed data:
 

@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\LatteApplicationConfig;
+
 return [
 
     /*
@@ -15,19 +17,20 @@ return [
     |
     */
 
-    'paths' => ['auth/*'],
+    'paths' => ['auth/*', 'api/v1/*'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_filter([
-        env('FRONTEND_URL', 'http://localhost:5173'),
+        LatteApplicationConfig::trustedOriginFromUrl((string) env('FRONTEND_URL', 'https://latte.localhost'))
+            ?? 'https://latte.localhost',
     ]),
 
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-Request-Id'],
 
     'max_age' => 0,
 

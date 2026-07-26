@@ -14,8 +14,9 @@ Pane uses `.env.example` as the template for local and deployed environment file
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.
 - `TRUSTED_HOSTS` is a comma-separated list of extra hostnames that legitimately route to Pane and are not already covered by `APP_URL`.
 - `pane.localhost` is already covered when `APP_URL=https://pane.localhost`, so it does not need to be repeated in `TRUSTED_HOSTS`.
-- `burro.localhost` should not normally be in `TRUSTED_HOSTS`. Burro proxies `/pane/*` requests to Pane and should send Pane a Pane host header such as `pane.localhost` through Burro's `VITE_PANE_PROXY_HOST=pane.localhost` setting.
-- Add `burro.localhost` only if Pane actually receives requests with `Host: burro.localhost`; that would mean the proxy is preserving Burro's browser host instead of sending Pane's host.
+- `latte.localhost` should not normally be in `TRUSTED_HOSTS`. Latte proxies `/pane/*` requests to Pane and should send Pane a Pane host header such as `pane.localhost` through Latte's `VITE_PANE_PROXY_HOST=pane.localhost` setting.
+- Add `latte.localhost` only if Pane actually receives requests with `Host: latte.localhost`; that would mean the proxy is preserving Latte's browser host instead of sending Pane's host.
+- Pane does not run frontend Nginx vhosts for Latte-derived apps. Latte-derived frontends own their browser hostnames, HTTPS certificates, and `/pane` proxy.
 
 Examples:
 
@@ -47,11 +48,12 @@ TRUSTED_HOSTS=pane.staging.example.com,pane.internal.example.com
 
 - `CACHE_DRIVER` and `FILESYSTEM_DISK` configure framework services used by Pane. The example values are local-development defaults.
 
-## WorkOS And Burro
+## WorkOS And Latte
 
 - `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_PROVIDER`, `WORKOS_ORGANIZATION_ID`, and `WORKOS_CONNECTION_ID` configure WorkOS AuthKit for Pane.
-- `FRONTEND_URL` is the trusted Burro origin Pane may return users to after authentication.
-- `WORKOS_REDIRECT_URI` should point to Burro's callback route in the Burro/Pane browser flow, for example `https://burro.localhost/auth/callback`.
+- `FRONTEND_URL` is the trusted Latte origin Pane uses for v1 session application projection and CORS.
+- `LATTE_REDIRECT_URIS` is a comma-separated list of exact, normalized Latte return URLs that v1 login intents may use.
+- `WORKOS_REDIRECT_URI` should point to Latte's callback route in the Latte/Pane browser flow, for example `https://latte.localhost/auth/callback`.
 - `WORKOS_RETURN_TO` is the post-login return origin or URL used by WorkOS/Pane.
 
-For the full WorkOS and Burro browser flow, see [WorkOS and Burro Authentication](workos-burro-auth.md).
+For the full WorkOS and Latte browser flow, see [WorkOS and Latte Authentication](workos-latte-auth.md).

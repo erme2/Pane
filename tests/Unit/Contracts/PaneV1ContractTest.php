@@ -72,19 +72,60 @@ class PaneV1ContractTest extends TestCase
         $this->assertStringContainsString('impersonation target', $this->documentation);
     }
 
-    public function test_authentication_csrf_and_invitation_activation_are_versioned(): void
+    public function test_authentication_csrf_and_session_routes_are_versioned(): void
     {
         $this->assertArrayHasKey('/csrf-cookie', $this->contract['paths']);
         $this->assertArrayHasKey('/auth/login-intents', $this->contract['paths']);
         $this->assertArrayHasKey('/auth/callback', $this->contract['paths']);
         $this->assertArrayHasKey('/session', $this->contract['paths']);
         $this->assertSame(
+            '#/components/schemas/AuthCallbackInput',
+            $this->contract['paths']['/auth/callback']['post']['requestBody']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(
             '#/components/schemas/LoginIntentInput',
             $this->contract['paths']['/auth/login-intents']['post']['requestBody']['content']['application/json']['schema']['$ref'],
         );
-        $this->assertTrue($this->contract['components']['schemas']['LoginIntentInput']['properties']['invitation_token']['writeOnly']);
+        $this->assertArrayNotHasKey(
+            'invitation_token',
+            $this->contract['components']['schemas']['LoginIntentInput']['properties'],
+        );
         $this->assertArrayHasKey('post', $this->contract['paths']['/csrf-cookie']);
         $this->assertArrayNotHasKey('get', $this->contract['paths']['/csrf-cookie']);
+    }
+
+    public function test_auth_callback_accepts_success_and_provider_error_inputs(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+
+        $this->assertSame(
+            [
+                ['$ref' => '#/components/schemas/AuthCallbackSuccessInput'],
+                ['$ref' => '#/components/schemas/AuthCallbackProviderErrorInput'],
+            ],
+            $schemas['AuthCallbackInput']['oneOf'],
+        );
+
+        $success = $schemas['AuthCallbackSuccessInput'];
+        $providerError = $schemas['AuthCallbackProviderErrorInput'];
+
+        $this->assertSame(['code', 'state'], $success['required']);
+        $this->assertTrue($success['properties']['code']['writeOnly']);
+        $this->assertTrue($success['properties']['state']['writeOnly']);
+        $this->assertFalse($success['additionalProperties']);
+
+        $this->assertSame(['error'], $providerError['required']);
+        $this->assertTrue($providerError['properties']['error']['writeOnly']);
+        $this->assertTrue($providerError['properties']['error_description']['writeOnly']);
+        $this->assertTrue($providerError['properties']['state']['writeOnly']);
+        $this->assertSame(
+            $success['properties']['state'],
+            $providerError['properties']['state'],
+        );
+        $this->assertFalse($providerError['additionalProperties']);
+
+        $this->assertStringContainsString('Provider rejection callbacks send `error`, optional `error_description`, and', $this->documentation);
+        $this->assertStringContainsString('the forwarded `state` when present', $this->documentation);
     }
 
     public function test_every_operation_has_an_id_and_declares_responses(): void
@@ -281,32 +322,27 @@ class PaneV1ContractTest extends TestCase
         $this->assertStringContainsString('never accepts a caller-selected expiry', $this->documentation);
     }
 
-    public function test_auth_callback_exposes_safe_invitation_acceptance_codes(): void
+    public function test_auth_callback_exposes_safe_validation_rejection_code(): void
     {
         $operation = $this->contract['paths']['/auth/callback']['post'];
         $matrix = $this->contract['x-pane-operation-errors']['completeAuthCallback'];
         $response = $this->contract['components']['responses'][basename($operation['responses']['422']['$ref'])];
         $error = $response['content']['application/json']['schema']['properties']['error'];
         $codes = $error['properties']['code']['enum'];
-        $expected = [
-            'validation_failed',
-            'invitation_invalid',
-            'invitation_expired',
-            'invitation_revoked',
-            'invitation_already_accepted',
-            'invitation_email_mismatch',
-            'invitation_organization_mismatch',
-        ];
+        $expected = ['validation_failed'];
 
         $this->assertSame('#/components/responses/Error422AuthCallbackRejected', $operation['responses']['422']['$ref']);
         $this->assertSame($expected, $matrix['422']);
         $this->assertSame($expected, $codes);
         $this->assertNotContains('details', $error['required']);
         $this->assertArrayNotHasKey('details', $error['properties']);
-        $this->assertStringContainsString('invitation_email_mismatch', $this->documentation);
-        $this->assertStringContainsString('Generic malformed callback input remains', $this->documentation);
-        $this->assertStringContainsString('Clients render invitation outcomes from `error.code`', $this->documentation);
-        $this->assertStringContainsString('callback rejection responses omit `error.details`', $this->documentation);
+        $this->assertStringNotContainsString('optional invitation intent', $this->documentation);
+        $this->assertStringNotContainsString('New invitation activation is implemented only in v1', $this->documentation);
+        $this->assertStringContainsString('Malformed callback input and', $this->documentation);
+        $this->assertStringContainsString('invalid state also return `400 invalid_request`', $this->documentation);
+        $this->assertStringContainsString('returns `422 validation_failed`', $this->documentation);
+        $this->assertStringContainsString('rejection responses omit', $this->documentation);
+        $this->assertStringContainsString('`error.details`', $this->documentation);
     }
 
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void

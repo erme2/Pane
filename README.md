@@ -7,9 +7,8 @@ applications created from Latte.
 
 Each Pane installation is an independent universe that may serve many unrelated
 organizations. Every Latte-derived application is linked to exactly one
-organization and uses Pane as its only data-access layer. Burro is the private
-Pane-administrator console; the current Burro repository is planned to become
-the Latte frontend template.
+organization and uses Pane as its only data-access layer. A separate Burro
+application is planned as the private Pane-administrator console.
 
 The current code is a transitional metadata-driven CRUD implementation over one
 default database. The target introduces invite-only multi-tenancy, managed
@@ -47,30 +46,14 @@ complete `.env.example` contract.
 ## Local development requirements
 
 - Docker Desktop with Docker Compose
-- `mkcert` for locally trusted HTTPS certificates
-- `nss` when using Firefox
 
-On macOS, install the certificate tooling with Homebrew:
+Pane's Compose stack runs the backend application and database on the shared
+local Docker network. It does not run browser-facing Nginx vhosts for
+Latte-derived applications.
 
-```bash
-brew install mkcert
-brew install nss # Required for Firefox trust-store support
-mkcert -install
-```
-
-Add the local development domains to `/etc/hosts`:
-
-```text
-127.0.0.1 pane.localhost burro.localhost
-```
-
-Generate or regenerate the certificate covering both applications:
-
-```bash
-./bash/generate-certs.sh
-```
-
-The script creates `nginx/certs/localhost.pem` and `nginx/certs/localhost-key.pem`. The entire `nginx/certs` directory is ignored by Git because its private key is local development material. After Nginx HTTPS is configured, Pane and Burro are available at `https://pane.localhost` and `https://burro.localhost`.
+Latte-derived frontends own their browser hostnames, HTTPS certificates, and
+`/pane` proxy. For local browser access, start the target Latte-derived app and
+use that app's documented hostname, for example `https://latte.localhost`.
 
 ## Testing
 
@@ -107,8 +90,10 @@ Set these values in your environment:
 ```dotenv
 WORKOS_API_KEY=sk_test_...
 WORKOS_CLIENT_ID=client_...
-WORKOS_REDIRECT_URI=http://localhost:5173/auth/callback
-WORKOS_RETURN_TO=http://localhost:5173
+FRONTEND_URL=https://latte.localhost
+LATTE_REDIRECT_URIS=https://latte.localhost/auth/callback,https://latte.localhost/dashboard
+WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback
+WORKOS_RETURN_TO=https://latte.localhost
 WORKOS_PROVIDER=authkit
 SESSION_COOKIE=pane_session
 SESSION_SECURE_COOKIE=false
@@ -119,13 +104,13 @@ Add `WORKOS_REDIRECT_URI` to the Redirects tab for your WorkOS application.
 Routes:
 
 1. `GET /auth/login-url` returns the WorkOS AuthKit authorization URL as JSON.
-2. `POST /auth/callback` exchanges WorkOS callback params, creates the Pane session, and returns the authenticated user to Burro.
+2. `POST /auth/callback` exchanges WorkOS callback params, creates the Pane session, and returns the authenticated user to Latte.
 3. `GET /auth/login` redirects to WorkOS AuthKit.
 4. `GET /auth/callback` handles the WorkOS callback for legacy Pane-owned redirects.
 5. `GET /auth/user` returns the user attached to the authenticated Pane session.
 
-Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Burro receives only the user snapshot and organization ID.
+Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Latte receives only the user snapshot and organization ID.
 
-For the full Burro and Pane callback sequence, see [WorkOS and Burro Authentication](docs/workos-burro-auth.md).
+For the full Latte and Pane callback sequence, see [WorkOS and Latte Authentication](docs/workos-latte-auth.md).
 
 For how that authenticated session gates CRUD routes, see [CRUD Authentication and Authorization](docs/crud-authentication.md).

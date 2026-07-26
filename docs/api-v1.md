@@ -125,20 +125,20 @@ suspension, or organization suspension/closure.
 - `POST /csrf-cookie` initializes CSRF protection from a request whose browser
   `Origin` identifies the application. This bootstrap route does not itself
   require a CSRF token.
-- `POST /auth/login-intents` stores redirect and optional invitation intent in
-  Pane's session and returns the WorkOS authorization URL and OAuth state.
-- `POST /auth/callback` completes WorkOS authentication. If the login intent
-  contains an invitation token, Pane atomically validates the token, verified
-  WorkOS email, application organization, and invitation state before creating
-  or reactivating the membership. The token is never returned or put in a URL.
-  Invitation acceptance failures return safe public `422` codes:
-  `invitation_invalid`, `invitation_expired`, `invitation_revoked`,
-  `invitation_already_accepted`, `invitation_email_mismatch`, or
-  `invitation_organization_mismatch`. Generic malformed callback input remains
-  `validation_failed`. Clients render invitation outcomes from `error.code`;
-  callback rejection responses omit `error.details` and must not expose
-  invitation tokens, organization identifiers, target emails, or
-  identity-provider data.
+- `POST /auth/login-intents` stores the redirect target in Pane's session and
+  returns the WorkOS authorization URL and OAuth state. The request body accepts
+  only `redirect_to`; unsupported writable fields are rejected instead of being
+  stored as login intent metadata.
+- `POST /auth/callback` completes WorkOS authentication, synchronizes the user,
+  and starts the server-side session from a successful `code`/`state` callback.
+  Provider rejection callbacks send `error`, optional `error_description`, and
+  the forwarded `state` when present; Pane returns a safe `400 invalid_request`
+  response and does not echo provider details. Malformed callback input and
+  invalid state also return `400 invalid_request`. A completed WorkOS exchange
+  whose returned user payload fails Pane validation, such as a missing email,
+  returns `422 validation_failed`. Callback rejection responses omit
+  `error.details` and must not expose organization identifiers, target emails,
+  or identity-provider data.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` logs out and invalidates the Pane session.
@@ -322,10 +322,10 @@ fall back to them.
 During migration, the current `/auth/login-url`, `/auth/callback`, and
 `/auth/user` routes remain compatibility endpoints for the current Latte
 client. Their v1 replacements are `/api/v1/auth/login-intents`,
-`/api/v1/auth/callback`, and `/api/v1/session`. New invitation activation is
-implemented only in v1. The compatibility endpoints follow the same origin,
-redirect, OAuth-state, safe-error, session, and CSRF invariants and are removed
-under the policy below after Latte migrates.
+`/api/v1/auth/callback`, and `/api/v1/session`. Invitation activation is
+deferred until the invitation service is implemented. The compatibility
+endpoints follow the same origin, redirect, OAuth-state, safe-error, session,
+and CSRF invariants and are removed under the policy below after Latte migrates.
 
 Migration proceeds endpoint family by endpoint family:
 

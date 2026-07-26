@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\WorkOsService;
+use App\Support\LatteApplicationConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,26 +14,89 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 
 class WorkOsAuthController extends Controller
 {
     private const STATE_COOKIE = 'pane_workos_state';
+    private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
     public function __construct(private readonly WorkOsService $workOs) {}
 
     public function loginUrl(Request $request): JsonResponse
     {
+        return $this->loginIntentResponse($request, false);
+    }
+
+    public function csrfCookie(Request $request): Response
+    {
+        $request->session()->regenerateToken();
+
+        return $this->versionedNoContentResponse($request);
+    }
+
+    public function loginIntent(Request $request): JsonResponse
+    {
+        return $this->loginIntentResponse($request, true);
+    }
+
+    public function session(Request $request): JsonResponse
+    {
+        return $this->versionedAuthenticatedResponse($request);
+    }
+
+    public function destroySession(Request $request): Response|JsonResponse
+    {
+        $application = $this->activeSessionLatteApplication($request);
+
+        if ($application instanceof JsonResponse) {
+            return $application;
+        }
+
+        Auth::guard()->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return $this->versionedNoContentResponse($request);
+    }
+
+    private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
+    {
+        $intendedRedirectUrl = $versioned
+            ? $this->versionedIntendedRedirectUrl($request)
+            : $this->intendedRedirectUrl($request);
+
+        if ($intendedRedirectUrl instanceof JsonResponse) {
+            return $intendedRedirectUrl;
+        }
+
         $this->workOs->ensureConfigured();
 
         $state = $this->workOs->makeState();
 
         $request->session()->put('workos_state', $state);
-        $request->session()->put('workos_intended_url', $this->intendedRedirectUrl($request));
+        $request->session()->put('workos_intended_url', $intendedRedirectUrl);
 
-        return response()->json([
+        if ($versioned) {
+            $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $this->currentLatteApplicationId());
+        }
+
+        $intent = [
             'authorization_url' => $this->workOs->authorizationUrl($state),
             'state' => $state,
-        ])->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
+        ];
+        $requestId = $this->requestId($request);
+        $payload = $versioned
+            ? ['data' => $intent, 'meta' => ['request_id' => $requestId]]
+            : $intent;
+
+        $response = response()->json($payload)
+            ->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
+
+        return $versioned
+            ? $response->header('X-Request-Id', $requestId)
+            : $response;
     }
 
     public function login(Request $request): RedirectResponse
@@ -60,14 +124,34 @@ class WorkOsAuthController extends Controller
 
     public function completeCallback(Request $request): JsonResponse
     {
+        return $this->completeCallbackResponse($request, false);
+    }
+
+    public function completeV1Callback(Request $request): JsonResponse
+    {
+        return $this->completeCallbackResponse($request, true);
+    }
+
+    private function completeCallbackResponse(Request $request, bool $versioned): JsonResponse
+    {
         if ($request->filled('error')) {
-            return response()->json([
-                'message' => $request->input('error_description', $request->input('error')),
-            ], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $request,
+                $versioned,
+                $this->providerCallbackErrorMessage($request, $versioned),
+                Response::HTTP_BAD_REQUEST,
+                'invalid_request'
+            );
         }
 
         if (! $request->filled('code')) {
-            return response()->json(['message' => 'Missing WorkOS authorization code.'], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $request,
+                $versioned,
+                'Missing WorkOS authorization code.',
+                Response::HTTP_BAD_REQUEST,
+                'invalid_request'
+            );
         }
 
         $state = (string) $request->input('state');
@@ -84,10 +168,18 @@ class WorkOsAuthController extends Controller
                 (string) $request->session()->get('workos_completed_state'),
                 $state
             )) {
-                return $this->authenticatedResponse($request);
+                return $versioned
+                    ? $this->versionedAuthenticatedResponse($request)
+                    : $this->authenticatedResponse($request);
             }
 
-            return response()->json(['message' => 'Invalid WorkOS state.'], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $request,
+                $versioned,
+                'Invalid WorkOS state.',
+                Response::HTTP_BAD_REQUEST,
+                'invalid_request'
+            );
         }
 
         $authentication = $this->workOs->authenticateWithCode(
@@ -97,7 +189,13 @@ class WorkOsAuthController extends Controller
         );
 
         if (! filled($authentication['user']['email'] ?? null)) {
-            return response()->json(['message' => 'WorkOS did not return a user email.'], Response::HTTP_BAD_REQUEST);
+            return $this->callbackErrorResponse(
+                $request,
+                $versioned,
+                'WorkOS did not return a user email.',
+                $versioned ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_BAD_REQUEST,
+                'validation_failed'
+            );
         }
 
         $user = $this->syncUser($authentication);
@@ -114,7 +212,9 @@ class WorkOsAuthController extends Controller
 
         Cookie::queue(Cookie::forget(self::STATE_COOKIE));
 
-        return $this->authenticatedResponse($request);
+        return $versioned
+            ? $this->versionedAuthenticatedResponse($request)
+            : $this->authenticatedResponse($request);
     }
 
     public function user(Request $request): JsonResponse
@@ -130,10 +230,199 @@ class WorkOsAuthController extends Controller
         ]);
     }
 
+    private function versionedAuthenticatedResponse(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $now = now()->toJSON();
+        $application = $this->activeSessionLatteApplication($request);
+
+        if ($application instanceof JsonResponse) {
+            return $application;
+        }
+
+        $applicationId = $application['id'];
+        $organizationId = $application['organization_id'];
+        $email = (string) $user->getAttribute('email');
+        $name = (string) ($user->getAttribute('name') ?: $email);
+        $role = ((int) $user->getAttribute('user_type_id')) === 1
+            ? 'organization_administrator'
+            : 'organization_user';
+        $userId = $this->versionedUserId($user);
+        $membershipId = $this->versionedMembershipId($organizationId, $user);
+        $requestId = $this->requestId($request);
+
+        return response()->json([
+            'data' => [
+                'mode' => 'latte',
+                'user' => [
+                    'id' => $userId,
+                    'type' => 'user',
+                    'attributes' => [
+                        'email' => $email,
+                        'name' => $name,
+                    ],
+                ],
+                'application' => [
+                    'id' => $applicationId,
+                    'type' => 'application',
+                    'attributes' => [
+                        'kind' => 'latte',
+                        'name' => $application['name'],
+                        'trusted_origin' => $application['trusted_origin'],
+                        'redirect_uris' => $application['redirect_uris'],
+                        'status' => 'active',
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                ],
+                'organization' => [
+                    'id' => $organizationId,
+                    'type' => 'organization',
+                    'attributes' => [
+                        'name' => $application['organization_name'],
+                        'slug' => $application['organization_slug'],
+                        'status' => 'active',
+                        'database_limit' => $application['organization_database_limit'],
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                ],
+                'membership' => [
+                    'id' => $membershipId,
+                    'type' => 'membership',
+                    'attributes' => [
+                        'role' => $role,
+                        'status' => 'active',
+                        'created_at' => optional($user->getAttribute('created_at'))->toJSON() ?: $now,
+                        'updated_at' => optional($user->getAttribute('updated_at'))->toJSON() ?: $now,
+                    ],
+                ],
+            ],
+            'meta' => ['request_id' => $requestId],
+        ])->header('X-Request-Id', $requestId);
+    }
+
+    private function versionedUserId(User $user): string
+    {
+        return (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'pane:user:'.$user->getKey());
+    }
+
+    private function versionedMembershipId(string $organizationId, User $user): string
+    {
+        return (string) Uuid::uuid5(
+            Uuid::NAMESPACE_URL,
+            'pane:membership:'.$organizationId.':'.$user->getKey()
+        );
+    }
+
+    private function currentLatteApplicationId(): string
+    {
+        return (string) config('services.latte.application_id');
+    }
+
+    /**
+     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}
+     */
+    private function currentLatteApplication(): array
+    {
+        return [
+            'id' => $this->currentLatteApplicationId(),
+            'name' => (string) config('app.name', 'Latte'),
+            'trusted_origin' => LatteApplicationConfig::trustedOrigin(),
+            'redirect_uris' => LatteApplicationConfig::redirectUris(),
+            'organization_id' => (string) config('services.latte.organization_id'),
+            'organization_name' => 'Latte Local',
+            'organization_slug' => 'latte-local',
+            'organization_database_limit' => 1,
+        ];
+    }
+
+    /**
+     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}|JsonResponse
+     */
+    private function activeSessionLatteApplication(Request $request): array|JsonResponse
+    {
+        $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
+
+        if (! is_string($sessionApplicationId)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'application_not_allowed',
+                'The application origin is not allowed.',
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        $application = $this->currentLatteApplication();
+
+        if (! hash_equals($application['id'], $sessionApplicationId)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'application_not_allowed',
+                'The application origin is not allowed.',
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        return $application;
+    }
+
+    private function versionedErrorResponse(Request $request, string $code, string $message, int $status): JsonResponse
+    {
+        $requestId = $this->requestId($request);
+
+        return response()->json([
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+                'request_id' => $requestId,
+            ],
+        ], $status)->header('X-Request-Id', $requestId);
+    }
+
+    private function callbackErrorResponse(
+        Request $request,
+        bool $versioned,
+        string $message,
+        int $status,
+        string $code
+    ): JsonResponse
+    {
+        if ($versioned) {
+            return $this->versionedErrorResponse($request, $code, $message, $status);
+        }
+
+        return response()->json(['message' => $message], $status);
+    }
+
+    private function providerCallbackErrorMessage(Request $request, bool $versioned): string
+    {
+        if ($versioned) {
+            return 'The WorkOS callback was rejected.';
+        }
+
+        return (string) $request->input('error_description', $request->input('error'));
+    }
+
+    private function requestId(Request $request): string
+    {
+        $requestId = $request->header('X-Request-Id');
+
+        return is_string($requestId) && Str::isUuid($requestId)
+            ? $requestId
+            : (string) Str::uuid();
+    }
+
+    private function versionedNoContentResponse(Request $request): Response
+    {
+        return response()->noContent()
+            ->header('X-Request-Id', $this->requestId($request));
+    }
+
     private function intendedRedirectUrl(Request $request): string
     {
         $fallback = config('services.workos.return_to') ?: url('/');
-        $redirectTo = $request->query('redirect_to');
+        $redirectTo = $request->input('redirect_to', $request->query('redirect_to'));
 
         if (! is_string($redirectTo) || blank($redirectTo)) {
             return $fallback;
@@ -159,6 +448,66 @@ class WorkOsAuthController extends Controller
         }
 
         return $fallback;
+    }
+
+    private function versionedIntendedRedirectUrl(Request $request): string|JsonResponse
+    {
+        $body = $this->requestBody($request);
+        $unsupportedFields = array_values(array_diff(array_keys($body), ['redirect_to']));
+
+        if ($unsupportedFields !== []) {
+            sort($unsupportedFields);
+
+            return $this->versionedErrorResponse(
+                $request,
+                'validation_failed',
+                'The '.$unsupportedFields[0].' field is not supported.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        $redirectTo = $body['redirect_to'] ?? null;
+
+        if (! is_string($redirectTo) || blank($redirectTo)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'validation_failed',
+                'The redirect_to field is required.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        $normalizedRedirectTo = LatteApplicationConfig::normalizeRedirectUri($redirectTo);
+
+        if ($normalizedRedirectTo === null) {
+            return $this->versionedErrorResponse(
+                $request,
+                'validation_failed',
+                'The redirect_to field must be a valid redirect URI.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        if (! in_array($normalizedRedirectTo, LatteApplicationConfig::redirectUris(), true)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'redirect_not_allowed',
+                'The redirect_to URL is not allowed.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        return $normalizedRedirectTo;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function requestBody(Request $request): array
+    {
+        return $request->isJson()
+            ? $request->json()->all()
+            : $request->request->all();
     }
 
     private function sameOrigin(string $url, string $allowedOrigin): bool
