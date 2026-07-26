@@ -74,12 +74,17 @@ class WorkOsAuthController extends Controller
             'authorization_url' => $this->workOs->authorizationUrl($state),
             'state' => $state,
         ];
+        $requestId = $this->requestId($request);
         $payload = $versioned
-            ? ['data' => $intent, 'meta' => ['request_id' => (string) Str::uuid()]]
+            ? ['data' => $intent, 'meta' => ['request_id' => $requestId]]
             : $intent;
 
-        return response()->json($payload)
+        $response = response()->json($payload)
             ->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
+
+        return $versioned
+            ? $response->header('X-Request-Id', $requestId)
+            : $response;
     }
 
     public function login(Request $request): RedirectResponse
@@ -119,6 +124,7 @@ class WorkOsAuthController extends Controller
     {
         if ($request->filled('error')) {
             return $this->callbackErrorResponse(
+                $request,
                 $versioned,
                 (string) $request->input('error_description', $request->input('error')),
                 Response::HTTP_BAD_REQUEST,
@@ -128,6 +134,7 @@ class WorkOsAuthController extends Controller
 
         if (! $request->filled('code')) {
             return $this->callbackErrorResponse(
+                $request,
                 $versioned,
                 'Missing WorkOS authorization code.',
                 Response::HTTP_BAD_REQUEST,
@@ -155,6 +162,7 @@ class WorkOsAuthController extends Controller
             }
 
             return $this->callbackErrorResponse(
+                $request,
                 $versioned,
                 'Invalid WorkOS state.',
                 Response::HTTP_BAD_REQUEST,
@@ -170,6 +178,7 @@ class WorkOsAuthController extends Controller
 
         if (! filled($authentication['user']['email'] ?? null)) {
             return $this->callbackErrorResponse(
+                $request,
                 $versioned,
                 'WorkOS did not return a user email.',
                 $versioned ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_BAD_REQUEST,
@@ -223,6 +232,7 @@ class WorkOsAuthController extends Controller
             : 'organization_user';
         $userId = $this->versionedUserId($user);
         $membershipId = $this->versionedMembershipId($organizationId, $user);
+        $requestId = $this->requestId($request);
 
         return response()->json([
             'data' => [
@@ -271,8 +281,8 @@ class WorkOsAuthController extends Controller
                     ],
                 ],
             ],
-            'meta' => ['request_id' => (string) Str::uuid()],
-        ]);
+            'meta' => ['request_id' => $requestId],
+        ])->header('X-Request-Id', $requestId);
     }
 
     private function versionedUserId(User $user): string
@@ -288,9 +298,9 @@ class WorkOsAuthController extends Controller
         );
     }
 
-    private function versionedErrorResponse(string $code, string $message, int $status): JsonResponse
+    private function versionedErrorResponse(Request $request, string $code, string $message, int $status): JsonResponse
     {
-        $requestId = (string) Str::uuid();
+        $requestId = $this->requestId($request);
 
         return response()->json([
             'error' => [
@@ -301,13 +311,28 @@ class WorkOsAuthController extends Controller
         ], $status)->header('X-Request-Id', $requestId);
     }
 
-    private function callbackErrorResponse(bool $versioned, string $message, int $status, string $code): JsonResponse
+    private function callbackErrorResponse(
+        Request $request,
+        bool $versioned,
+        string $message,
+        int $status,
+        string $code
+    ): JsonResponse
     {
         if ($versioned) {
-            return $this->versionedErrorResponse($code, $message, $status);
+            return $this->versionedErrorResponse($request, $code, $message, $status);
         }
 
         return response()->json(['message' => $message], $status);
+    }
+
+    private function requestId(Request $request): string
+    {
+        $requestId = $request->header('X-Request-Id');
+
+        return is_string($requestId) && Str::isUuid($requestId)
+            ? $requestId
+            : (string) Str::uuid();
     }
 
     private function frontendOrigin(): string
@@ -378,6 +403,7 @@ class WorkOsAuthController extends Controller
 
         if (! is_string($redirectTo) || blank($redirectTo)) {
             return $this->versionedErrorResponse(
+                $request,
                 'validation_failed',
                 'The redirect_to field is required.',
                 Response::HTTP_UNPROCESSABLE_ENTITY
@@ -386,6 +412,7 @@ class WorkOsAuthController extends Controller
 
         if (! $this->isValidRedirectUrl($redirectTo)) {
             return $this->versionedErrorResponse(
+                $request,
                 'validation_failed',
                 'The redirect_to field must be a valid redirect URI.',
                 Response::HTTP_UNPROCESSABLE_ENTITY
@@ -394,6 +421,7 @@ class WorkOsAuthController extends Controller
 
         if (! $this->isAllowedRedirectUrl($redirectTo)) {
             return $this->versionedErrorResponse(
+                $request,
                 'redirect_not_allowed',
                 'The redirect_to URL is not allowed.',
                 Response::HTTP_UNPROCESSABLE_ENTITY

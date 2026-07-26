@@ -87,18 +87,24 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_login_intent_returns_versioned_payload(): void
     {
+        $requestId = (string) Str::uuid();
+
         config()->set('services.workos.api_key', 'sk_test_123');
         config()->set('services.workos.client_id', 'client_123');
         config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
         config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.workos.provider', 'authkit');
 
-        $response = $this->postJson('/api/v1/auth/login-intents', [
-            'redirect_to' => 'https://latte.test/dashboard',
-        ]);
+        $response = $this
+            ->withHeader('X-Request-Id', $requestId)
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => 'https://latte.test/dashboard',
+            ]);
 
         $response
             ->assertOk()
+            ->assertHeader('X-Request-Id', $requestId)
+            ->assertJsonPath('meta.request_id', $requestId)
             ->assertJsonStructure([
                 'data' => ['authorization_url', 'state'],
                 'meta' => ['request_id'],
@@ -117,9 +123,11 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.latte.frontend_url', 'https://latte.test');
 
-        $response = $this->postJson('/api/v1/auth/login-intents', [
-            'redirect_to' => 'https://evil.test/dashboard',
-        ]);
+        $response = $this
+            ->withHeader('X-Request-Id', 'not-a-uuid')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => 'https://evil.test/dashboard',
+            ]);
 
         $response
             ->assertUnprocessable()
@@ -129,6 +137,7 @@ class WorkOsAuthTest extends TestCase
             ->assertSessionMissing('workos_intended_url');
 
         $this->assertTrue(Str::isUuid($response->json('error.request_id')));
+        $this->assertSame($response->json('error.request_id'), $response->headers->get('X-Request-Id'));
         $this->assertNull($response->json('message'));
     }
 
@@ -151,6 +160,8 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_session_returns_latte_session_payload(): void
     {
+        $requestId = (string) Str::uuid();
+
         config()->set('services.workos.return_to', 'https://latte.test');
         config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000101');
         config()->set('services.latte.organization_id', '00000000-0000-4000-8000-000000000102');
@@ -168,16 +179,20 @@ class WorkOsAuthTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/session');
+        $response = $this
+            ->withHeader('X-Request-Id', $requestId)
+            ->getJson('/api/v1/session');
 
         $response
             ->assertOk()
+            ->assertHeader('X-Request-Id', $requestId)
             ->assertJsonPath('data.mode', 'latte')
             ->assertJsonPath('data.application.id', '00000000-0000-4000-8000-000000000101')
             ->assertJsonPath('data.application.attributes.kind', 'latte')
             ->assertJsonPath('data.application.attributes.trusted_origin', 'https://latte.test')
             ->assertJsonPath('data.organization.id', '00000000-0000-4000-8000-000000000102')
             ->assertJsonPath('data.membership.attributes.role', 'organization_administrator')
+            ->assertJsonPath('meta.request_id', $requestId)
             ->assertJsonStructure([
                 'data' => [
                     'user' => ['id', 'type', 'attributes' => ['email', 'name']],
@@ -261,7 +276,10 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_json_callback_rejects_invalid_state_with_error_envelope(): void
     {
+        $requestId = (string) Str::uuid();
+
         $response = $this
+            ->withHeader('X-Request-Id', $requestId)
             ->withSession(['workos_state' => 'expected_state'])
             ->postJson('/api/v1/auth/callback', [
                 'code' => 'code_123',
@@ -270,8 +288,10 @@ class WorkOsAuthTest extends TestCase
 
         $response
             ->assertBadRequest()
+            ->assertHeader('X-Request-Id', $requestId)
             ->assertJsonPath('error.code', 'invalid_request')
             ->assertJsonPath('error.message', 'Invalid WorkOS state.')
+            ->assertJsonPath('error.request_id', $requestId)
             ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
 
         $this->assertTrue(Str::isUuid($response->json('error.request_id')));
