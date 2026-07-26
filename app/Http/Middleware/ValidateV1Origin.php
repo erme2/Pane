@@ -38,7 +38,8 @@ class ValidateV1Origin
         $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
 
         if ($sessionApplicationId === null) {
-            return LatteApplicationConfig::isAllowedOrigin($origin);
+            return ($this->isBootstrapRequest($request) || $request->user() === null)
+                && LatteApplicationConfig::isAllowedOrigin($origin);
         }
 
         if (! is_string($sessionApplicationId) || ! hash_equals($this->currentLatteApplicationId(), $sessionApplicationId)) {
@@ -46,6 +47,13 @@ class ValidateV1Origin
         }
 
         return LatteApplicationConfig::isAllowedOrigin($origin);
+    }
+
+    private function isBootstrapRequest(Request $request): bool
+    {
+        return $request->is('api/v1/csrf-cookie')
+            || $request->is('api/v1/auth/login-intents')
+            || $request->is('api/v1/auth/callback');
     }
 
     private function currentLatteApplicationId(): string

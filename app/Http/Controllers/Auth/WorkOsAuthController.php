@@ -45,8 +45,14 @@ class WorkOsAuthController extends Controller
         return $this->versionedAuthenticatedResponse($request);
     }
 
-    public function destroySession(Request $request): Response
+    public function destroySession(Request $request): Response|JsonResponse
     {
+        $application = $this->activeSessionLatteApplication($request);
+
+        if ($application instanceof JsonResponse) {
+            return $application;
+        }
+
         Auth::guard()->logout();
 
         $request->session()->invalidate();
@@ -339,7 +345,12 @@ class WorkOsAuthController extends Controller
         $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
 
         if (! is_string($sessionApplicationId)) {
-            return $this->currentLatteApplication();
+            return $this->versionedErrorResponse(
+                $request,
+                'application_not_allowed',
+                'The application origin is not allowed.',
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         $application = $this->currentLatteApplication();

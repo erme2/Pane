@@ -189,6 +189,39 @@ class WorkOsAuthTest extends TestCase
         );
     }
 
+    public function test_v1_login_intent_binds_application_for_existing_legacy_session(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
+        config()->set('services.workos.return_to', 'https://latte.test');
+        config()->set('services.workos.provider', 'authkit');
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => 'https://latte.test/dashboard',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSessionHas('pane_v1_application_id', config('services.latte.application_id'));
+    }
+
     public function test_v1_login_intent_rejects_untrusted_redirect(): void
     {
         config()->set('services.workos.return_to', 'https://latte.test');
@@ -298,6 +331,7 @@ class WorkOsAuthTest extends TestCase
 
         $response = $this
             ->withHeader('X-Request-Id', $requestId)
+            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000101'])
             ->getJson('/api/v1/session');
 
         $response
@@ -322,6 +356,28 @@ class WorkOsAuthTest extends TestCase
 
         $this->assertTrue(Str::isUuid($response->json('data.user.id')));
         $this->assertTrue(Str::isUuid($response->json('data.membership.id')));
+    }
+
+    public function test_v1_session_rejects_authenticated_session_without_bound_application(): void
+    {
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->actingAs($user);
+
+        $response = $this->getJson('/api/v1/session');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
     }
 
     public function test_v1_session_reloads_application_bound_during_login(): void
@@ -460,7 +516,9 @@ class WorkOsAuthTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/v1/session');
+        $response = $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->getJson('/api/v1/session');
 
         $response
             ->assertOk()
@@ -485,6 +543,7 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $response = $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
             ->withHeader('Origin', 'https://other.test')
             ->getJson('/api/v1/session');
 
@@ -530,6 +589,7 @@ class WorkOsAuthTest extends TestCase
         $this->withCsrfToken()->actingAs($user);
 
         $response = $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
             ->withHeader('X-Request-Id', $requestId)
             ->withHeader('Origin', 'https://latte.localhost')
             ->deleteJson('/api/v1/session');
@@ -537,6 +597,30 @@ class WorkOsAuthTest extends TestCase
         $response
             ->assertNoContent()
             ->assertHeader('X-Request-Id', $requestId);
+    }
+
+    public function test_v1_destroy_session_rejects_authenticated_session_without_bound_application(): void
+    {
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->withCsrfToken()->actingAs($user);
+
+        $response = $this
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->deleteJson('/api/v1/session');
+
+        $response
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']]);
     }
 
     public function test_v1_destroy_session_rejects_missing_origin_before_csrf(): void
