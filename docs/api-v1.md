@@ -130,10 +130,12 @@ suspension, or organization suspension/closure.
   only `redirect_to`; unsupported writable fields are rejected instead of being
   stored as login intent metadata.
 - `POST /auth/callback` completes WorkOS authentication, synchronizes the user,
-  and starts the server-side session. Malformed callback input returns
-  `validation_failed`; callback rejection responses omit `error.details` and
-  must not expose organization identifiers, target emails, or
-  identity-provider data.
+  and starts the server-side session from a successful `code`/`state` callback.
+  Provider rejection callbacks send `error` and optional `error_description`;
+  Pane returns a safe `invalid_request` response and does not echo provider
+  details. Malformed callback input returns `validation_failed`; callback
+  rejection responses omit `error.details` and must not expose organization
+  identifiers, target emails, or identity-provider data.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` logs out and invalidates the Pane session.

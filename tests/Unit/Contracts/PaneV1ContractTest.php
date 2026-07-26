@@ -79,6 +79,10 @@ class PaneV1ContractTest extends TestCase
         $this->assertArrayHasKey('/auth/callback', $this->contract['paths']);
         $this->assertArrayHasKey('/session', $this->contract['paths']);
         $this->assertSame(
+            '#/components/schemas/AuthCallbackInput',
+            $this->contract['paths']['/auth/callback']['post']['requestBody']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(
             '#/components/schemas/LoginIntentInput',
             $this->contract['paths']['/auth/login-intents']['post']['requestBody']['content']['application/json']['schema']['$ref'],
         );
@@ -88,6 +92,34 @@ class PaneV1ContractTest extends TestCase
         );
         $this->assertArrayHasKey('post', $this->contract['paths']['/csrf-cookie']);
         $this->assertArrayNotHasKey('get', $this->contract['paths']['/csrf-cookie']);
+    }
+
+    public function test_auth_callback_accepts_success_and_provider_error_inputs(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+
+        $this->assertSame(
+            [
+                ['$ref' => '#/components/schemas/AuthCallbackSuccessInput'],
+                ['$ref' => '#/components/schemas/AuthCallbackProviderErrorInput'],
+            ],
+            $schemas['AuthCallbackInput']['oneOf'],
+        );
+
+        $success = $schemas['AuthCallbackSuccessInput'];
+        $providerError = $schemas['AuthCallbackProviderErrorInput'];
+
+        $this->assertSame(['code', 'state'], $success['required']);
+        $this->assertTrue($success['properties']['code']['writeOnly']);
+        $this->assertTrue($success['properties']['state']['writeOnly']);
+        $this->assertFalse($success['additionalProperties']);
+
+        $this->assertSame(['error'], $providerError['required']);
+        $this->assertTrue($providerError['properties']['error']['writeOnly']);
+        $this->assertTrue($providerError['properties']['error_description']['writeOnly']);
+        $this->assertFalse($providerError['additionalProperties']);
+
+        $this->assertStringContainsString('Provider rejection callbacks send `error`', $this->documentation);
     }
 
     public function test_every_operation_has_an_id_and_declares_responses(): void
@@ -300,7 +332,7 @@ class PaneV1ContractTest extends TestCase
         $this->assertArrayNotHasKey('details', $error['properties']);
         $this->assertStringNotContainsString('optional invitation intent', $this->documentation);
         $this->assertStringNotContainsString('New invitation activation is implemented only in v1', $this->documentation);
-        $this->assertStringContainsString('callback rejection responses omit `error.details`', $this->documentation);
+        $this->assertStringContainsString('rejection responses omit `error.details`', $this->documentation);
     }
 
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void

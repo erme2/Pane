@@ -2729,6 +2729,16 @@
                 "additionalProperties": false
             },
             "AuthCallbackInput": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/AuthCallbackSuccessInput"
+                    },
+                    {
+                        "$ref": "#/components/schemas/AuthCallbackProviderErrorInput"
+                    }
+                ]
+            },
+            "AuthCallbackSuccessInput": {
                 "type": "object",
                 "required": [
                     "code",
@@ -2743,6 +2753,25 @@
                     "state": {
                         "type": "string",
                         "minLength": 32,
+                        "writeOnly": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "AuthCallbackProviderErrorInput": {
+                "type": "object",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "minLength": 1,
+                        "writeOnly": true
+                    },
+                    "error_description": {
+                        "type": "string",
+                        "minLength": 1,
                         "writeOnly": true
                     }
                 },
