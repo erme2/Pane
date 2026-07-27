@@ -34,6 +34,7 @@ abstract class AbstractMapper
         'user_types' => 'user_types',
         'organizations' => 'organizations',
         'organization_memberships' => 'organization_memberships',
+        'audit_events' => 'audit_events',
         'test_table' => 'test_table',
     ];
     const array FIELD_TYPES = [

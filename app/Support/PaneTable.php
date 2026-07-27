@@ -10,6 +10,8 @@ class PaneTable
 
     public const string ORGANIZATION_MEMBERSHIPS = 'organization_memberships';
 
+    public const string AUDIT_EVENTS = 'audit_events';
+
     public static function name(string $table): string
     {
         return (string) config('database.table_prefix', 'pane_').AbstractMapper::MAP_TABLES_PREFIX.$table;
