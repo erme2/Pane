@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\DefaultsHelper;
 use App\Models\AuditEvent;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
@@ -12,6 +13,8 @@ use InvalidArgumentException;
 
 class AuditEventService
 {
+    use DefaultsHelper;
+
     private const string REDACTED = '[redacted]';
 
     /** @var array<int, string> */
@@ -89,22 +92,32 @@ class AuditEventService
     /**
      * @return Collection<int, AuditEvent>
      */
-    public function installationEventsFor(User $viewer): Collection
+    public function installationEventsFor(User $viewer, ?int $limit = null, int $offset = 0): Collection
     {
         if (! $viewer->isPaneAdministrator()) {
             throw new DomainException('Only Pane administrators can view installation audit events.');
         }
 
+        $limit = $this->normalizePageLimit($limit);
+        $this->assertPageOffset($offset);
+
         return AuditEvent::query()
             ->orderByDesc('occurred_at')
+            ->orderByDesc('audit_event_id')
+            ->limit($limit)
+            ->offset($offset)
             ->get();
     }
 
     /**
      * @return Collection<int, AuditEvent>
      */
-    public function organizationEventsFor(User $viewer, Organization $organization): Collection
-    {
+    public function organizationEventsFor(
+        User $viewer,
+        Organization $organization,
+        ?int $limit = null,
+        int $offset = 0
+    ): Collection {
         $membership = $organization->activeMembershipFor($viewer);
 
         if (
@@ -115,10 +128,35 @@ class AuditEventService
             throw new DomainException('Only active organization administrators can view organization audit events.');
         }
 
+        $limit = $this->normalizePageLimit($limit);
+        $this->assertPageOffset($offset);
+
         return AuditEvent::query()
             ->where('organization_id', $organization->getKey())
             ->orderByDesc('occurred_at')
+            ->orderByDesc('audit_event_id')
+            ->limit($limit)
+            ->offset($offset)
             ->get();
+    }
+
+    private function normalizePageLimit(?int $limit): int
+    {
+        $limit ??= (int) $this->default('PAGINATION_LIMIT');
+        $max = (int) $this->default('PAGINATION_MAX');
+
+        if ($limit < 1 || $limit > $max) {
+            throw new InvalidArgumentException("Audit event page limit must be between 1 and $max.");
+        }
+
+        return $limit;
+    }
+
+    private function assertPageOffset(int $offset): void
+    {
+        if ($offset < 0) {
+            throw new InvalidArgumentException('Audit event page offset cannot be negative.');
+        }
     }
 
     /**

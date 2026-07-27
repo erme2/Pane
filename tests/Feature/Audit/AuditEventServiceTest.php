@@ -9,9 +9,12 @@ use App\Models\User;
 use App\Services\AuditEventService;
 use App\Services\OrganizationTenancyService;
 use DomainException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class AuditEventServiceTest extends TestCase
@@ -103,6 +106,30 @@ class AuditEventServiceTest extends TestCase
         }
 
         $this->assertTrue(AuditEvent::query()->whereKey($event->getKey())->exists());
+
+        try {
+            AuditEvent::query()
+                ->whereKey($event->getKey())
+                ->update(['outcome' => AuditEvent::OUTCOME_SUCCESS]);
+
+            $this->fail('Expected audit event bulk updates to be rejected.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Audit events are append-only.', $exception->getMessage());
+        }
+
+        $this->assertSame(AuditEvent::OUTCOME_DENIED, $event->fresh()->outcome);
+
+        try {
+            DB::table($event->getTable())
+                ->where('audit_event_id', $event->getKey())
+                ->delete();
+
+            $this->fail('Expected audit event table deletes to be rejected.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('Audit events are append-only.', $exception->getMessage());
+        }
+
+        $this->assertTrue(AuditEvent::query()->whereKey($event->getKey())->exists());
     }
 
     public function test_audit_event_records_participate_in_caller_transactions(): void
@@ -187,6 +214,57 @@ class AuditEventServiceTest extends TestCase
 
         $this->expectException(DomainException::class);
         $this->audit->installationEventsFor($user);
+    }
+
+    public function test_audit_event_views_are_bounded_and_stably_ordered(): void
+    {
+        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $organization = $this->createOrganization('Paged Audit Workspace');
+
+        $this->tenancy->addOrReactivateMembership(
+            $organization,
+            $organizationAdministrator,
+            OrganizationMembership::ROLE_ADMINISTRATOR
+        );
+
+        $baseTime = now();
+
+        Carbon::setTestNow($baseTime->copy()->addSecond());
+        $this->audit->record('audit.page.one', AuditEvent::OUTCOME_SUCCESS, [
+            'organization' => $organization,
+        ]);
+
+        Carbon::setTestNow($baseTime->copy()->addSeconds(2));
+        $this->audit->record('audit.page.two', AuditEvent::OUTCOME_SUCCESS, [
+            'organization' => $organization,
+        ]);
+
+        Carbon::setTestNow($baseTime->copy()->addSeconds(3));
+        $this->audit->record('audit.page.three', AuditEvent::OUTCOME_SUCCESS, [
+            'organization' => $organization,
+        ]);
+
+        Carbon::setTestNow();
+
+        $this->assertSame(
+            ['audit.page.three', 'audit.page.two'],
+            $this->audit->organizationEventsFor($organizationAdministrator, $organization, 2)
+                ->pluck('action')
+                ->all()
+        );
+
+        $this->assertSame(
+            ['audit.page.one'],
+            $this->audit->organizationEventsFor($organizationAdministrator, $organization, 2, 2)
+                ->pluck('action')
+                ->all()
+        );
+
+        $this->assertCount(2, $this->audit->installationEventsFor($paneAdministrator, 2));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->audit->organizationEventsFor($organizationAdministrator, $organization, 101);
     }
 
     private function createOrganization(string $name): Organization
