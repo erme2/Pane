@@ -12,6 +12,8 @@ class PaneTable
 
     public const string AUDIT_EVENTS = 'audit_events';
 
+    public const string SETTING_DEFAULTS = 'setting_defaults';
+
     public const string SETTING_OVERRIDES = 'setting_overrides';
 
     public static function name(string $table): string

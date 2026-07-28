@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditEvent;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
+use App\Models\SettingDefault;
 use App\Models\SettingOverride;
 use App\Models\User;
 use App\Support\SettingDefinition;
@@ -51,7 +52,7 @@ class SettingsService
             }
         }
 
-        return $definition->defaultValue;
+        return $this->defaultValueFor($definition);
     }
 
     public function setInstallationOverride(User $actor, string $key, mixed $value): SettingOverride
@@ -150,6 +151,15 @@ class SettingsService
             ->first();
 
         return $override instanceof SettingOverride ? $override : null;
+    }
+
+    private function defaultValueFor(SettingDefinition $definition): mixed
+    {
+        $default = SettingDefault::query()
+            ->where('setting_key', $definition->key)
+            ->first();
+
+        return $default instanceof SettingDefault ? $default->value : $definition->defaultValue;
     }
 
     private function assertScope(SettingDefinition $definition, string $scope): void

@@ -5,6 +5,7 @@ namespace Tests\Feature\Settings;
 use App\Models\AuditEvent;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
+use App\Models\SettingDefault;
 use App\Models\SettingOverride;
 use App\Models\User;
 use App\Services\OrganizationTenancyService;
@@ -18,6 +19,11 @@ use Tests\TestCase;
 
 class SettingsServiceTest extends TestCase
 {
+    /**
+     * @var array<string, array{value: mixed, default_version: int}>|null
+     */
+    private static ?array $migratedDefaults = null;
+
     private SettingsService $settings;
 
     private OrganizationTenancyService $tenancy;
@@ -27,6 +33,7 @@ class SettingsServiceTest extends TestCase
         parent::setUp();
 
         SettingOverride::query()->delete();
+        $this->restoreMigratedDefaults();
 
         $this->settings = app(SettingsService::class);
         $this->tenancy = app(OrganizationTenancyService::class);
@@ -202,6 +209,29 @@ class SettingsServiceTest extends TestCase
         );
     }
 
+    public function test_defaults_are_resolved_from_migrated_versioned_state(): void
+    {
+        $default = SettingDefault::query()
+            ->where('setting_key', SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
+            ->firstOrFail();
+
+        $this->assertSame(1, $default->default_version);
+        $this->assertSame(
+            604_800,
+            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
+        );
+
+        $default->update([
+            'value' => 1_209_600,
+            'default_version' => 2,
+        ]);
+
+        $this->assertSame(
+            1_209_600,
+            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
+        );
+    }
+
     public function test_registered_defaults_are_versioned_and_setting_changes_are_audited(): void
     {
         $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
@@ -209,6 +239,12 @@ class SettingsServiceTest extends TestCase
         foreach ($this->settings->registeredSettings() as $definition) {
             $this->assertInstanceOf(SettingDefinition::class, $definition);
             $this->assertGreaterThan(0, $definition->defaultVersion);
+            $this->assertTrue(
+                SettingDefault::query()
+                    ->where('setting_key', $definition->key)
+                    ->where('default_version', $definition->defaultVersion)
+                    ->exists()
+            );
         }
 
         $override = $this->settings->setInstallationOverride(
@@ -230,5 +266,30 @@ class SettingsServiceTest extends TestCase
     private function createOrganization(string $name): Organization
     {
         return $this->tenancy->createOrganization($name, Str::slug($name).'-'.Str::uuid());
+    }
+
+    private function restoreMigratedDefaults(): void
+    {
+        if (self::$migratedDefaults === null) {
+            self::$migratedDefaults = SettingDefault::query()
+                ->get()
+                ->mapWithKeys(static fn (SettingDefault $default): array => [
+                    $default->setting_key => [
+                        'value' => $default->value,
+                        'default_version' => $default->default_version,
+                    ],
+                ])
+                ->all();
+        }
+
+        SettingDefault::query()->delete();
+
+        foreach (self::$migratedDefaults as $settingKey => $default) {
+            SettingDefault::query()->create([
+                'setting_key' => $settingKey,
+                'value' => $default['value'],
+                'default_version' => $default['default_version'],
+            ]);
+        }
     }
 }
