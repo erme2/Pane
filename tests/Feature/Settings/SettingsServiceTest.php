@@ -209,6 +209,59 @@ class SettingsServiceTest extends TestCase
         );
     }
 
+    public function test_pane_admin_cannot_tighten_bounds_past_existing_organization_overrides(): void
+    {
+        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $organization = $this->createOrganization('Existing Override Bounds Workspace');
+
+        $this->tenancy->addOrReactivateMembership(
+            $organization,
+            $organizationAdministrator,
+            OrganizationMembership::ROLE_ADMINISTRATOR
+        );
+
+        $this->settings->setOrganizationOverride(
+            $organizationAdministrator,
+            $organization,
+            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
+            172_800
+        );
+
+        try {
+            $this->settings->setInstallationOverride(
+                $paneAdministrator,
+                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS,
+                86_400
+            );
+            $this->fail('Expected maximum bound tightening past an existing organization override to fail.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame(
+                'Organization invitation maximum expiry cannot be lower than existing organization overrides.',
+                $exception->getMessage()
+            );
+        }
+
+        try {
+            $this->settings->setInstallationOverride(
+                $paneAdministrator,
+                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS,
+                259_200
+            );
+            $this->fail('Expected minimum bound tightening past an existing organization override to fail.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame(
+                'Organization invitation minimum expiry cannot exceed existing organization overrides.',
+                $exception->getMessage()
+            );
+        }
+
+        $this->assertSame(
+            172_800,
+            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
+        );
+    }
+
     public function test_defaults_are_resolved_from_migrated_versioned_state(): void
     {
         $default = SettingDefault::query()
