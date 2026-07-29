@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\PaneAdminInvitationController;
@@ -30,6 +31,16 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/session', [WorkOsAuthController::class, 'session'])->name('session.show');
         Route::delete('/session', [WorkOsAuthController::class, 'destroySession'])->name('session.destroy');
+        Route::get('/installation/applications', [ApplicationController::class, 'list'])
+            ->name('installation.applications.index');
+        Route::post('/installation/applications', [ApplicationController::class, 'store'])
+            ->name('installation.applications.store');
+        Route::get('/installation/applications/{applicationId}', [ApplicationController::class, 'show'])
+            ->name('installation.applications.show');
+        Route::patch('/installation/applications/{applicationId}', [ApplicationController::class, 'update'])
+            ->name('installation.applications.update');
+        Route::delete('/installation/applications/{applicationId}', [ApplicationController::class, 'destroy'])
+            ->name('installation.applications.destroy');
         Route::get('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'list'])
             ->name('installation.pane-admin-invitations.index');
         Route::post('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'store'])

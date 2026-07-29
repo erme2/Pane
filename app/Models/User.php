@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Mappers\AbstractMapper;
+use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
 /**
  * Class User
@@ -16,13 +18,13 @@ use Illuminate\Notifications\Notifiable;
  * @property string $name
  * @property string $email
  * @property string $password
- * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property Carbon|null $email_verified_at
  * @property string|null $workos_id
  * @property string|null $workos_organization_id
  * @property array<string, mixed>|null $details
  * @property int $user_type_id
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $last_login_at
+ * @property Carbon|null $last_login_at
  */
 class User extends Authenticatable
 {
@@ -38,7 +40,7 @@ class User extends Authenticatable
     {
         parent::__construct($attributes);
 
-        $this->table = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['users'];
+        $this->table = PaneTable::mapName(AbstractMapper::TABLES['users']);
     }
 
     /**

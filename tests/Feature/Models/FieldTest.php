@@ -4,6 +4,7 @@ namespace Tests\Feature\Models;
 
 use App\Mappers\AbstractMapper;
 use App\Models\Field;
+use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Collection;
 use Tests\TestCase;
 use Tests\TestsHelper;
@@ -35,8 +36,8 @@ class FieldTest extends TestCase
 
     public function test_has_validation()
     {
-        $fieldsTable = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
-        $tablesTable = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'];
+        $fieldsTable = PaneTable::mapName(AbstractMapper::TABLES['fields']);
+        $tablesTable = PaneTable::mapName(AbstractMapper::TABLES['tables']);
 
         // checking all the fields in test_table
         foreach ((new Field)

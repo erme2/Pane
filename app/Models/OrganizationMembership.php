@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -13,7 +14,9 @@ use Illuminate\Support\Str;
  * @property int $user_id
  * @property string $role
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $suspended_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $suspended_at
  */
 class OrganizationMembership extends Model
 {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\LatteApplicationConfig;
+use App\Services\ApplicationRegistryService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
 class ValidateV1Origin
 {
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
+
+    public function __construct(private readonly ApplicationRegistryService $applications) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -39,14 +41,19 @@ class ValidateV1Origin
 
         if ($sessionApplicationId === null) {
             return ($this->isBootstrapRequest($request) || $request->user() === null)
-                && LatteApplicationConfig::isAllowedOrigin($origin);
+                && $this->applications->activeApplicationForOrigin($origin) !== null;
         }
 
-        if (! is_string($sessionApplicationId) || ! hash_equals($this->currentLatteApplicationId(), $sessionApplicationId)) {
+        if (! is_string($sessionApplicationId)) {
             return false;
         }
 
-        return LatteApplicationConfig::isAllowedOrigin($origin);
+        $application = $this->applications->activeApplicationForId($sessionApplicationId);
+        $originApplication = $this->applications->activeApplicationForOrigin($origin);
+
+        return $application !== null
+            && $originApplication !== null
+            && hash_equals((string) $application->getKey(), (string) $originApplication->getKey());
     }
 
     private function isBootstrapRequest(Request $request): bool
@@ -54,11 +61,6 @@ class ValidateV1Origin
         return $request->is('api/v1/csrf-cookie')
             || $request->is('api/v1/auth/login-intents')
             || $request->is('api/v1/auth/callback');
-    }
-
-    private function currentLatteApplicationId(): string
-    {
-        return (string) config('services.latte.application_id');
     }
 
     private function applicationNotAllowed(Request $request): Response

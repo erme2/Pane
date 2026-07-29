@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ApplicationRegistration;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
 use App\Support\LatteApplicationConfig;
@@ -482,6 +483,10 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_session_rejects_stale_bound_application(): void
     {
+        ApplicationRegistration::query()
+            ->whereKey('00000000-0000-4000-8000-000000000201')
+            ->delete();
+
         config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000301');
         config()->set('services.latte.frontend_url', 'https://current-latte.test');
 

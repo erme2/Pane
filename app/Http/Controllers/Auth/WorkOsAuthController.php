@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ApplicationRegistration;
+use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use App\Models\User;
+use App\Services\ApplicationRegistryService;
 use App\Services\PaneAdminLifecycleService;
 use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
@@ -21,12 +25,15 @@ use Ramsey\Uuid\Uuid;
 class WorkOsAuthController extends Controller
 {
     private const STATE_COOKIE = 'pane_workos_state';
+
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
+
     private const PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY = 'pane_admin_invitation_token_hash';
 
     public function __construct(
         private readonly WorkOsService $workOs,
         private readonly PaneAdminLifecycleService $administrators,
+        private readonly ApplicationRegistryService $applications,
     ) {}
 
     public function loginUrl(Request $request): JsonResponse
@@ -53,7 +60,7 @@ class WorkOsAuthController extends Controller
 
     public function destroySession(Request $request): Response|JsonResponse
     {
-        $application = $this->activeSessionLatteApplication($request);
+        $application = $this->activeSessionApplication($request);
 
         if ($application instanceof JsonResponse) {
             return $application;
@@ -69,8 +76,14 @@ class WorkOsAuthController extends Controller
 
     private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
     {
+        $application = $versioned ? $this->requestApplication($request) : null;
+
+        if ($application instanceof JsonResponse) {
+            return $application;
+        }
+
         $intendedRedirectUrl = $versioned
-            ? $this->versionedIntendedRedirectUrl($request)
+            ? $this->versionedIntendedRedirectUrl($request, $application)
             : $this->intendedRedirectUrl($request);
 
         if ($intendedRedirectUrl instanceof JsonResponse) {
@@ -91,7 +104,7 @@ class WorkOsAuthController extends Controller
         $request->session()->put('workos_intended_url', $intendedRedirectUrl);
 
         if ($versioned) {
-            $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $this->currentLatteApplicationId());
+            $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $application->getKey());
 
             if (is_string($invitationTokenHash)) {
                 $request->session()->put(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY, $invitationTokenHash);
@@ -288,69 +301,66 @@ class WorkOsAuthController extends Controller
     {
         $user = $request->user();
         $now = now()->toJSON();
-        $application = $this->activeSessionLatteApplication($request);
+        $application = $this->activeSessionApplication($request);
 
         if ($application instanceof JsonResponse) {
             return $application;
         }
 
-        $applicationId = $application['id'];
-        $organizationId = $application['organization_id'];
-        $email = (string) $user->getAttribute('email');
-        $name = (string) ($user->getAttribute('name') ?: $email);
-        $role = ((int) $user->getAttribute('user_type_id')) === 1
-            ? 'organization_administrator'
-            : 'organization_user';
-        $userId = $this->versionedUserId($user);
-        $membershipId = $this->versionedMembershipId($organizationId, $user);
+        if ($application->isBurro()) {
+            if (! $user instanceof User || ! $user->isPaneAdministrator()) {
+                return $this->versionedErrorResponse(
+                    $request,
+                    'permission_denied',
+                    'Only active Pane administrators can access Burro.',
+                    Response::HTTP_FORBIDDEN
+                );
+            }
+
+            $requestId = $this->requestId($request);
+
+            return response()->json([
+                'data' => [
+                    'mode' => 'burro_installation',
+                    'user' => $this->userResource($user),
+                    'application' => $this->applicationResource($application),
+                ],
+                'meta' => ['request_id' => $requestId],
+            ])->header('X-Request-Id', $requestId);
+        }
+
+        $organization = $this->applications->fixedOrganizationFor($application);
+
+        if (! $organization instanceof Organization || ! $organization->isActive()) {
+            return $this->versionedErrorResponse(
+                $request,
+                'organization_inactive',
+                'The application organization is inactive.',
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        $membership = $organization->activeMembershipFor($user);
         $requestId = $this->requestId($request);
+
+        if (! $membership instanceof OrganizationMembership && ! $user->isPaneAdministrator()) {
+            return $this->versionedErrorResponse(
+                $request,
+                'membership_required',
+                'An active organization membership is required.',
+                Response::HTTP_FORBIDDEN
+            );
+        }
 
         return response()->json([
             'data' => [
                 'mode' => 'latte',
-                'user' => [
-                    'id' => $userId,
-                    'type' => 'user',
-                    'attributes' => [
-                        'email' => $email,
-                        'name' => $name,
-                    ],
-                ],
-                'application' => [
-                    'id' => $applicationId,
-                    'type' => 'application',
-                    'attributes' => [
-                        'kind' => 'latte',
-                        'name' => $application['name'],
-                        'trusted_origin' => $application['trusted_origin'],
-                        'redirect_uris' => $application['redirect_uris'],
-                        'status' => 'active',
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ],
-                ],
-                'organization' => [
-                    'id' => $organizationId,
-                    'type' => 'organization',
-                    'attributes' => [
-                        'name' => $application['organization_name'],
-                        'slug' => $application['organization_slug'],
-                        'status' => 'active',
-                        'database_limit' => $application['organization_database_limit'],
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ],
-                ],
-                'membership' => [
-                    'id' => $membershipId,
-                    'type' => 'membership',
-                    'attributes' => [
-                        'role' => $role,
-                        'status' => 'active',
-                        'created_at' => optional($user->getAttribute('created_at'))->toJSON() ?: $now,
-                        'updated_at' => optional($user->getAttribute('updated_at'))->toJSON() ?: $now,
-                    ],
-                ],
+                'user' => $this->userResource($user),
+                'application' => $this->applicationResource($application, true),
+                'organization' => $this->organizationResource($organization),
+                'membership' => $membership instanceof OrganizationMembership
+                    ? $this->membershipResource($membership)
+                    : $this->syntheticPaneAdminMembershipResource($organization, $user, $now),
             ],
             'meta' => ['request_id' => $requestId],
         ])->header('X-Request-Id', $requestId);
@@ -369,32 +379,7 @@ class WorkOsAuthController extends Controller
         );
     }
 
-    private function currentLatteApplicationId(): string
-    {
-        return (string) config('services.latte.application_id');
-    }
-
-    /**
-     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}
-     */
-    private function currentLatteApplication(): array
-    {
-        return [
-            'id' => $this->currentLatteApplicationId(),
-            'name' => (string) config('app.name', 'Latte'),
-            'trusted_origin' => LatteApplicationConfig::trustedOrigin(),
-            'redirect_uris' => LatteApplicationConfig::redirectUris(),
-            'organization_id' => (string) config('services.latte.organization_id'),
-            'organization_name' => 'Latte Local',
-            'organization_slug' => 'latte-local',
-            'organization_database_limit' => 1,
-        ];
-    }
-
-    /**
-     * @return array{id: string, name: string, trusted_origin: string, redirect_uris: array<int, string>, organization_id: string, organization_name: string, organization_slug: string, organization_database_limit: int}|JsonResponse
-     */
-    private function activeSessionLatteApplication(Request $request): array|JsonResponse
+    private function activeSessionApplication(Request $request): ApplicationRegistration|JsonResponse
     {
         $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
 
@@ -407,9 +392,9 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        $application = $this->currentLatteApplication();
+        $application = $this->applications->activeApplicationForId($sessionApplicationId);
 
-        if (! hash_equals($application['id'], $sessionApplicationId)) {
+        if (! $application instanceof ApplicationRegistration) {
             return $this->versionedErrorResponse(
                 $request,
                 'application_not_allowed',
@@ -419,6 +404,31 @@ class WorkOsAuthController extends Controller
         }
 
         return $application;
+    }
+
+    private function requestApplication(Request $request): ApplicationRegistration|JsonResponse
+    {
+        $origin = $request->header('Origin');
+
+        if (! is_string($origin)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'application_not_allowed',
+                'The application origin is not allowed.',
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        $application = $this->applications->activeApplicationForOrigin($origin);
+
+        return $application instanceof ApplicationRegistration
+            ? $application
+            : $this->versionedErrorResponse(
+                $request,
+                'application_not_allowed',
+                'The application origin is not allowed.',
+                Response::HTTP_FORBIDDEN
+            );
     }
 
     private function versionedErrorResponse(Request $request, string $code, string $message, int $status): JsonResponse
@@ -440,8 +450,7 @@ class WorkOsAuthController extends Controller
         string $message,
         int $status,
         string $code
-    ): JsonResponse
-    {
+    ): JsonResponse {
         if ($versioned) {
             return $this->versionedErrorResponse($request, $code, $message, $status);
         }
@@ -504,7 +513,7 @@ class WorkOsAuthController extends Controller
         return $fallback;
     }
 
-    private function versionedIntendedRedirectUrl(Request $request): string|JsonResponse
+    private function versionedIntendedRedirectUrl(Request $request, ApplicationRegistration $application): string|JsonResponse
     {
         $body = $this->requestBody($request);
         $unsupportedFields = array_values(array_diff(array_keys($body), ['redirect_to', 'invitation_token']));
@@ -542,7 +551,7 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        if (! in_array($normalizedRedirectTo, LatteApplicationConfig::redirectUris(), true)) {
+        if (! in_array($normalizedRedirectTo, $application->redirect_uris ?? [], true)) {
             return $this->versionedErrorResponse(
                 $request,
                 'redirect_not_allowed',
@@ -552,6 +561,102 @@ class WorkOsAuthController extends Controller
         }
 
         return $normalizedRedirectTo;
+    }
+
+    /**
+     * @return array{id: string, type: string, attributes: array<string, string>}
+     */
+    private function userResource(User $user): array
+    {
+        $email = (string) $user->getAttribute('email');
+
+        return [
+            'id' => $this->versionedUserId($user),
+            'type' => 'user',
+            'attributes' => [
+                'email' => $email,
+                'name' => (string) ($user->getAttribute('name') ?: $email),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{id: string, type: string, attributes: array<string, mixed>}
+     */
+    private function applicationResource(ApplicationRegistration $application, bool $sessionLatte = false): array
+    {
+        $attributes = [
+            'kind' => $application->kind,
+            'name' => $application->name,
+            'trusted_origin' => $application->trusted_origin,
+            'redirect_uris' => array_values($application->redirect_uris ?? []),
+            'status' => $application->status,
+            'created_at' => $application->created_at?->toJSON() ?: now()->toJSON(),
+            'updated_at' => $application->updated_at?->toJSON() ?: now()->toJSON(),
+        ];
+
+        if (! $sessionLatte) {
+            $attributes['organization_id'] = $application->isLatte() ? $application->organization_id : null;
+        }
+
+        return [
+            'id' => (string) $application->getKey(),
+            'type' => 'application',
+            'attributes' => $attributes,
+        ];
+    }
+
+    /**
+     * @return array{id: string, type: string, attributes: array<string, mixed>}
+     */
+    private function organizationResource(Organization $organization): array
+    {
+        return [
+            'id' => (string) $organization->getKey(),
+            'type' => 'organization',
+            'attributes' => [
+                'name' => $organization->name,
+                'slug' => $organization->slug,
+                'status' => $organization->status,
+                'database_limit' => $organization->database_limit,
+                'created_at' => $organization->created_at?->toJSON(),
+                'updated_at' => $organization->updated_at?->toJSON(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{id: string, type: string, attributes: array<string, mixed>}
+     */
+    private function membershipResource(OrganizationMembership $membership): array
+    {
+        return [
+            'id' => (string) $membership->getKey(),
+            'type' => 'membership',
+            'attributes' => [
+                'role' => $membership->role,
+                'status' => $membership->status,
+                'created_at' => $membership->created_at?->toJSON(),
+                'updated_at' => $membership->updated_at?->toJSON(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{id: string, type: string, attributes: array<string, mixed>}
+     */
+    private function syntheticPaneAdminMembershipResource(Organization $organization, User $user, string $now): array
+    {
+        return [
+            'id' => $this->versionedMembershipId((string) $organization->getKey(), $user),
+            'type' => 'membership',
+            'attributes' => [
+                'role' => $user->isPaneAdministrator() ? 'organization_administrator' : 'organization_user',
+                'status' => 'active',
+                'created_at' => optional($user->getAttribute('created_at'))->toJSON() ?: $now,
+                'updated_at' => optional($user->getAttribute('updated_at'))->toJSON() ?: $now,
+            ],
+        ];
     }
 
     private function versionedInvitationTokenHash(Request $request): string|JsonResponse|null

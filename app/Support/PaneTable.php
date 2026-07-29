@@ -10,11 +10,13 @@ class PaneTable
 
     public const string ORGANIZATION_MEMBERSHIPS = 'organization_memberships';
 
+    public const string APPLICATIONS = 'applications';
+
     public const string AUDIT_EVENTS = 'audit_events';
 
-    public const string PANE_ADMIN_INVITATIONS = 'pane_admin_invitations';
+    public const string PANE_ADMIN_INVITATIONS = 'admin_invitations';
 
-    public const string PANE_INSTALLATION_LOCKS = 'pane_installation_locks';
+    public const string PANE_INSTALLATION_LOCKS = 'installation_locks';
 
     public const string SETTING_DEFAULTS = 'setting_defaults';
 
@@ -22,6 +24,16 @@ class PaneTable
 
     public static function name(string $table): string
     {
-        return (string) config('database.table_prefix', 'pane_').AbstractMapper::MAP_TABLES_PREFIX.$table;
+        return self::prefix().$table;
+    }
+
+    public static function mapName(string $table): string
+    {
+        return self::prefix().AbstractMapper::MAP_TABLES_PREFIX.$table;
+    }
+
+    public static function prefix(): string
+    {
+        return (string) config('database.table_prefix', 'pane_');
     }
 }

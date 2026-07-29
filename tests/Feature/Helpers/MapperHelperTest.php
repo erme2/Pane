@@ -8,6 +8,7 @@ use App\Helpers\MapperHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
 use App\Models\Field;
+use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -105,8 +106,8 @@ class MapperHelperTest extends TestCase
     {
         $mapper = new class(self::TEST_TABLE_NAME) extends AbstractMapper {};
         $field = new Field;
-        $fieldsTable = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['fields'];
-        $tablesTable = (env('DB_TABLE_PREFIX')).AbstractMapper::MAP_TABLES_PREFIX.AbstractMapper::TABLES['tables'];
+        $fieldsTable = PaneTable::mapName(AbstractMapper::TABLES['fields']);
+        $tablesTable = PaneTable::mapName(AbstractMapper::TABLES['tables']);
 
         // getting the field_id for test_table.table_id
         $field->test_id = 'invalid';
