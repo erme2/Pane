@@ -203,6 +203,9 @@ invitations resolve the installation setting; organization invitations resolve
 the organization override, then installation setting, then versioned default.
 The response exposes the resolved `expires_at`. Exact configurable bounds remain
 a Pane-admin product decision and are not hard-coded into the HTTP contract.
+Pane-admin invitation creation also returns a one-time `meta.invitation_url`
+for delivery to the invited user; normal invitation representations and
+collection reads remain token-free.
 
 ## Success, pagination, and concurrency
 
@@ -210,6 +213,10 @@ Every successful response is one of:
 
 ```json
 {"data":{"id":"..."},"meta":{"request_id":"..."}}
+```
+
+```json
+{"data":{"id":"..."},"meta":{"request_id":"...","invitation_url":"https://..."}}
 ```
 
 ```json

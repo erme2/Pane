@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
-use App\Services\PaneAdminLifecycleService;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
@@ -305,9 +304,26 @@ class WorkOsAuthTest extends TestCase
             'password' => 'password',
             'is_active' => true,
         ]);
-        $invitation = app(PaneAdminLifecycleService::class)
-            ->invitePaneAdministrator($actor, 'Invited.Admin@Example.COM');
-        $token = $invitation['token'];
+        $create = $this
+            ->withCsrfToken()
+            ->actingAs($actor)
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/installation/pane-admin-invitations', [
+                'email' => 'Invited.Admin@Example.COM',
+            ])
+            ->assertCreated();
+
+        $invitationUrl = (string) $create->json('meta.invitation_url');
+        $query = [];
+        parse_str((string) parse_url($invitationUrl, PHP_URL_QUERY), $query);
+
+        $this->assertIsString($query['invitation_token'] ?? null);
+
+        $token = $query['invitation_token'];
+        $invitation = PaneAdminInvitation::query()->where('email', 'invited.admin@example.com')->firstOrFail();
+
+        $this->app['auth']->guard()->logout();
 
         $intent = $this
             ->withHeader('Origin', 'https://latte.test')
@@ -357,7 +373,7 @@ class WorkOsAuthTest extends TestCase
         $accepted = User::query()->where('email', 'invited.admin@example.com')->firstOrFail();
 
         $this->assertTrue($accepted->isPaneAdministrator());
-        $this->assertSame(PaneAdminInvitation::STATUS_ACCEPTED, $invitation['invitation']->fresh()->status);
+        $this->assertSame(PaneAdminInvitation::STATUS_ACCEPTED, $invitation->fresh()->status);
         $this->assertStringNotContainsString($token, $accepted->toJson());
     }
 

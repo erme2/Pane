@@ -33,6 +33,7 @@ class PaneAdminInvitationApiTest extends TestCase
             ->assertCreated()
             ->assertHeader('X-Request-Id')
             ->assertHeader('ETag')
+            ->assertJsonPath('meta.invitation_url', fn (string $url): bool => str_starts_with($url, 'https://latte.localhost/auth/login?'))
             ->assertJsonPath('data.type', 'invitation')
             ->assertJsonPath('data.attributes.scope', 'installation')
             ->assertJsonPath('data.attributes.role', 'pane_administrator')
@@ -40,9 +41,17 @@ class PaneAdminInvitationApiTest extends TestCase
             ->assertJsonPath('data.attributes.status', PaneAdminInvitation::STATUS_PENDING);
 
         $this->assertNull($create->json('data.attributes.token'));
-        $this->assertNull($create->json('meta.invitation_token'));
 
         $invitationId = $create->json('data.id');
+        $invitationUrl = (string) $create->json('meta.invitation_url');
+        $invitationQuery = [];
+        parse_str((string) parse_url($invitationUrl, PHP_URL_QUERY), $invitationQuery);
+
+        $this->assertIsString($invitationQuery['invitation_token'] ?? null);
+        $this->assertSame(
+            hash('sha256', $invitationQuery['invitation_token']),
+            PaneAdminInvitation::query()->findOrFail($invitationId)->token_hash
+        );
 
         $list = $this
             ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
@@ -57,6 +66,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $revoke = $this
             ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
             ->withHeader('Origin', 'https://latte.localhost')
+            ->withHeader('If-Match', (string) $create->headers->get('ETag'))
             ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId");
 
         $revoke->assertNoContent();
@@ -65,6 +75,107 @@ class PaneAdminInvitationApiTest extends TestCase
             PaneAdminInvitation::STATUS_REVOKED,
             PaneAdminInvitation::query()->findOrFail($invitationId)->status
         );
+    }
+
+    public function test_list_uses_opaque_cursor_pagination(): void
+    {
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        foreach (['first@example.com', 'second@example.com', 'third@example.com'] as $email) {
+            $this
+                ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+                ->withHeader('Origin', 'https://latte.localhost')
+                ->postJson('/api/v1/installation/pane-admin-invitations', ['email' => $email])
+                ->assertCreated();
+        }
+
+        $firstPage = $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->getJson('/api/v1/installation/pane-admin-invitations?'.http_build_query([
+                'page' => ['limit' => 1],
+            ], '', '&', PHP_QUERY_RFC3986));
+
+        $firstPage
+            ->assertOk()
+            ->assertJsonPath('meta.page.has_more', true);
+
+        $firstId = $firstPage->json('data.0.id');
+        $cursor = $firstPage->json('meta.page.next_cursor');
+
+        $this->assertIsString($firstId);
+        $this->assertIsString($cursor);
+        $this->assertNotSame($firstId, $cursor);
+
+        $secondPage = $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->getJson('/api/v1/installation/pane-admin-invitations?'.http_build_query([
+                'page' => ['limit' => 1, 'cursor' => $cursor],
+            ], '', '&', PHP_QUERY_RFC3986));
+
+        $secondPage
+            ->assertOk()
+            ->assertJsonPath('meta.page.has_more', true);
+
+        $this->assertIsString($secondPage->json('data.0.id'));
+        $this->assertNotSame($firstId, $secondPage->json('data.0.id'));
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->getJson('/api/v1/installation/pane-admin-invitations?'.http_build_query([
+                'page' => ['cursor' => 'not-a-valid-cursor'],
+            ], '', '&', PHP_QUERY_RFC3986))
+            ->assertStatus(Response::HTTP_BAD_REQUEST)
+            ->assertJsonPath('error.code', 'invalid_cursor');
+    }
+
+    public function test_revoke_requires_current_strong_if_match(): void
+    {
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $create = $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->postJson('/api/v1/installation/pane-admin-invitations', [
+                'email' => 'invited.admin@example.com',
+            ])
+            ->assertCreated();
+
+        $invitationId = $create->json('data.id');
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
+            ->assertStatus(Response::HTTP_PRECONDITION_REQUIRED)
+            ->assertJsonPath('error.code', 'precondition_required');
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->withHeader('If-Match', 'W/"revision_42"')
+            ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
+            ->assertStatus(Response::HTTP_BAD_REQUEST)
+            ->assertJsonPath('error.code', 'invalid_request');
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->withHeader('If-Match', '"revision_42"')
+            ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
+            ->assertStatus(Response::HTTP_PRECONDITION_FAILED)
+            ->assertJsonPath('error.code', 'version_conflict');
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->withHeader('If-Match', (string) $create->headers->get('ETag'))
+            ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
+            ->assertNoContent();
     }
 
     public function test_non_pane_admin_cannot_create_pane_admin_invitation(): void

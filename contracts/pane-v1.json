@@ -847,7 +847,7 @@
                 },
                 "responses": {
                     "201": {
-                        "$ref": "#/components/responses/Invitation"
+                        "$ref": "#/components/responses/PaneAdminInvitationCreated"
                     },
                     "401": {
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
@@ -2681,6 +2681,23 @@
                             }
                         },
                         "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "InvitationCreateMeta": {
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "invitation_url"
+                ],
+                "properties": {
+                    "request_id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "invitation_url": {
+                        "type": "string",
+                        "format": "uri"
                     }
                 },
                 "additionalProperties": false
@@ -4971,6 +4988,37 @@
                                 },
                                 "meta": {
                                     "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "PaneAdminInvitationCreated": {
+                "description": "Pane administrator invitation created with one-time delivery URL",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/InvitationResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/InvitationCreateMeta"
                                 }
                             },
                             "additionalProperties": false
