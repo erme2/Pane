@@ -178,6 +178,39 @@ class PaneAdminInvitationApiTest extends TestCase
             ->assertNoContent();
     }
 
+    public function test_create_rejects_unsupported_fields(): void
+    {
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->postJson('/api/v1/installation/pane-admin-invitations', [
+                'email' => 'invited.admin@example.com',
+                'expires_in_seconds' => 999999,
+                'role' => 'organization_administrator',
+            ])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertSame(0, PaneAdminInvitation::query()->count());
+    }
+
+    public function test_revoke_rejects_malformed_invitation_identifier(): void
+    {
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $this
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->withHeader('If-Match', '"revision_42"')
+            ->deleteJson('/api/v1/installation/pane-admin-invitations/not-a-uuid')
+            ->assertStatus(Response::HTTP_BAD_REQUEST)
+            ->assertJsonPath('error.code', 'invalid_identifier');
+    }
+
     public function test_non_pane_admin_cannot_create_pane_admin_invitation(): void
     {
         $this->withCsrfToken()->actingAs($this->makePaneUser(User::STANDARD_USER_TYPE_ID));

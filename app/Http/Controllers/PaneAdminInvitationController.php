@@ -81,6 +81,14 @@ class PaneAdminInvitationController extends Controller
             return $this->v1Error($request, 'permission_denied', 'Only active Pane administrators can manage Pane administrator invitations.', Response::HTTP_FORBIDDEN);
         }
 
+        $unsupportedFields = array_values(array_diff(array_keys($request->all()), ['email']));
+
+        if ($unsupportedFields !== []) {
+            sort($unsupportedFields);
+
+            return $this->v1Error($request, 'validation_failed', 'The '.$unsupportedFields[0].' field is not supported.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $validator = Validator::make($request->all(), [
             'email' => ['required', 'email', 'max:320'],
         ]);
@@ -118,6 +126,10 @@ class PaneAdminInvitationController extends Controller
 
         if (! $actor instanceof User) {
             return $this->v1Error($request, 'permission_denied', 'Only active Pane administrators can manage Pane administrator invitations.', Response::HTTP_FORBIDDEN);
+        }
+
+        if (! Str::isUuid($invitationId)) {
+            return $this->v1Error($request, 'invalid_identifier', 'The invitation_id path parameter must be a valid UUID.', Response::HTTP_BAD_REQUEST);
         }
 
         $invitation = PaneAdminInvitation::query()->find($invitationId);
