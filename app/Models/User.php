@@ -13,8 +13,16 @@ use Illuminate\Notifications\Notifiable;
  * This is the user model, it is here because it is the default model for the authentication
  * system that comes with Laravel. I am not sure what we will do with it yet.
  *
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property string|null $workos_id
+ * @property string|null $workos_organization_id
+ * @property array<string, mixed>|null $details
  * @property int $user_type_id
  * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $last_login_at
  */
 class User extends Authenticatable
 {

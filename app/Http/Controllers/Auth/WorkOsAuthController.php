@@ -200,6 +200,16 @@ class WorkOsAuthController extends Controller
 
         $user = $this->syncUser($authentication);
 
+        if (! (bool) $user->is_active) {
+            return $this->callbackErrorResponse(
+                $request,
+                $versioned,
+                'Pane account is inactive.',
+                Response::HTTP_FORBIDDEN,
+                'permission_denied'
+            );
+        }
+
         Auth::login($user);
 
         $request->session()->regenerate();
@@ -571,17 +581,30 @@ class WorkOsAuthController extends Controller
         }
 
         $user->forceFill([
-            'user_type_id' => $user->user_type_id ?: 2,
+            'user_type_id' => $user->user_type_id ?: User::STANDARD_USER_TYPE_ID,
             'name' => $email,
             'email' => $email,
             'email_verified_at' => ($workOsUser['email_verified'] ?? false) ? now() : $user->email_verified_at,
             'workos_id' => $workOsUser['id'] ?? $user->workos_id,
             'workos_organization_id' => $authentication['organization_id'] ?? null,
             'details' => array_replace_recursive($user->details ?? [], $details),
-            'is_active' => true,
+            'is_active' => $this->shouldActivateSyncedUser($user),
             'last_login_at' => now(),
         ])->save();
 
         return $user;
+    }
+
+    private function shouldActivateSyncedUser(User $user): bool
+    {
+        if (
+            $user->exists
+            && (int) $user->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID
+            && ! (bool) $user->is_active
+        ) {
+            return false;
+        }
+
+        return true;
     }
 }
