@@ -237,7 +237,7 @@ class SettingsServiceTest extends TestCase
             $this->fail('Expected maximum bound tightening past an existing organization override to fail.');
         } catch (InvalidArgumentException $exception) {
             $this->assertSame(
-                'Organization invitation maximum expiry cannot be lower than existing organization overrides.',
+                'Organization invitation maximum expiry cannot be lower than existing invitation overrides.',
                 $exception->getMessage()
             );
         }
@@ -251,7 +251,7 @@ class SettingsServiceTest extends TestCase
             $this->fail('Expected minimum bound tightening past an existing organization override to fail.');
         } catch (InvalidArgumentException $exception) {
             $this->assertSame(
-                'Organization invitation minimum expiry cannot exceed existing organization overrides.',
+                'Organization invitation minimum expiry cannot exceed existing invitation overrides.',
                 $exception->getMessage()
             );
         }
@@ -259,6 +259,50 @@ class SettingsServiceTest extends TestCase
         $this->assertSame(
             172_800,
             $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
+        );
+    }
+
+    public function test_pane_admin_cannot_tighten_bounds_past_installation_invitation_override(): void
+    {
+        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+
+        $this->settings->setInstallationOverride(
+            $paneAdministrator,
+            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
+            172_800
+        );
+
+        try {
+            $this->settings->setInstallationOverride(
+                $paneAdministrator,
+                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS,
+                86_400
+            );
+            $this->fail('Expected maximum bound tightening past an existing installation override to fail.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame(
+                'Organization invitation maximum expiry cannot be lower than existing invitation overrides.',
+                $exception->getMessage()
+            );
+        }
+
+        try {
+            $this->settings->setInstallationOverride(
+                $paneAdministrator,
+                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS,
+                259_200
+            );
+            $this->fail('Expected minimum bound tightening past an existing installation override to fail.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame(
+                'Organization invitation minimum expiry cannot exceed existing invitation overrides.',
+                $exception->getMessage()
+            );
+        }
+
+        $this->assertSame(
+            172_800,
+            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
         );
     }
 

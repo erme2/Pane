@@ -219,7 +219,7 @@ class SettingsService
                 throw new InvalidArgumentException('Organization invitation minimum expiry cannot exceed the maximum expiry.');
             }
 
-            $this->assertExistingOrganizationOverridesRespectMinimum($value);
+            $this->assertExistingInvitationOverridesRespectMinimum($value);
         }
 
         if ($definition->key === SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS) {
@@ -229,33 +229,31 @@ class SettingsService
                 throw new InvalidArgumentException('Organization invitation maximum expiry cannot be lower than the minimum expiry.');
             }
 
-            $this->assertExistingOrganizationOverridesRespectMaximum($value);
+            $this->assertExistingInvitationOverridesRespectMaximum($value);
         }
     }
 
-    private function assertExistingOrganizationOverridesRespectMinimum(int $minimum): void
+    private function assertExistingInvitationOverridesRespectMinimum(int $minimum): void
     {
         $hasInvalidOverride = SettingOverride::query()
             ->where('setting_key', SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
-            ->where('scope', SettingDefinition::SCOPE_ORGANIZATION)
             ->get()
             ->contains(static fn (SettingOverride $override): bool => is_int($override->value) && $override->value < $minimum);
 
         if ($hasInvalidOverride) {
-            throw new InvalidArgumentException('Organization invitation minimum expiry cannot exceed existing organization overrides.');
+            throw new InvalidArgumentException('Organization invitation minimum expiry cannot exceed existing invitation overrides.');
         }
     }
 
-    private function assertExistingOrganizationOverridesRespectMaximum(int $maximum): void
+    private function assertExistingInvitationOverridesRespectMaximum(int $maximum): void
     {
         $hasInvalidOverride = SettingOverride::query()
             ->where('setting_key', SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
-            ->where('scope', SettingDefinition::SCOPE_ORGANIZATION)
             ->get()
             ->contains(static fn (SettingOverride $override): bool => is_int($override->value) && $override->value > $maximum);
 
         if ($hasInvalidOverride) {
-            throw new InvalidArgumentException('Organization invitation maximum expiry cannot be lower than existing organization overrides.');
+            throw new InvalidArgumentException('Organization invitation maximum expiry cannot be lower than existing invitation overrides.');
         }
     }
 
