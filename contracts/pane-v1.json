@@ -847,7 +847,7 @@
                 },
                 "responses": {
                     "201": {
-                        "$ref": "#/components/responses/Invitation"
+                        "$ref": "#/components/responses/PaneAdminInvitationCreated"
                     },
                     "401": {
                         "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
@@ -2685,6 +2685,23 @@
                 },
                 "additionalProperties": false
             },
+            "InvitationCreateMeta": {
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "invitation_url"
+                ],
+                "properties": {
+                    "request_id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "invitation_url": {
+                        "type": "string",
+                        "format": "uri"
+                    }
+                },
+                "additionalProperties": false
+            },
             "LoginIntentInput": {
                 "type": "object",
                 "required": [
@@ -2693,6 +2710,11 @@
                 "properties": {
                     "redirect_to": {
                         "$ref": "#/components/schemas/RedirectUriInput"
+                    },
+                    "invitation_token": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
                     }
                 },
                 "additionalProperties": false
@@ -4973,6 +4995,37 @@
                     }
                 }
             },
+            "PaneAdminInvitationCreated": {
+                "description": "Pane administrator invitation created with one-time delivery URL",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/InvitationResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/InvitationCreateMeta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
             "InvitationCollection": {
                 "description": "Paginated InvitationCollection",
                 "headers": {
@@ -5593,7 +5646,12 @@
                                         "code": {
                                             "type": "string",
                                             "enum": [
-                                                "validation_failed"
+                                                "validation_failed",
+                                                "invitation_invalid",
+                                                "invitation_expired",
+                                                "invitation_revoked",
+                                                "invitation_already_accepted",
+                                                "invitation_email_mismatch"
                                             ]
                                         },
                                         "message": {
@@ -6567,7 +6625,12 @@
                 "application_not_allowed"
             ],
             "422": [
-                "validation_failed"
+                "validation_failed",
+                "invitation_invalid",
+                "invitation_expired",
+                "invitation_revoked",
+                "invitation_already_accepted",
+                "invitation_email_mismatch"
             ],
             "429": [
                 "rate_limited"

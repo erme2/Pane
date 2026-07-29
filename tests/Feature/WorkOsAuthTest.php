@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PaneAdminInvitation;
 use App\Models\User;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Http\Response;
@@ -287,25 +288,93 @@ class WorkOsAuthTest extends TestCase
         $this->assertNull($response->json('message'));
     }
 
-    public function test_v1_login_intent_rejects_invitation_token_until_activation_is_supported(): void
+    public function test_v1_login_intent_accepts_pane_admin_invitation_token_for_callback_activation(): void
     {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
+        config()->set('services.workos.provider', 'authkit');
         config()->set('services.latte.frontend_url', 'https://latte.test');
         config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
-        $response = $this
+        $actor = User::query()->create([
+            'user_type_id' => User::PANE_ADMINISTRATOR_USER_TYPE_ID,
+            'name' => 'Root Admin',
+            'email' => 'root@example.com',
+            'password' => 'password',
+            'is_active' => true,
+        ]);
+        $create = $this
+            ->withCsrfToken()
+            ->actingAs($actor)
+            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/installation/pane-admin-invitations', [
+                'email' => 'Invited.Admin@Example.COM',
+            ])
+            ->assertCreated();
+
+        $invitationUrl = (string) $create->json('meta.invitation_url');
+        $query = [];
+        parse_str((string) parse_url($invitationUrl, PHP_URL_QUERY), $query);
+
+        $this->assertIsString($query['invitation_token'] ?? null);
+
+        $token = $query['invitation_token'];
+        $invitation = PaneAdminInvitation::query()->where('email', 'invited.admin@example.com')->firstOrFail();
+
+        $this->app['auth']->guard()->logout();
+
+        $intent = $this
             ->withHeader('Origin', 'https://latte.test')
             ->postJson('/api/v1/auth/login-intents', [
                 'redirect_to' => 'https://latte.test/dashboard',
-                'invitation_token' => str_repeat('a', 32),
+                'invitation_token' => $token,
             ]);
 
-        $response
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonPath('error.message', 'The invitation_token field is not supported.')
-            ->assertJsonStructure(['error' => ['code', 'message', 'request_id']])
-            ->assertSessionMissing('workos_state')
-            ->assertSessionMissing('workos_intended_url');
+        $intent
+            ->assertOk()
+            ->assertSessionHas('pane_admin_invitation_token_hash', hash('sha256', $token));
+
+        Http::fake([
+            'api.workos.com/user_management/authenticate' => Http::response([
+                'user' => [
+                    'id' => 'user_invited',
+                    'email' => 'invited.admin@example.com',
+                    'email_verified' => true,
+                    'first_name' => 'Invited',
+                    'last_name' => 'Admin',
+                ],
+                'session_id' => 'session_123',
+                'organization_id' => 'org_123',
+                'authentication_method' => 'sso',
+            ]),
+        ]);
+
+        $callback = $this
+            ->withSession([
+                'workos_state' => $intent->json('data.state'),
+                'workos_intended_url' => 'https://latte.test/dashboard',
+                'pane_v1_application_id' => config('services.latte.application_id'),
+                'pane_admin_invitation_token_hash' => hash('sha256', $token),
+            ])
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/auth/callback', [
+                'code' => 'code_123',
+                'state' => $intent->json('data.state'),
+            ]);
+
+        $callback
+            ->assertOk()
+            ->assertSessionMissing('pane_admin_invitation_token_hash')
+            ->assertJsonPath('data.user.attributes.email', 'invited.admin@example.com')
+            ->assertJsonPath('data.membership.attributes.role', 'organization_administrator');
+
+        $accepted = User::query()->where('email', 'invited.admin@example.com')->firstOrFail();
+
+        $this->assertTrue($accepted->isPaneAdministrator());
+        $this->assertSame(PaneAdminInvitation::STATUS_ACCEPTED, $invitation->fresh()->status);
+        $this->assertStringNotContainsString($token, $accepted->toJson());
     }
 
     public function test_v1_session_returns_latte_session_payload(): void

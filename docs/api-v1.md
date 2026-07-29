@@ -127,8 +127,8 @@ suspension, or organization suspension/closure.
   require a CSRF token.
 - `POST /auth/login-intents` stores the redirect target in Pane's session and
   returns the WorkOS authorization URL and OAuth state. The request body accepts
-  only `redirect_to`; unsupported writable fields are rejected instead of being
-  stored as login intent metadata.
+  `redirect_to` and an optional `invitation_token`; unsupported writable fields
+  are rejected instead of being stored as login intent metadata.
 - `POST /auth/callback` completes WorkOS authentication, synchronizes the user,
   and starts the server-side session from a successful `code`/`state` callback.
   Provider rejection callbacks send `error`, optional `error_description`, and
@@ -203,6 +203,9 @@ invitations resolve the installation setting; organization invitations resolve
 the organization override, then installation setting, then versioned default.
 The response exposes the resolved `expires_at`. Exact configurable bounds remain
 a Pane-admin product decision and are not hard-coded into the HTTP contract.
+Pane-admin invitation creation also returns a one-time `meta.invitation_url`
+for delivery to the invited user; normal invitation representations and
+collection reads remain token-free.
 
 ## Success, pagination, and concurrency
 
@@ -210,6 +213,10 @@ Every successful response is one of:
 
 ```json
 {"data":{"id":"..."},"meta":{"request_id":"..."}}
+```
+
+```json
+{"data":{"id":"..."},"meta":{"request_id":"...","invitation_url":"https://..."}}
 ```
 
 ```json
@@ -322,10 +329,11 @@ fall back to them.
 During migration, the current `/auth/login-url`, `/auth/callback`, and
 `/auth/user` routes remain compatibility endpoints for the current Latte
 client. Their v1 replacements are `/api/v1/auth/login-intents`,
-`/api/v1/auth/callback`, and `/api/v1/session`. Invitation activation is
-deferred until the invitation service is implemented. The compatibility
-endpoints follow the same origin, redirect, OAuth-state, safe-error, session,
-and CSRF invariants and are removed under the policy below after Latte migrates.
+`/api/v1/auth/callback`, and `/api/v1/session`. Pane-admin invitation
+activation is available through the v1 login intent and callback flow. The
+compatibility endpoints follow the same origin, redirect, OAuth-state,
+safe-error, session, and CSRF invariants and are removed under the policy below
+after Latte migrates.
 
 Migration proceeds endpoint family by endpoint family:
 

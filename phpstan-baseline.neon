@@ -73,18 +73,6 @@ parameters:
 			path: app/Actions/ValidateAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\User\:\:\$email_verified_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Auth/WorkOsAuthController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\User\:\:\$workos_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Auth/WorkOsAuthController.php
-
-		-
 			message: '#^Parameter \#1 \$array \(array\{workos\: array\{first_name\: mixed, last_name\: mixed, profile_picture_url\: mixed, external_id\: mixed, authentication_method\: mixed\}\}\) to function array_filter does not contain falsy values, the array will always stay the same\.$#'
 			identifier: arrayFilter.same
 			count: 1
