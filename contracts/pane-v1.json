@@ -2693,6 +2693,11 @@
                 "properties": {
                     "redirect_to": {
                         "$ref": "#/components/schemas/RedirectUriInput"
+                    },
+                    "invitation_token": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
                     }
                 },
                 "additionalProperties": false
@@ -5593,7 +5598,12 @@
                                         "code": {
                                             "type": "string",
                                             "enum": [
-                                                "validation_failed"
+                                                "validation_failed",
+                                                "invitation_invalid",
+                                                "invitation_expired",
+                                                "invitation_revoked",
+                                                "invitation_already_accepted",
+                                                "invitation_email_mismatch"
                                             ]
                                         },
                                         "message": {
@@ -6567,7 +6577,12 @@
                 "application_not_allowed"
             ],
             "422": [
-                "validation_failed"
+                "validation_failed",
+                "invitation_invalid",
+                "invitation_expired",
+                "invitation_revoked",
+                "invitation_already_accepted",
+                "invitation_email_mismatch"
             ],
             "429": [
                 "rate_limited"

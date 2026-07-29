@@ -14,6 +14,8 @@ class PaneTable
 
     public const string PANE_ADMIN_INVITATIONS = 'pane_admin_invitations';
 
+    public const string PANE_INSTALLATION_LOCKS = 'pane_installation_locks';
+
     public const string SETTING_DEFAULTS = 'setting_defaults';
 
     public const string SETTING_OVERRIDES = 'setting_overrides';

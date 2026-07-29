@@ -86,7 +86,7 @@ class PaneV1ContractTest extends TestCase
             '#/components/schemas/LoginIntentInput',
             $this->contract['paths']['/auth/login-intents']['post']['requestBody']['content']['application/json']['schema']['$ref'],
         );
-        $this->assertArrayNotHasKey(
+        $this->assertArrayHasKey(
             'invitation_token',
             $this->contract['components']['schemas']['LoginIntentInput']['properties'],
         );
@@ -329,7 +329,14 @@ class PaneV1ContractTest extends TestCase
         $response = $this->contract['components']['responses'][basename($operation['responses']['422']['$ref'])];
         $error = $response['content']['application/json']['schema']['properties']['error'];
         $codes = $error['properties']['code']['enum'];
-        $expected = ['validation_failed'];
+        $expected = [
+            'validation_failed',
+            'invitation_invalid',
+            'invitation_expired',
+            'invitation_revoked',
+            'invitation_already_accepted',
+            'invitation_email_mismatch',
+        ];
 
         $this->assertSame('#/components/responses/Error422AuthCallbackRejected', $operation['responses']['422']['$ref']);
         $this->assertSame($expected, $matrix['422']);

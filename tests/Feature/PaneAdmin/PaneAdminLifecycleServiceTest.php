@@ -35,6 +35,9 @@ class PaneAdminLifecycleServiceTest extends TestCase
 
         $administrator = User::query()->where('email', 'first.admin@example.com')->firstOrFail();
 
+        $this->assertDatabaseHas(PaneTable::name(PaneTable::PANE_INSTALLATION_LOCKS), [
+            'lock_name' => 'pane_admin_bootstrap',
+        ]);
         $this->assertSame(User::PANE_ADMINISTRATOR_USER_TYPE_ID, $administrator->user_type_id);
         $this->assertSame('First Admin', $administrator->name);
         $this->assertTrue((bool) $administrator->is_active);

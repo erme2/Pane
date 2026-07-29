@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\PaneAdminInvitationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,6 +30,12 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/session', [WorkOsAuthController::class, 'session'])->name('session.show');
         Route::delete('/session', [WorkOsAuthController::class, 'destroySession'])->name('session.destroy');
+        Route::get('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'list'])
+            ->name('installation.pane-admin-invitations.index');
+        Route::post('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'store'])
+            ->name('installation.pane-admin-invitations.store');
+        Route::delete('/installation/pane-admin-invitations/{invitationId}', [PaneAdminInvitationController::class, 'destroy'])
+            ->name('installation.pane-admin-invitations.destroy');
     });
 });
 

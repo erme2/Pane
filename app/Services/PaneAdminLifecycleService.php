@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditEvent;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
+use App\Support\PaneTable;
 use App\Support\SettingsRegistry;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use InvalidArgumentException;
 
 class PaneAdminLifecycleService
 {
+    private const string BOOTSTRAP_LOCK_NAME = 'pane_admin_bootstrap';
+
     private const int TOKEN_BYTES = 40;
 
     public function __construct(
@@ -26,6 +29,8 @@ class PaneAdminLifecycleService
         $email = $this->normalizeEmail($email);
 
         return DB::transaction(function () use ($email, $name): User {
+            $this->lockPaneAdminBootstrap();
+
             $administrators = User::query()
                 ->where('user_type_id', User::PANE_ADMINISTRATOR_USER_TYPE_ID)
                 ->lockForUpdate()
@@ -180,15 +185,31 @@ class PaneAdminLifecycleService
         array $workOsUser,
         array $authentication = []
     ): User {
+        return $this->acceptPaneAdministratorInvitationHash($this->tokenHash($token), $workOsUser, $authentication);
+    }
+
+    /**
+     * @param array<string, mixed> $workOsUser
+     * @param array<string, mixed> $authentication
+     */
+    public function acceptPaneAdministratorInvitationHash(
+        string $tokenHash,
+        array $workOsUser,
+        array $authentication = []
+    ): User {
         $email = $this->normalizeEmail((string) ($workOsUser['email'] ?? ''));
 
         if (($workOsUser['email_verified'] ?? false) !== true) {
             throw new InvalidArgumentException('Pane administrator invitation requires a verified WorkOS email.');
         }
 
-        $result = DB::transaction(function () use ($token, $workOsUser, $authentication, $email): User|InvalidArgumentException {
+        if (! preg_match('/\A[a-f0-9]{64}\z/', $tokenHash)) {
+            throw new InvalidArgumentException('Pane administrator invitation is invalid.');
+        }
+
+        $result = DB::transaction(function () use ($tokenHash, $workOsUser, $authentication, $email): User|InvalidArgumentException {
             $invitation = PaneAdminInvitation::query()
-                ->where('token_hash', $this->tokenHash($token))
+                ->where('token_hash', $tokenHash)
                 ->lockForUpdate()
                 ->first();
 
@@ -480,6 +501,18 @@ class PaneAdminLifecycleService
     private function tokenHash(string $token): string
     {
         return hash('sha256', $token);
+    }
+
+    private function lockPaneAdminBootstrap(): void
+    {
+        $lock = DB::table(PaneTable::name(PaneTable::PANE_INSTALLATION_LOCKS))
+            ->where('lock_name', self::BOOTSTRAP_LOCK_NAME)
+            ->lockForUpdate()
+            ->first();
+
+        if ($lock === null) {
+            throw new DomainException('Pane administrator bootstrap lock is missing.');
+        }
     }
 
     private function workOsDisplayName(array $workOsUser, string $fallback): string

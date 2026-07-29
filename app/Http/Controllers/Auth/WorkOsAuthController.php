@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PaneAdminLifecycleService;
 use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Http\JsonResponse;
@@ -14,14 +15,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
 
 class WorkOsAuthController extends Controller
 {
     private const STATE_COOKIE = 'pane_workos_state';
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
+    private const PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY = 'pane_admin_invitation_token_hash';
 
-    public function __construct(private readonly WorkOsService $workOs) {}
+    public function __construct(
+        private readonly WorkOsService $workOs,
+        private readonly PaneAdminLifecycleService $administrators,
+    ) {}
 
     public function loginUrl(Request $request): JsonResponse
     {
@@ -71,6 +77,12 @@ class WorkOsAuthController extends Controller
             return $intendedRedirectUrl;
         }
 
+        $invitationTokenHash = $versioned ? $this->versionedInvitationTokenHash($request) : null;
+
+        if ($invitationTokenHash instanceof JsonResponse) {
+            return $invitationTokenHash;
+        }
+
         $this->workOs->ensureConfigured();
 
         $state = $this->workOs->makeState();
@@ -80,6 +92,12 @@ class WorkOsAuthController extends Controller
 
         if ($versioned) {
             $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $this->currentLatteApplicationId());
+
+            if (is_string($invitationTokenHash)) {
+                $request->session()->put(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY, $invitationTokenHash);
+            } else {
+                $request->session()->forget(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY);
+            }
         }
 
         $intent = [
@@ -198,7 +216,30 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        $user = $this->syncUser($authentication);
+        $invitationTokenHash = $versioned
+            ? $request->session()->get(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY)
+            : null;
+        $workOsUser = is_array($authentication['user'] ?? null) ? $authentication['user'] : [];
+
+        try {
+            $user = is_string($invitationTokenHash)
+                ? $this->administrators->acceptPaneAdministratorInvitationHash(
+                    $invitationTokenHash,
+                    $workOsUser,
+                    $authentication
+                )
+                : $this->syncUser($authentication);
+        } catch (InvalidArgumentException $exception) {
+            $request->session()->forget(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY);
+
+            return $this->callbackErrorResponse(
+                $request,
+                $versioned,
+                $exception->getMessage(),
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                $this->invitationErrorCode($exception)
+            );
+        }
 
         if (! (bool) $user->is_active) {
             return $this->callbackErrorResponse(
@@ -213,7 +254,10 @@ class WorkOsAuthController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
-        $request->session()->forget('workos_state');
+        $request->session()->forget([
+            'workos_state',
+            self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY,
+        ]);
         $request->session()->put([
             'workos_completed_state' => $state,
             'workos_session_id' => $authentication['session_id'] ?? null,
@@ -463,7 +507,7 @@ class WorkOsAuthController extends Controller
     private function versionedIntendedRedirectUrl(Request $request): string|JsonResponse
     {
         $body = $this->requestBody($request);
-        $unsupportedFields = array_values(array_diff(array_keys($body), ['redirect_to']));
+        $unsupportedFields = array_values(array_diff(array_keys($body), ['redirect_to', 'invitation_token']));
 
         if ($unsupportedFields !== []) {
             sort($unsupportedFields);
@@ -508,6 +552,27 @@ class WorkOsAuthController extends Controller
         }
 
         return $normalizedRedirectTo;
+    }
+
+    private function versionedInvitationTokenHash(Request $request): string|JsonResponse|null
+    {
+        $body = $this->requestBody($request);
+        $token = $body['invitation_token'] ?? null;
+
+        if ($token === null) {
+            return null;
+        }
+
+        if (! is_string($token) || blank($token) || strlen($token) > 255) {
+            return $this->versionedErrorResponse(
+                $request,
+                'validation_failed',
+                'The invitation_token field must be a valid invitation token.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        return hash('sha256', $token);
     }
 
     /**
@@ -606,5 +671,16 @@ class WorkOsAuthController extends Controller
         }
 
         return true;
+    }
+
+    private function invitationErrorCode(InvalidArgumentException $exception): string
+    {
+        return match ($exception->getMessage()) {
+            'Pane administrator invitation has expired.' => 'invitation_expired',
+            'Pane administrator invitation was revoked.' => 'invitation_revoked',
+            'Pane administrator invitation was already accepted.' => 'invitation_already_accepted',
+            'Pane administrator invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
+            default => 'invitation_invalid',
+        };
     }
 }

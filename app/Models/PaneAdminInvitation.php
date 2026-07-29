@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
  * @property Carbon $expires_at
  * @property Carbon|null $accepted_at
  * @property Carbon|null $revoked_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class PaneAdminInvitation extends Model
 {
