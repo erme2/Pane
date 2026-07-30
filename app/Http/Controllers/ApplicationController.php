@@ -234,7 +234,7 @@ class ApplicationController extends Controller
             'name' => ['required', 'string', 'min:1', 'max:200'],
             'kind' => ['required', 'in:latte,burro'],
             'organization_id' => ['nullable', 'uuid'],
-            'trusted_origin' => ['required', 'string', 'max:2048'],
+            'trusted_origin' => ['required', 'string', 'max:255'],
             'redirect_uris' => ['required', 'array', 'min:1'],
             'redirect_uris.*' => ['required', 'string', 'max:2048'],
         ]);
@@ -299,7 +299,7 @@ class ApplicationController extends Controller
 
         $validator = Validator::make($body, [
             'name' => ['sometimes', 'required', 'string', 'min:1', 'max:200'],
-            'trusted_origin' => ['sometimes', 'required', 'string', 'max:2048'],
+            'trusted_origin' => ['sometimes', 'required', 'string', 'max:255'],
             'redirect_uris' => ['sometimes', 'required', 'array', 'min:1'],
             'redirect_uris.*' => ['required', 'string', 'max:2048'],
             'status' => ['sometimes', 'required', 'in:active,disabled'],

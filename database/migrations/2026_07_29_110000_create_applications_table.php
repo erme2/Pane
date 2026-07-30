@@ -14,7 +14,8 @@ return new class extends Migration
             $table->uuid('organization_id')->nullable()->index();
             $table->string('name', 200);
             $table->string('kind')->index();
-            $table->string('trusted_origin', 2048)->index();
+            $table->string('trusted_origin');
+            $table->string('active_trusted_origin')->nullable()->unique();
             $table->json('redirect_uris');
             $table->string('status')->default('active')->index();
             $table->json('details')->nullable();

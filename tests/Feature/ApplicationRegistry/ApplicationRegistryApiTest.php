@@ -7,8 +7,10 @@ use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\OrganizationTenancyService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -94,6 +96,7 @@ class ApplicationRegistryApiTest extends TestCase
             ApplicationRegistration::STATUS_DISABLED,
             ApplicationRegistration::query()->findOrFail($applicationId)->status
         );
+        $this->assertNull(ApplicationRegistration::query()->findOrFail($applicationId)->active_trusted_origin);
     }
 
     public function test_application_registry_rejects_duplicate_active_origin_and_releases_disabled_origin(): void
@@ -146,6 +149,48 @@ class ApplicationRegistryApiTest extends TestCase
                 'redirect_uris' => ['https://shared.example.test/auth/callback'],
             ])
             ->assertCreated();
+    }
+
+    public function test_active_origin_uniqueness_is_enforced_by_the_database(): void
+    {
+        $organization = $this->tenancy->createOrganization('Unique Workspace', 'unique-workspace-'.Str::uuid());
+
+        ApplicationRegistration::query()->create([
+            'name' => 'First Workspace App',
+            'kind' => ApplicationRegistration::KIND_LATTE,
+            'organization_id' => $organization->organization_id,
+            'trusted_origin' => 'https://unique.example.test',
+            'redirect_uris' => ['https://unique.example.test/auth/callback'],
+            'status' => ApplicationRegistration::STATUS_ACTIVE,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        ApplicationRegistration::query()->create([
+            'name' => 'Second Workspace App',
+            'kind' => ApplicationRegistration::KIND_LATTE,
+            'organization_id' => $organization->organization_id,
+            'trusted_origin' => 'https://unique.example.test',
+            'redirect_uris' => ['https://unique.example.test/auth/callback'],
+            'status' => ApplicationRegistration::STATUS_ACTIVE,
+        ]);
+    }
+
+    public function test_legacy_control_plane_tables_are_renamed_to_current_names(): void
+    {
+        $prefix = config('database.table_prefix');
+        $legacy = $prefix.'map_setting_defaults';
+        $current = $prefix.'setting_defaults';
+
+        DB::statement('ALTER TABLE '.$current.' RENAME TO '.$legacy);
+        $this->assertTrue(DB::getSchemaBuilder()->hasTable($legacy));
+        $this->assertFalse(DB::getSchemaBuilder()->hasTable($current));
+
+        $migration = include database_path('migrations/2026_07_29_100000_normalize_control_plane_table_names.php');
+        $migration->up();
+
+        $this->assertFalse(DB::getSchemaBuilder()->hasTable($legacy));
+        $this->assertTrue(DB::getSchemaBuilder()->hasTable($current));
     }
 
     public function test_login_intent_binds_the_registered_application_for_the_origin(): void

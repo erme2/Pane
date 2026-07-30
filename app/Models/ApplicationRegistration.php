@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
  * @property string $name
  * @property string $kind
  * @property string $trusted_origin
+ * @property string|null $active_trusted_origin
  * @property array<int, string> $redirect_uris
  * @property string $status
  * @property array<string, mixed>|null $details
@@ -52,6 +53,7 @@ class ApplicationRegistration extends Model
         'name',
         'kind',
         'trusted_origin',
+        'active_trusted_origin',
         'redirect_uris',
         'status',
         'details',
@@ -75,6 +77,12 @@ class ApplicationRegistration extends Model
             if (blank($application->application_id)) {
                 $application->application_id = (string) Str::uuid();
             }
+        });
+
+        static::saving(function (ApplicationRegistration $application): void {
+            $application->active_trusted_origin = $application->isActive()
+                ? $application->trusted_origin
+                : null;
         });
     }
 

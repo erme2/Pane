@@ -8,12 +8,15 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Support\LatteApplicationConfig;
 use DomainException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class ApplicationRegistryService
 {
+    private const CONFIGURED_LATTE_SOURCE = 'configured_latte';
+
     public function __construct(private readonly AuditEventService $audit) {}
 
     public function activeApplicationForOrigin(string $origin): ?ApplicationRegistration
@@ -25,7 +28,7 @@ class ApplicationRegistryService
         }
 
         $application = ApplicationRegistration::query()
-            ->where('trusted_origin', $trustedOrigin)
+            ->where('active_trusted_origin', $trustedOrigin)
             ->where('status', ApplicationRegistration::STATUS_ACTIVE)
             ->first();
 
@@ -48,8 +51,18 @@ class ApplicationRegistryService
 
         $application = ApplicationRegistration::query()->find($applicationId);
 
-        if (! $application instanceof ApplicationRegistration && hash_equals($this->configuredLatteApplicationId(), $applicationId)) {
+        try {
+            $configuredApplicationId = $this->configuredLatteApplicationId();
+        } catch (InvalidArgumentException) {
+            return $application instanceof ApplicationRegistration && $application->isActive()
+                ? $application
+                : null;
+        }
+
+        if (hash_equals($configuredApplicationId, $applicationId)) {
             $application = $this->configuredLatteApplication();
+
+            return $application->isActive() ? $application : null;
         }
 
         return $application instanceof ApplicationRegistration && $application->isActive()
@@ -78,10 +91,35 @@ class ApplicationRegistryService
                         'organization_id' => $organization->getKey(),
                         'trusted_origin' => $trustedOrigin,
                         'redirect_uris' => $redirectUris,
+                        'details' => array_replace($application->details ?? [], [
+                            'source' => self::CONFIGURED_LATTE_SOURCE,
+                        ]),
                     ])->save();
                 }
 
                 return $application;
+            }
+
+            $conflictingOriginApplication = ApplicationRegistration::query()
+                ->where('active_trusted_origin', $trustedOrigin)
+                ->where('status', ApplicationRegistration::STATUS_ACTIVE)
+                ->lockForUpdate()
+                ->first();
+
+            if ($this->isConfiguredLatteApplication($conflictingOriginApplication)) {
+                $conflictingOriginApplication->forceFill([
+                    'application_id' => $applicationId,
+                    'name' => (string) config('app.name', 'Latte'),
+                    'kind' => ApplicationRegistration::KIND_LATTE,
+                    'organization_id' => $organization->getKey(),
+                    'trusted_origin' => $trustedOrigin,
+                    'redirect_uris' => $redirectUris,
+                    'details' => array_replace($conflictingOriginApplication->details ?? [], [
+                        'source' => self::CONFIGURED_LATTE_SOURCE,
+                    ]),
+                ])->save();
+
+                return $conflictingOriginApplication;
             }
 
             return ApplicationRegistration::query()->create([
@@ -92,6 +130,7 @@ class ApplicationRegistryService
                 'trusted_origin' => $trustedOrigin,
                 'redirect_uris' => $redirectUris,
                 'status' => ApplicationRegistration::STATUS_ACTIVE,
+                'details' => ['source' => self::CONFIGURED_LATTE_SOURCE],
             ]);
         });
     }
@@ -106,16 +145,22 @@ class ApplicationRegistryService
         return DB::transaction(function () use ($actor, $attributes): ApplicationRegistration {
             $this->assertActiveOriginAvailable($attributes['trusted_origin']);
 
-            $application = ApplicationRegistration::query()->create([
-                'name' => $attributes['name'],
-                'kind' => $attributes['kind'],
-                'organization_id' => $attributes['kind'] === ApplicationRegistration::KIND_LATTE
-                    ? $attributes['organization_id']
-                    : null,
-                'trusted_origin' => $attributes['trusted_origin'],
-                'redirect_uris' => $attributes['redirect_uris'],
-                'status' => ApplicationRegistration::STATUS_ACTIVE,
-            ]);
+            try {
+                $application = ApplicationRegistration::query()->create([
+                    'name' => $attributes['name'],
+                    'kind' => $attributes['kind'],
+                    'organization_id' => $attributes['kind'] === ApplicationRegistration::KIND_LATTE
+                        ? $attributes['organization_id']
+                        : null,
+                    'trusted_origin' => $attributes['trusted_origin'],
+                    'redirect_uris' => $attributes['redirect_uris'],
+                    'status' => ApplicationRegistration::STATUS_ACTIVE,
+                ]);
+            } catch (QueryException $exception) {
+                $this->throwDuplicateOriginWhenUniqueConstraintFails($exception);
+
+                throw $exception;
+            }
 
             $this->audit->record('application.create', AuditEvent::OUTCOME_SUCCESS, [
                 'real_actor' => $actor,
@@ -152,7 +197,13 @@ class ApplicationRegistryService
                 $this->assertActiveOriginAvailable($targetOrigin, $locked);
             }
 
-            $locked->forceFill($attributes)->save();
+            try {
+                $locked->forceFill($attributes)->save();
+            } catch (QueryException $exception) {
+                $this->throwDuplicateOriginWhenUniqueConstraintFails($exception);
+
+                throw $exception;
+            }
 
             $this->audit->record('application.update', AuditEvent::OUTCOME_SUCCESS, [
                 'real_actor' => $actor,
@@ -247,10 +298,16 @@ class ApplicationRegistryService
         }
     }
 
+    private function isConfiguredLatteApplication(mixed $application): bool
+    {
+        return $application instanceof ApplicationRegistration
+            && ($application->details['source'] ?? null) === self::CONFIGURED_LATTE_SOURCE;
+    }
+
     private function assertActiveOriginAvailable(string $trustedOrigin, ?ApplicationRegistration $except = null): void
     {
         $duplicate = ApplicationRegistration::query()
-            ->where('trusted_origin', $trustedOrigin)
+            ->where('active_trusted_origin', $trustedOrigin)
             ->where('status', ApplicationRegistration::STATUS_ACTIVE)
             ->when($except instanceof ApplicationRegistration, fn ($query) => $query->whereKeyNot($except->getKey()))
             ->lockForUpdate()
@@ -258,6 +315,16 @@ class ApplicationRegistryService
 
         if ($duplicate) {
             throw new DomainException('Application trusted origin is already registered.');
+        }
+    }
+
+    private function throwDuplicateOriginWhenUniqueConstraintFails(QueryException $exception): void
+    {
+        if (
+            in_array((string) $exception->getCode(), ['23000', '23505'], true)
+            && str_contains($exception->getMessage(), 'active_trusted_origin')
+        ) {
+            throw new DomainException('Application trusted origin is already registered.', previous: $exception);
         }
     }
 }
