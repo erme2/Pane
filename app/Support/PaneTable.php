@@ -10,6 +10,8 @@ class PaneTable
 
     public const string ORGANIZATION_MEMBERSHIPS = 'organization_memberships';
 
+    public const string ORGANIZATION_INVITATIONS = 'organization_invitations';
+
     public const string APPLICATIONS = 'applications';
 
     public const string AUDIT_EVENTS = 'audit_events';

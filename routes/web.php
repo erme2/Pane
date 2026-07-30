@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\OrganizationInvitationController;
 use App\Http\Controllers\PaneAdminInvitationController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,14 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('installation.pane-admin-invitations.store');
         Route::delete('/installation/pane-admin-invitations/{invitationId}', [PaneAdminInvitationController::class, 'destroy'])
             ->name('installation.pane-admin-invitations.destroy');
+        Route::get('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'list'])
+            ->name('organizations.invitations.index');
+        Route::post('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'store'])
+            ->name('organizations.invitations.store');
+        Route::post('/organizations/{organizationId}/invitations/{invitationId}/resend', [OrganizationInvitationController::class, 'resend'])
+            ->name('organizations.invitations.resend');
+        Route::delete('/organizations/{organizationId}/invitations/{invitationId}', [OrganizationInvitationController::class, 'destroy'])
+            ->name('organizations.invitations.destroy');
     });
 });
 
