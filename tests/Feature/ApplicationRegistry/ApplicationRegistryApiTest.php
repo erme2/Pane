@@ -6,6 +6,7 @@ use App\Models\ApplicationRegistration;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
+use App\Services\ApplicationRegistryService;
 use App\Services\OrganizationTenancyService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class ApplicationRegistryApiTest extends TestCase
         $this->withCsrfToken()->actingAs($actor);
 
         $create = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/applications', [
                 'name' => 'Customer Workspace',
@@ -64,14 +65,14 @@ class ApplicationRegistryApiTest extends TestCase
         $applicationId = (string) $create->json('data.id');
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->getJson('/api/v1/installation/applications')
             ->assertOk()
             ->assertJsonPath('data.0.id', $applicationId);
 
         $update = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', (string) $create->headers->get('ETag'))
             ->patchJson("/api/v1/installation/applications/$applicationId", [
@@ -86,7 +87,7 @@ class ApplicationRegistryApiTest extends TestCase
             ->assertJsonPath('data.attributes.status', ApplicationRegistration::STATUS_DISABLED);
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', (string) $update->headers->get('ETag'))
             ->deleteJson("/api/v1/installation/applications/$applicationId")
@@ -107,7 +108,7 @@ class ApplicationRegistryApiTest extends TestCase
         $this->withCsrfToken()->actingAs($actor);
 
         $first = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/applications', [
                 'name' => 'First Workspace App',
@@ -119,7 +120,7 @@ class ApplicationRegistryApiTest extends TestCase
             ->assertCreated();
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/applications', [
                 'name' => 'Second Workspace App',
@@ -132,14 +133,14 @@ class ApplicationRegistryApiTest extends TestCase
             ->assertJsonPath('error.code', 'duplicate_resource');
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', (string) $first->headers->get('ETag'))
             ->deleteJson('/api/v1/installation/applications/'.$first->json('data.id'))
             ->assertNoContent();
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/applications', [
                 'name' => 'Second Workspace App',
@@ -149,6 +150,40 @@ class ApplicationRegistryApiTest extends TestCase
                 'redirect_uris' => ['https://shared.example.test/auth/callback'],
             ])
             ->assertCreated();
+    }
+
+    public function test_disabled_application_sessions_stay_invalid_after_reenable(): void
+    {
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $organization = $this->tenancy->createOrganization('Rotated Workspace', 'rotated-workspace-'.Str::uuid());
+
+        $application = ApplicationRegistration::query()->create([
+            'name' => 'Rotated Workspace App',
+            'kind' => ApplicationRegistration::KIND_LATTE,
+            'organization_id' => $organization->organization_id,
+            'trusted_origin' => 'https://rotated.example.test',
+            'redirect_uris' => ['https://rotated.example.test/auth/callback'],
+            'status' => ApplicationRegistration::STATUS_ACTIVE,
+        ]);
+        $staleSession = $this->v1ApplicationSession($application);
+
+        $service = app(ApplicationRegistryService::class);
+        $disabled = $service->disable($actor, $application);
+
+        $this->assertNotSame(
+            $staleSession['pane_v1_application_session_version'],
+            $disabled->session_version
+        );
+
+        $service->update($actor, $disabled, ['status' => ApplicationRegistration::STATUS_ACTIVE]);
+
+        $this
+            ->actingAs($actor)
+            ->withSession($staleSession)
+            ->withHeader('Origin', 'https://rotated.example.test')
+            ->getJson('/api/v1/session')
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed');
     }
 
     public function test_active_origin_uniqueness_is_enforced_by_the_database(): void
@@ -216,7 +251,8 @@ class ApplicationRegistryApiTest extends TestCase
                 'redirect_to' => 'https://customer.example.test/app',
             ])
             ->assertOk()
-            ->assertSessionHas('pane_v1_application_id', $application->application_id);
+            ->assertSessionHas('pane_v1_application_id', $application->application_id)
+            ->assertSessionHas('pane_v1_application_session_version', $application->session_version);
 
         $this
             ->withHeader('Origin', 'https://customer.example.test')
@@ -275,14 +311,14 @@ class ApplicationRegistryApiTest extends TestCase
         $this->actingAs($user);
 
         $this
-            ->withSession(['pane_v1_application_id' => $application->application_id])
+            ->withV1ApplicationSession($application)
             ->withHeader('Origin', 'https://fixed.example.test')
             ->getJson('/api/v1/organizations/'.$otherOrganization->organization_id.'/application-context-probe')
             ->assertForbidden()
             ->assertJsonPath('error.code', 'organization_context_mismatch');
 
         $this
-            ->withSession(['pane_v1_application_id' => $application->application_id])
+            ->withV1ApplicationSession($application)
             ->withHeader('Origin', 'https://fixed.example.test')
             ->getJson('/api/v1/organizations/'.$fixedOrganization->organization_id.'/application-context-probe')
             ->assertOk()

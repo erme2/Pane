@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
  * @property string $kind
  * @property string $trusted_origin
  * @property string|null $active_trusted_origin
+ * @property string $session_version
  * @property array<int, string> $redirect_uris
  * @property string $status
  * @property array<string, mixed>|null $details
@@ -54,6 +55,7 @@ class ApplicationRegistration extends Model
         'kind',
         'trusted_origin',
         'active_trusted_origin',
+        'session_version',
         'redirect_uris',
         'status',
         'details',
@@ -77,6 +79,10 @@ class ApplicationRegistration extends Model
             if (blank($application->application_id)) {
                 $application->application_id = (string) Str::uuid();
             }
+
+            if (blank($application->session_version)) {
+                $application->rotateSessionVersion();
+            }
         });
 
         static::saving(function (ApplicationRegistration $application): void {
@@ -92,6 +98,11 @@ class ApplicationRegistration extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'organization_id', 'organization_id');
+    }
+
+    public function rotateSessionVersion(): void
+    {
+        $this->session_version = (string) Str::uuid();
     }
 
     public function isActive(): bool

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('kind')->index();
             $table->string('trusted_origin');
             $table->string('active_trusted_origin')->nullable()->unique();
+            $table->uuid('session_version')->index();
             $table->json('redirect_uris');
             $table->string('status')->default('active')->index();
             $table->json('details')->nullable();

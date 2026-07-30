@@ -28,6 +28,8 @@ class WorkOsAuthController extends Controller
 
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
+    private const V1_APPLICATION_SESSION_VERSION_KEY = 'pane_v1_application_session_version';
+
     private const PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY = 'pane_admin_invitation_token_hash';
 
     public function __construct(
@@ -105,6 +107,7 @@ class WorkOsAuthController extends Controller
 
         if ($versioned) {
             $request->session()->put(self::V1_APPLICATION_SESSION_KEY, $application->getKey());
+            $request->session()->put(self::V1_APPLICATION_SESSION_VERSION_KEY, $application->session_version);
 
             if (is_string($invitationTokenHash)) {
                 $request->session()->put(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY, $invitationTokenHash);
@@ -392,7 +395,10 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        $application = $this->applications->activeApplicationForId($sessionApplicationId);
+        $application = $this->applications->activeApplicationForSession(
+            $sessionApplicationId,
+            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY)
+        );
 
         if (! $application instanceof ApplicationRegistration) {
             return $this->versionedErrorResponse(

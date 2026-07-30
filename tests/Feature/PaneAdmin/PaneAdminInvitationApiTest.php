@@ -23,7 +23,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->withCsrfToken()->actingAs($actor);
 
         $create = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/pane-admin-invitations', [
                 'email' => 'Invited.Admin@Example.COM',
@@ -54,7 +54,7 @@ class PaneAdminInvitationApiTest extends TestCase
         );
 
         $list = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->getJson('/api/v1/installation/pane-admin-invitations');
 
@@ -64,7 +64,7 @@ class PaneAdminInvitationApiTest extends TestCase
             ->assertJsonPath('meta.page.has_more', false);
 
         $revoke = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', (string) $create->headers->get('ETag'))
             ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId");
@@ -84,14 +84,14 @@ class PaneAdminInvitationApiTest extends TestCase
 
         foreach (['first@example.com', 'second@example.com', 'third@example.com'] as $email) {
             $this
-                ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+                ->withV1ApplicationSession()
                 ->withHeader('Origin', 'https://latte.localhost')
                 ->postJson('/api/v1/installation/pane-admin-invitations', ['email' => $email])
                 ->assertCreated();
         }
 
         $firstPage = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->getJson('/api/v1/installation/pane-admin-invitations?'.http_build_query([
                 'page' => ['limit' => 1],
@@ -109,7 +109,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->assertNotSame($firstId, $cursor);
 
         $secondPage = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->getJson('/api/v1/installation/pane-admin-invitations?'.http_build_query([
                 'page' => ['limit' => 1, 'cursor' => $cursor],
@@ -123,7 +123,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->assertNotSame($firstId, $secondPage->json('data.0.id'));
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->getJson('/api/v1/installation/pane-admin-invitations?'.http_build_query([
                 'page' => ['cursor' => 'not-a-valid-cursor'],
@@ -138,7 +138,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->withCsrfToken()->actingAs($actor);
 
         $create = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/pane-admin-invitations', [
                 'email' => 'invited.admin@example.com',
@@ -148,14 +148,14 @@ class PaneAdminInvitationApiTest extends TestCase
         $invitationId = $create->json('data.id');
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
             ->assertStatus(Response::HTTP_PRECONDITION_REQUIRED)
             ->assertJsonPath('error.code', 'precondition_required');
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', 'W/"revision_42"')
             ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
@@ -163,7 +163,7 @@ class PaneAdminInvitationApiTest extends TestCase
             ->assertJsonPath('error.code', 'invalid_request');
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', '"revision_42"')
             ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
@@ -171,7 +171,7 @@ class PaneAdminInvitationApiTest extends TestCase
             ->assertJsonPath('error.code', 'version_conflict');
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', (string) $create->headers->get('ETag'))
             ->deleteJson("/api/v1/installation/pane-admin-invitations/$invitationId")
@@ -184,7 +184,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->withCsrfToken()->actingAs($actor);
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/pane-admin-invitations', [
                 'email' => 'invited.admin@example.com',
@@ -203,7 +203,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->withCsrfToken()->actingAs($actor);
 
         $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->withHeader('If-Match', '"revision_42"')
             ->deleteJson('/api/v1/installation/pane-admin-invitations/not-a-uuid')
@@ -216,7 +216,7 @@ class PaneAdminInvitationApiTest extends TestCase
         $this->withCsrfToken()->actingAs($this->makePaneUser(User::STANDARD_USER_TYPE_ID));
 
         $response = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.localhost')
             ->postJson('/api/v1/installation/pane-admin-invitations', [
                 'email' => 'invited.admin@example.com',

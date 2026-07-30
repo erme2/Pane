@@ -16,6 +16,8 @@ class ValidateV1OrganizationContext
 {
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
+    private const V1_APPLICATION_SESSION_VERSION_KEY = 'pane_v1_application_session_version';
+
     public function __construct(private readonly ApplicationRegistryService $applications) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -40,7 +42,10 @@ class ValidateV1OrganizationContext
             return $this->v1Error($request, 'application_not_allowed', 'The application origin is not allowed.', Response::HTTP_FORBIDDEN);
         }
 
-        $application = $this->applications->activeApplicationForId($applicationId);
+        $application = $this->applications->activeApplicationForSession(
+            $applicationId,
+            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY)
+        );
 
         if (! $application instanceof ApplicationRegistration) {
             return $this->v1Error($request, 'application_not_allowed', 'The application origin is not allowed.', Response::HTTP_FORBIDDEN);

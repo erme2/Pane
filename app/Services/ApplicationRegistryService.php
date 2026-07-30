@@ -70,6 +70,21 @@ class ApplicationRegistryService
             : null;
     }
 
+    public function activeApplicationForSession(mixed $applicationId, mixed $sessionVersion): ?ApplicationRegistration
+    {
+        if (! is_string($applicationId) || ! is_string($sessionVersion) || ! Str::isUuid($sessionVersion)) {
+            return null;
+        }
+
+        $application = $this->activeApplicationForId($applicationId);
+
+        if (! $application instanceof ApplicationRegistration || ! hash_equals((string) $application->session_version, $sessionVersion)) {
+            return null;
+        }
+
+        return $application;
+    }
+
     public function configuredLatteApplication(): ApplicationRegistration
     {
         $applicationId = $this->configuredLatteApplicationId();
@@ -198,7 +213,16 @@ class ApplicationRegistryService
             }
 
             try {
-                $locked->forceFill($attributes)->save();
+                $shouldInvalidateSessions = $locked->isActive()
+                    && $targetStatus === ApplicationRegistration::STATUS_DISABLED;
+
+                $locked->forceFill($attributes);
+
+                if ($shouldInvalidateSessions) {
+                    $locked->rotateSessionVersion();
+                }
+
+                $locked->save();
             } catch (QueryException $exception) {
                 $this->throwDuplicateOriginWhenUniqueConstraintFails($exception);
 

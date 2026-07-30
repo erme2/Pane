@@ -12,6 +12,8 @@ class ValidateV1Origin
 {
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
+    private const V1_APPLICATION_SESSION_VERSION_KEY = 'pane_v1_application_session_version';
+
     public function __construct(private readonly ApplicationRegistryService $applications) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -48,7 +50,10 @@ class ValidateV1Origin
             return false;
         }
 
-        $application = $this->applications->activeApplicationForId($sessionApplicationId);
+        $application = $this->applications->activeApplicationForSession(
+            $sessionApplicationId,
+            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY)
+        );
         $originApplication = $this->applications->activeApplicationForOrigin($origin);
 
         return $application !== null

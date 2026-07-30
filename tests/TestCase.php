@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use App\Models\ApplicationRegistration;
 use App\Models\User;
+use App\Services\ApplicationRegistryService;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Str;
 
@@ -66,6 +68,24 @@ abstract class TestCase extends BaseTestCase
         return $this
             ->withSession(['_token' => $token])
             ->withHeader('X-CSRF-TOKEN', $token);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function v1ApplicationSession(?ApplicationRegistration $application = null): array
+    {
+        $application ??= app(ApplicationRegistryService::class)->configuredLatteApplication();
+
+        return [
+            'pane_v1_application_id' => (string) $application->getKey(),
+            'pane_v1_application_session_version' => $application->session_version,
+        ];
+    }
+
+    protected function withV1ApplicationSession(?ApplicationRegistration $application = null): static
+    {
+        return $this->withSession($this->v1ApplicationSession($application));
     }
 
     protected function authenticateAsUser(): User
