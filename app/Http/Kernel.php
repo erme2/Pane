@@ -10,6 +10,7 @@ use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustHosts;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\ValidateSignature;
+use App\Http\Middleware\ValidateV1OrganizationContext;
 use App\Http\Middleware\ValidateV1Origin;
 use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
@@ -62,6 +63,7 @@ class Kernel extends HttpKernel
             ValidateV1Origin::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            ValidateV1OrganizationContext::class,
         ],
 
         'api' => [

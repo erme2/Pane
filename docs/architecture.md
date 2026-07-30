@@ -219,9 +219,10 @@ managed-connection registry or per-request connection selection. The current
 Pane system tables, users, mapped application tables, and CRUD data share the
 default database.
 
-`DB_TABLE_PREFIX` prefixes Pane's `map_` system and auth tables. It is a naming
-convention inside the default database, not a tenant or connection-isolation
-boundary.
+`DB_TABLE_PREFIX` prefixes Pane-owned system and control-plane tables. Legacy
+mapper metadata tables keep their extra `map_` segment after this prefix. It is
+a naming convention inside the default database, not a tenant or
+connection-isolation boundary.
 
 WorkOS, frontend, database, session, host, and cookie configuration comes from
 environment variables mapped through Laravel config. The authoritative list is

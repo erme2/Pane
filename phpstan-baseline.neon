@@ -13,12 +13,6 @@ parameters:
 			path: app/Actions/DeleteAction.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Actions/DeleteAction.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -31,12 +25,6 @@ parameters:
 			path: app/Actions/ReadAction.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Actions/ReadAction.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -45,12 +33,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$primary\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Actions/SaveAction.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
 			path: app/Actions/SaveAction.php
 
@@ -63,12 +45,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$primary\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Actions/ValidateAction.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
 			path: app/Actions/ValidateAction.php
 
@@ -151,12 +127,6 @@ parameters:
 			path: app/Mappers/AbstractMapper.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 2
-			path: app/Mappers/AbstractMapper.php
-
-		-
 			message: '#^Method App\\Models\\Field\:\:getValidationFields\(\) invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
@@ -217,12 +187,6 @@ parameters:
 			path: app/Models/AbstractModel.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Models/AbstractModel.php
-
-		-
 			message: '#^PHPDoc tag @param references unknown parameter\: \$subject$#'
 			identifier: parameter.notFound
 			count: 1
@@ -232,12 +196,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$validation_type_id\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Models/Field.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 3
 			path: app/Models/Field.php
 
 		-
@@ -253,18 +211,6 @@ parameters:
 			path: app/Models/Field.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Models/FieldValidation.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Models/User.php
-
-		-
 			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
 			identifier: property.phpDocType
 			count: 1
@@ -277,40 +223,10 @@ parameters:
 			path: app/Models/User.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: app/Models/ValidationType.php
-
-		-
 			message: '#^PHPDoc tag @return with type mixed is not subtype of native type object\.$#'
 			identifier: return.phpDocType
 			count: 3
 			path: app/Stories/AbstractStory.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 7
-			path: database/migrations/2023_10_09_192202_pane_system_tables.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 7
-			path: database/migrations/2023_10_15_061423_pane_auth_tables.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 7
-			path: database/migrations/2026_06_23_191411_add_workos_columns_to_users_table.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 7
-			path: database/migrations/test/2023_11_26_083302_test_tables.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -321,12 +237,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$primary\.$#'
 			identifier: property.notFound
-			count: 1
-			path: database/seeders/TestTableSeeder.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
 			path: database/seeders/TestTableSeeder.php
 
@@ -363,12 +273,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$primary\.$#'
 			identifier: property.notFound
-			count: 1
-			path: tests/Feature/Helpers/ActionHelperTest.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
 			path: tests/Feature/Helpers/ActionHelperTest.php
 
@@ -463,12 +367,6 @@ parameters:
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 5
-			path: tests/Feature/Helpers/MapperHelperTest.php
-
-		-
 			message: '#^Method App\\Models\\Field\:\:getValidationFields\(\) invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 2
@@ -499,37 +397,37 @@ parameters:
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:34\:\:checkIfRequired\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:35\:\:checkIfRequired\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:34\:\:getAdditionalValidationRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:35\:\:getAdditionalValidationRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:34\:\:getTypeRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:35\:\:getTypeRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:64\:\:checkIfRequired\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:65\:\:checkIfRequired\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:64\:\:getAdditionalValidationRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:65\:\:getAdditionalValidationRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Feature/Helpers/MapperHelperTest.php
 
 		-
-			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:64\:\:getTypeRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#2 \$field of method App\\Mappers\\AbstractMapper@anonymous/tests/Feature/Helpers/MapperHelperTest\.php\:65\:\:getTypeRules\(\) expects App\\Models\\Field, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: tests/Feature/Helpers/MapperHelperTest.php
@@ -547,12 +445,6 @@ parameters:
 			path: tests/Feature/Helpers/ModelHelperTest.php
 
 		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 1
-			path: tests/Feature/Helpers/ModelHelperTest.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -561,12 +453,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$primary\.$#'
 			identifier: property.notFound
-			count: 1
-			path: tests/Feature/Helpers/PaginationHelperTest.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
 			path: tests/Feature/Helpers/PaginationHelperTest.php
 
@@ -574,12 +460,6 @@ parameters:
 			message: '#^Access to an undefined property App\\Models\\Field\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
-			path: tests/Feature/Models/FieldTest.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 2
 			path: tests/Feature/Models/FieldTest.php
 
 		-

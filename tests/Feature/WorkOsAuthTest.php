@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ApplicationRegistration;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
 use App\Support\LatteApplicationConfig;
@@ -182,6 +183,7 @@ class WorkOsAuthTest extends TestCase
             ->assertSessionHas('workos_state')
             ->assertSessionHas('workos_intended_url', 'https://latte.test/dashboard')
             ->assertSessionHas('pane_v1_application_id', config('services.latte.application_id'))
+            ->assertSessionHas('pane_v1_application_session_version')
             ->assertSessionMissing('pane_v1_application');
 
         $this->assertStringStartsWith(
@@ -220,7 +222,8 @@ class WorkOsAuthTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSessionHas('pane_v1_application_id', config('services.latte.application_id'));
+            ->assertSessionHas('pane_v1_application_id', config('services.latte.application_id'))
+            ->assertSessionHas('pane_v1_application_session_version');
     }
 
     public function test_v1_login_intent_rejects_untrusted_redirect(): void
@@ -307,7 +310,7 @@ class WorkOsAuthTest extends TestCase
         $create = $this
             ->withCsrfToken()
             ->actingAs($actor)
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://latte.test')
             ->postJson('/api/v1/installation/pane-admin-invitations', [
                 'email' => 'Invited.Admin@Example.COM',
@@ -352,12 +355,11 @@ class WorkOsAuthTest extends TestCase
         ]);
 
         $callback = $this
-            ->withSession([
+            ->withSession(array_merge($this->v1ApplicationSession(), [
                 'workos_state' => $intent->json('data.state'),
                 'workos_intended_url' => 'https://latte.test/dashboard',
-                'pane_v1_application_id' => config('services.latte.application_id'),
                 'pane_admin_invitation_token_hash' => hash('sha256', $token),
-            ])
+            ]))
             ->withHeader('Origin', 'https://latte.test')
             ->postJson('/api/v1/auth/callback', [
                 'code' => 'code_123',
@@ -400,7 +402,7 @@ class WorkOsAuthTest extends TestCase
 
         $response = $this
             ->withHeader('X-Request-Id', $requestId)
-            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000101'])
+            ->withV1ApplicationSession()
             ->getJson('/api/v1/session');
 
         $response
@@ -469,7 +471,7 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $response = $this
-            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->withV1ApplicationSession()
             ->getJson('/api/v1/session');
 
         $response
@@ -482,6 +484,10 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_session_rejects_stale_bound_application(): void
     {
+        ApplicationRegistration::query()
+            ->whereKey('00000000-0000-4000-8000-000000000201')
+            ->delete();
+
         config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000301');
         config()->set('services.latte.frontend_url', 'https://current-latte.test');
 
@@ -498,7 +504,10 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $this
-            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->withSession([
+                'pane_v1_application_id' => '00000000-0000-4000-8000-000000000201',
+                'pane_v1_application_session_version' => '00000000-0000-4000-8000-000000000202',
+            ])
             ->getJson('/api/v1/session')
             ->assertForbidden()
             ->assertJsonPath('error.code', 'application_not_allowed');
@@ -522,14 +531,14 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $this
-            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://previous-latte.test')
             ->getJson('/api/v1/session')
             ->assertForbidden()
             ->assertJsonPath('error.code', 'application_not_allowed');
 
         $this
-            ->withSession(['pane_v1_application_id' => '00000000-0000-4000-8000-000000000201'])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://current-latte.test')
             ->getJson('/api/v1/session')
             ->assertOk()
@@ -586,7 +595,7 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $response = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->getJson('/api/v1/session');
 
         $response
@@ -612,7 +621,7 @@ class WorkOsAuthTest extends TestCase
         $this->actingAs($user);
 
         $response = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('Origin', 'https://other.test')
             ->getJson('/api/v1/session');
 
@@ -658,7 +667,7 @@ class WorkOsAuthTest extends TestCase
         $this->withCsrfToken()->actingAs($user);
 
         $response = $this
-            ->withSession(['pane_v1_application_id' => config('services.latte.application_id')])
+            ->withV1ApplicationSession()
             ->withHeader('X-Request-Id', $requestId)
             ->withHeader('Origin', 'https://latte.localhost')
             ->deleteJson('/api/v1/session');

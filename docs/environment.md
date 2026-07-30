@@ -42,7 +42,7 @@ TRUSTED_HOSTS=pane.staging.example.com,pane.internal.example.com
 ## Database
 
 - `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` configure Pane's database connection.
-- `DB_TABLE_PREFIX` prefixes Pane's system mapping tables. The Docker/local default is `pane_`.
+- `DB_TABLE_PREFIX` prefixes Pane-owned system and control-plane tables. Legacy mapper metadata tables keep the extra `map_` segment after this prefix. The Docker/local default is `pane_`.
 
 ## Cache And Filesystem
 

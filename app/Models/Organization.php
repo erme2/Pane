@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -13,6 +14,8 @@ use Illuminate\Support\Str;
  * @property string $slug
  * @property string $status
  * @property int $database_limit
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Organization extends Model
 {
