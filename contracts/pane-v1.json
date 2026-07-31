@@ -1202,7 +1202,7 @@
                 },
                 "responses": {
                     "201": {
-                        "$ref": "#/components/responses/Invitation"
+                        "$ref": "#/components/responses/OrganizationInvitationCreated"
                     },
                     "400": {
                         "$ref": "#/components/responses/Error400InvalidIdentifier"
@@ -1361,7 +1361,7 @@
                 ],
                 "responses": {
                     "201": {
-                        "$ref": "#/components/responses/Invitation"
+                        "$ref": "#/components/responses/OrganizationInvitationCreated"
                     },
                     "400": {
                         "$ref": "#/components/responses/Error400InvalidRequestOrInvalidIdentifier"
@@ -1374,6 +1374,9 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Error409OperationConflict"
                     },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
@@ -5026,6 +5029,37 @@
                     }
                 }
             },
+            "OrganizationInvitationCreated": {
+                "description": "Organization invitation created with one-time delivery URL",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/InvitationResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/InvitationCreateMeta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
             "InvitationCollection": {
                 "description": "Paginated InvitationCollection",
                 "headers": {
@@ -5651,7 +5685,13 @@
                                                 "invitation_expired",
                                                 "invitation_revoked",
                                                 "invitation_already_accepted",
-                                                "invitation_email_mismatch"
+                                                "invitation_email_mismatch",
+                                                "invitation_email_unverified",
+                                                "membership_required",
+                                                "permission_denied",
+                                                "organization_inactive",
+                                                "application_not_allowed",
+                                                "operation_conflict"
                                             ]
                                         },
                                         "message": {
@@ -6630,7 +6670,13 @@
                 "invitation_expired",
                 "invitation_revoked",
                 "invitation_already_accepted",
-                "invitation_email_mismatch"
+                "invitation_email_mismatch",
+                "invitation_email_unverified",
+                "membership_required",
+                "permission_denied",
+                "organization_inactive",
+                "application_not_allowed",
+                "operation_conflict"
             ],
             "429": [
                 "rate_limited"
@@ -7285,6 +7331,9 @@
             ],
             "404": [
                 "resource_not_found"
+            ],
+            "409": [
+                "operation_conflict"
             ],
             "412": [
                 "version_conflict"

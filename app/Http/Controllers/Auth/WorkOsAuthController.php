@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
+use App\Services\OrganizationInvitationService;
 use App\Services\PaneAdminLifecycleService;
 use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
@@ -17,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -35,6 +37,7 @@ class WorkOsAuthController extends Controller
     public function __construct(
         private readonly WorkOsService $workOs,
         private readonly PaneAdminLifecycleService $administrators,
+        private readonly OrganizationInvitationService $organizationInvitations,
         private readonly ApplicationRegistryService $applications,
     ) {}
 
@@ -238,12 +241,8 @@ class WorkOsAuthController extends Controller
         $workOsUser = is_array($authentication['user'] ?? null) ? $authentication['user'] : [];
 
         try {
-            $user = is_string($invitationTokenHash)
-                ? $this->administrators->acceptPaneAdministratorInvitationHash(
-                    $invitationTokenHash,
-                    $workOsUser,
-                    $authentication
-                )
+            $user = $versioned
+                ? $this->syncVersionedUser($request, $authentication, $workOsUser, $invitationTokenHash)
                 : $this->syncUser($authentication);
         } catch (InvalidArgumentException $exception) {
             $request->session()->forget(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY);
@@ -734,7 +733,7 @@ class WorkOsAuthController extends Controller
         $workOsUser = $authentication['user'] ?? [];
         $email = $workOsUser['email'];
 
-        $details = array_filter([
+        $details = [
             'workos' => [
                 'first_name' => $workOsUser['first_name'] ?? null,
                 'last_name' => $workOsUser['last_name'] ?? null,
@@ -742,7 +741,7 @@ class WorkOsAuthController extends Controller
                 'external_id' => $workOsUser['external_id'] ?? null,
                 'authentication_method' => $authentication['authentication_method'] ?? null,
             ],
-        ]);
+        ];
 
         $user = User::query()
             ->when($workOsUser['id'] ?? null, fn ($query, $workOsId) => $query->where('workos_id', $workOsId))
@@ -771,6 +770,145 @@ class WorkOsAuthController extends Controller
         return $user;
     }
 
+    /**
+     * @param  array<string, mixed>  $authentication
+     * @param  array<string, mixed>  $workOsUser
+     */
+    private function syncVersionedUser(
+        Request $request,
+        array $authentication,
+        array $workOsUser,
+        mixed $invitationTokenHash
+    ): User {
+        $application = $this->activeSessionApplication($request);
+
+        if ($application instanceof JsonResponse) {
+            throw new InvalidArgumentException('The application origin is not allowed.');
+        }
+
+        if (is_string($invitationTokenHash)) {
+            return $this->acceptVersionedInvitation($application, $invitationTokenHash, $workOsUser, $authentication);
+        }
+
+        return DB::transaction(function () use ($application, $authentication): User {
+            $user = $this->existingVersionedUser($authentication);
+
+            $this->assertVersionedUserCanActivate($user);
+
+            if ($application->isBurro()) {
+                if (! $user->isPaneAdministrator()) {
+                    throw new InvalidArgumentException('Only active Pane administrators can access Burro.');
+                }
+
+                return $this->syncExistingVersionedUser($user, $authentication);
+            }
+
+            $organization = $this->applications->fixedOrganizationFor($application);
+
+            if (! $organization instanceof Organization || ! $organization->isActive()) {
+                throw new InvalidArgumentException('The application organization is inactive.');
+            }
+
+            if (! $user->isPaneAdministrator() && ! $organization->activeMembershipFor($user) instanceof OrganizationMembership) {
+                throw new InvalidArgumentException('An active organization membership or invitation is required.');
+            }
+
+            return $this->syncExistingVersionedUser($user, $authentication);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $workOsUser
+     * @param  array<string, mixed>  $authentication
+     */
+    private function acceptVersionedInvitation(
+        ApplicationRegistration $application,
+        string $tokenHash,
+        array $workOsUser,
+        array $authentication
+    ): User {
+        $organization = $this->applications->fixedOrganizationFor($application);
+
+        if (
+            $application->isLatte()
+            && $organization instanceof Organization
+            && $this->organizationInvitations->hasOrganizationInvitationHash($organization, $tokenHash)
+        ) {
+            return $this->organizationInvitations->acceptOrganizationInvitationHash(
+                $organization,
+                $tokenHash,
+                $workOsUser,
+                $authentication
+            );
+        }
+
+        return $this->administrators->acceptPaneAdministratorInvitationHash(
+            $tokenHash,
+            $workOsUser,
+            $authentication
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $authentication
+     */
+    private function existingVersionedUser(array $authentication): User
+    {
+        $workOsUser = $authentication['user'] ?? [];
+        $email = $this->normalizeEmail((string) ($workOsUser['email'] ?? ''));
+
+        $user = User::query()
+            ->where(function ($query) use ($workOsUser, $email): void {
+                if (filled($workOsUser['id'] ?? null)) {
+                    $query->where('workos_id', $workOsUser['id'])
+                        ->orWhere('email', $email);
+
+                    return;
+                }
+
+                $query->where('email', $email);
+            })
+            ->lockForUpdate()
+            ->first();
+
+        if (! $user instanceof User) {
+            throw new InvalidArgumentException('An active organization membership or invitation is required.');
+        }
+
+        return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $authentication
+     */
+    private function syncExistingVersionedUser(User $user, array $authentication): User
+    {
+        $workOsUser = $authentication['user'] ?? [];
+        $email = $this->normalizeEmail((string) ($workOsUser['email'] ?? ''));
+        $details = array_filter([
+            'workos' => [
+                'first_name' => $workOsUser['first_name'] ?? null,
+                'last_name' => $workOsUser['last_name'] ?? null,
+                'profile_picture_url' => $workOsUser['profile_picture_url'] ?? null,
+                'external_id' => $workOsUser['external_id'] ?? null,
+                'authentication_method' => $authentication['authentication_method'] ?? null,
+            ],
+        ]);
+
+        $user->forceFill([
+            'name' => $this->workOsDisplayName($workOsUser, $user->name ?: $email),
+            'email' => $email,
+            'email_verified_at' => ($workOsUser['email_verified'] ?? false) ? now() : $user->email_verified_at,
+            'workos_id' => $workOsUser['id'] ?? $user->workos_id,
+            'workos_organization_id' => $authentication['organization_id'] ?? null,
+            'details' => array_replace_recursive($user->details ?? [], $details),
+            'is_active' => $this->shouldActivateSyncedUser($user),
+            'last_login_at' => now(),
+        ])->save();
+
+        return $user;
+    }
+
     private function shouldActivateSyncedUser(User $user): bool
     {
         if (
@@ -784,14 +922,56 @@ class WorkOsAuthController extends Controller
         return true;
     }
 
+    private function assertVersionedUserCanActivate(User $user): void
+    {
+        if (
+            (int) $user->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID
+            && ! (bool) $user->is_active
+        ) {
+            throw new InvalidArgumentException('Pane account is inactive.');
+        }
+    }
+
     private function invitationErrorCode(InvalidArgumentException $exception): string
     {
         return match ($exception->getMessage()) {
             'Pane administrator invitation has expired.' => 'invitation_expired',
+            'Organization invitation has expired.' => 'invitation_expired',
             'Pane administrator invitation was revoked.' => 'invitation_revoked',
+            'Organization invitation was revoked.' => 'invitation_revoked',
             'Pane administrator invitation was already accepted.' => 'invitation_already_accepted',
+            'Organization invitation was already accepted.' => 'invitation_already_accepted',
             'Pane administrator invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
+            'Organization invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
+            'Organization invitation requires a verified WorkOS email.' => 'invitation_email_unverified',
+            'An active organization membership or invitation is required.' => 'membership_required',
+            'Only active Pane administrators can access Burro.' => 'permission_denied',
+            'Pane account is inactive.' => 'permission_denied',
+            'The application organization is inactive.' => 'organization_inactive',
+            'The application origin is not allowed.' => 'application_not_allowed',
+            'Organization membership already exists.' => 'operation_conflict',
             default => 'invitation_invalid',
         };
+    }
+
+    private function normalizeEmail(string $email): string
+    {
+        $normalized = strtolower(trim($email));
+
+        if (! filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException('WorkOS did not return a user email.');
+        }
+
+        return $normalized;
+    }
+
+    private function workOsDisplayName(array $workOsUser, string $fallback): string
+    {
+        $name = trim(implode(' ', array_filter([
+            $workOsUser['first_name'] ?? null,
+            $workOsUser['last_name'] ?? null,
+        ])));
+
+        return $name !== '' ? $name : $fallback;
     }
 }

@@ -266,6 +266,36 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
+    public function test_organization_invitation_operations_use_delivery_url_responses(): void
+    {
+        $collection = $this->contract['paths']['/organizations/{organization_id}/invitations'];
+        $item = $this->contract['paths']['/organizations/{organization_id}/invitations/{invitation_id}'];
+        $resend = $this->contract['paths']['/organizations/{organization_id}/invitations/{invitation_id}/resends'];
+        $response = $this->contract['components']['responses']['OrganizationInvitationCreated'];
+
+        $this->assertArrayHasKey('get', $item);
+        $this->assertSame(
+            '#/components/responses/OrganizationInvitationCreated',
+            $collection['post']['responses']['201']['$ref'],
+        );
+        $this->assertSame(
+            '#/components/responses/OrganizationInvitationCreated',
+            $resend['post']['responses']['201']['$ref'],
+        );
+        $this->assertSame(
+            '#/components/responses/Error409OperationConflict',
+            $resend['post']['responses']['409']['$ref'],
+        );
+        $this->assertSame(
+            ['operation_conflict'],
+            $this->contract['x-pane-operation-errors']['resendOrganizationInvitation']['409'],
+        );
+        $this->assertSame(
+            '#/components/schemas/InvitationCreateMeta',
+            $response['content']['application/json']['schema']['properties']['meta']['$ref'],
+        );
+    }
+
     public function test_application_and_invitation_responses_are_discriminated(): void
     {
         $schemas = $this->contract['components']['schemas'];
@@ -345,6 +375,12 @@ class PaneV1ContractTest extends TestCase
             'invitation_revoked',
             'invitation_already_accepted',
             'invitation_email_mismatch',
+            'invitation_email_unverified',
+            'membership_required',
+            'permission_denied',
+            'organization_inactive',
+            'application_not_allowed',
+            'operation_conflict',
         ];
 
         $this->assertSame('#/components/responses/Error422AuthCallbackRejected', $operation['responses']['422']['$ref']);
