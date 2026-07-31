@@ -283,6 +283,14 @@ class PaneV1ContractTest extends TestCase
             $resend['post']['responses']['201']['$ref'],
         );
         $this->assertSame(
+            '#/components/responses/Error409OperationConflict',
+            $resend['post']['responses']['409']['$ref'],
+        );
+        $this->assertSame(
+            ['operation_conflict'],
+            $this->contract['x-pane-operation-errors']['resendOrganizationInvitation']['409'],
+        );
+        $this->assertSame(
             '#/components/schemas/InvitationCreateMeta',
             $response['content']['application/json']['schema']['properties']['meta']['$ref'],
         );

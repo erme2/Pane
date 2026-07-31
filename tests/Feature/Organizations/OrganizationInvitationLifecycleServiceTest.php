@@ -426,6 +426,65 @@ class OrganizationInvitationLifecycleServiceTest extends TestCase
         $this->assertNull($invitation['invitation']->fresh()->accepted_at);
     }
 
+    public function test_invitation_mutations_revalidate_organization_authorization_inside_transaction(): void
+    {
+        $organization = $this->createOrganization('Authorization Workspace');
+        $administrator = $this->organizationAdministrator($organization);
+        $resendInvitation = $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'resend-auth@example.com',
+            OrganizationMembership::ROLE_USER,
+        )['invitation'];
+        $revokeInvitation = $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'revoke-auth@example.com',
+            OrganizationMembership::ROLE_USER,
+        )['invitation'];
+        Organization::query()
+            ->whereKey($organization->getKey())
+            ->update(['status' => Organization::STATUS_SUSPENDED]);
+
+        $this->assertTrue($organization->isActive());
+
+        $this->assertInvitationManagementDenied(fn () => $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'new-auth@example.com',
+            OrganizationMembership::ROLE_USER,
+        ));
+        $this->assertInvitationManagementDenied(fn () => $this->invitations->resendOrganizationInvitation(
+            $administrator,
+            $organization,
+            $resendInvitation,
+            $resendInvitation->versionTag(),
+        ));
+        $this->assertInvitationManagementDenied(fn () => $this->invitations->revokeOrganizationInvitation(
+            $administrator,
+            $organization,
+            $revokeInvitation,
+            $revokeInvitation->versionTag(),
+        ));
+
+        $this->assertSame(2, OrganizationInvitation::query()->count());
+        $this->assertSame(OrganizationInvitation::STATUS_PENDING, $resendInvitation->fresh()->status);
+        $this->assertSame(OrganizationInvitation::STATUS_PENDING, $revokeInvitation->fresh()->status);
+    }
+
+    private function assertInvitationManagementDenied(\Closure $operation): void
+    {
+        try {
+            $operation();
+            $this->fail('Expected invitation management to require an active administrator membership.');
+        } catch (DomainException $exception) {
+            $this->assertSame(
+                'Only active organization administrators can manage organization invitations.',
+                $exception->getMessage(),
+            );
+        }
+    }
+
     private function createOrganization(string $name): Organization
     {
         return $this->tenancy->createOrganization($name, $name.' '.Str::uuid());

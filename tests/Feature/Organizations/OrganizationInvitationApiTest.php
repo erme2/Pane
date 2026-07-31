@@ -8,6 +8,7 @@ use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
+use App\Services\OrganizationInvitationService;
 use App\Services\OrganizationTenancyService;
 use App\Support\PaneTable;
 use Illuminate\Http\Response;
@@ -240,6 +241,43 @@ class OrganizationInvitationApiTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'validation_failed');
+    }
+
+    public function test_resend_rejects_an_accepted_invitation_with_documented_conflict(): void
+    {
+        [$application, $organization] = $this->configuredApplicationAndOrganization();
+        $administrator = $this->organizationAdministrator($organization);
+        $result = app(OrganizationInvitationService::class)->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'accepted@example.com',
+            OrganizationMembership::ROLE_USER,
+        );
+        app(OrganizationInvitationService::class)->acceptOrganizationInvitation(
+            $organization,
+            $result['token'],
+            [
+                'id' => 'user_accepted',
+                'email' => 'accepted@example.com',
+                'email_verified' => true,
+            ],
+        );
+        /** @var OrganizationInvitation $invitation */
+        $invitation = $result['invitation']->fresh();
+
+        $this
+            ->withCsrfToken()
+            ->actingAs($administrator)
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->withHeader('If-Match', '"'.$invitation->versionTag().'"')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$invitation->getKey()}/resends")
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'operation_conflict')
+            ->assertJsonPath('error.message', 'Accepted organization invitations cannot be resent.');
+
+        $this->assertSame(OrganizationInvitation::STATUS_ACCEPTED, $invitation->fresh()->status);
+        $this->assertSame(1, OrganizationInvitation::query()->count());
     }
 
     /**

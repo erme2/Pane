@@ -35,12 +35,12 @@ class OrganizationInvitationService
         string $email,
         string $role
     ): array {
-        $this->assertOrganizationAdministrator($actor, $organization);
         $email = $this->normalizeEmail($email);
         $this->assertRole($role);
-        $this->assertEmailDoesNotBelongToActiveMembership($organization, $email);
 
         return DB::transaction(function () use ($actor, $organization, $email, $role): array {
+            $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
+            $this->assertEmailDoesNotBelongToActiveMembership($organization, $email);
             $this->revokePendingInvitationsForEmail($organization, $email);
 
             [$invitation, $token] = $this->createInvitation($actor, $organization, $email, $role);
@@ -76,9 +76,8 @@ class OrganizationInvitationService
         OrganizationInvitation $invitation,
         string $expectedVersion
     ): array {
-        $this->assertOrganizationAdministrator($actor, $organization);
-
         return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion): array {
+            $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $locked = $this->lockedInvitation($organization, $invitation);
             $this->assertExpectedVersion($locked, $expectedVersion);
 
@@ -123,9 +122,8 @@ class OrganizationInvitationService
         OrganizationInvitation $invitation,
         string $expectedVersion
     ): OrganizationInvitation {
-        $this->assertOrganizationAdministrator($actor, $organization);
-
         return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion): OrganizationInvitation {
+            $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $locked = $this->lockedInvitation($organization, $invitation);
             $this->assertExpectedVersion($locked, $expectedVersion);
 
@@ -387,17 +385,32 @@ class OrganizationInvitationService
         }
     }
 
-    private function assertOrganizationAdministrator(User $actor, Organization $organization): void
+    private function lockedOrganizationForAdministrator(User $actor, Organization $organization): Organization
     {
-        $membership = $organization->activeMembershipFor($actor);
+        $lockedOrganization = Organization::query()
+            ->whereKey($organization->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        $membership = $lockedOrganization instanceof Organization
+            ? OrganizationMembership::query()
+                ->where('organization_id', $lockedOrganization->getKey())
+                ->where('user_id', $actor->getKey())
+                ->where('status', OrganizationMembership::STATUS_ACTIVE)
+                ->lockForUpdate()
+                ->first()
+            : null;
 
         if (
-            ! $organization->isActive()
+            ! $lockedOrganization instanceof Organization
+            || ! $lockedOrganization->isActive()
             || ! $membership instanceof OrganizationMembership
             || ! $membership->isAdministrator()
         ) {
             throw new DomainException('Only active organization administrators can manage organization invitations.');
         }
+
+        return $lockedOrganization;
     }
 
     private function assertRole(string $role): void

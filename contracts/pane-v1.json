@@ -1375,6 +1375,9 @@
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
+                    "409": {
+                        "$ref": "#/components/responses/Error409OperationConflict"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -7328,6 +7331,9 @@
             ],
             "404": [
                 "resource_not_found"
+            ],
+            "409": [
+                "operation_conflict"
             ],
             "412": [
                 "version_conflict"
