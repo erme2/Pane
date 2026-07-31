@@ -793,6 +793,8 @@ class WorkOsAuthController extends Controller
         return DB::transaction(function () use ($application, $authentication): User {
             $user = $this->existingVersionedUser($authentication);
 
+            $this->assertVersionedUserCanActivate($user);
+
             if ($application->isBurro()) {
                 if (! $user->isPaneAdministrator()) {
                     throw new InvalidArgumentException('Only active Pane administrators can access Burro.');
@@ -920,6 +922,16 @@ class WorkOsAuthController extends Controller
         return true;
     }
 
+    private function assertVersionedUserCanActivate(User $user): void
+    {
+        if (
+            (int) $user->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID
+            && ! (bool) $user->is_active
+        ) {
+            throw new InvalidArgumentException('Pane account is inactive.');
+        }
+    }
+
     private function invitationErrorCode(InvalidArgumentException $exception): string
     {
         return match ($exception->getMessage()) {
@@ -934,6 +946,7 @@ class WorkOsAuthController extends Controller
             'Organization invitation requires a verified WorkOS email.' => 'invitation_email_unverified',
             'An active organization membership or invitation is required.' => 'membership_required',
             'Only active Pane administrators can access Burro.' => 'permission_denied',
+            'Pane account is inactive.' => 'permission_denied',
             'The application organization is inactive.' => 'organization_inactive',
             'The application origin is not allowed.' => 'application_not_allowed',
             'Organization membership already exists.' => 'operation_conflict',

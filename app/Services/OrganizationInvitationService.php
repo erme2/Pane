@@ -244,7 +244,17 @@ class OrganizationInvitationService
                 return new InvalidArgumentException('Organization invitation email does not match the WorkOS identity.');
             }
 
-            $user = $this->syncInvitedOrganizationUser($workOsUser, $authentication, $email);
+            $user = $this->invitedOrganizationUser($workOsUser, $email);
+
+            if (
+                $user->exists
+                && (int) $user->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID
+                && ! (bool) $user->is_active
+            ) {
+                throw new InvalidArgumentException('Pane account is inactive.');
+            }
+
+            $user = $this->syncInvitedOrganizationUser($user, $workOsUser, $authentication, $email);
             $activeMembership = OrganizationMembership::query()
                 ->where('organization_id', $organization->getKey())
                 ->where('user_id', $user->getKey())
@@ -397,7 +407,7 @@ class OrganizationInvitationService
         }
     }
 
-    private function syncInvitedOrganizationUser(array $workOsUser, array $authentication, string $email): User
+    private function invitedOrganizationUser(array $workOsUser, string $email): User
     {
         $user = User::query()
             ->where(function ($query) use ($workOsUser, $email): void {
@@ -420,6 +430,15 @@ class OrganizationInvitationService
             ]);
         }
 
+        return $user;
+    }
+
+    private function syncInvitedOrganizationUser(
+        User $user,
+        array $workOsUser,
+        array $authentication,
+        string $email
+    ): User {
         $user->forceFill([
             'user_type_id' => $user->user_type_id ?: User::STANDARD_USER_TYPE_ID,
             'name' => $this->workOsDisplayName($workOsUser, $user->name ?: $email),

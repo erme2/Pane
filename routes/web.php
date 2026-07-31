@@ -52,7 +52,9 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('organizations.invitations.index');
         Route::post('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'store'])
             ->name('organizations.invitations.store');
-        Route::post('/organizations/{organizationId}/invitations/{invitationId}/resend', [OrganizationInvitationController::class, 'resend'])
+        Route::get('/organizations/{organizationId}/invitations/{invitationId}', [OrganizationInvitationController::class, 'show'])
+            ->name('organizations.invitations.show');
+        Route::post('/organizations/{organizationId}/invitations/{invitationId}/resends', [OrganizationInvitationController::class, 'resend'])
             ->name('organizations.invitations.resend');
         Route::delete('/organizations/{organizationId}/invitations/{invitationId}', [OrganizationInvitationController::class, 'destroy'])
             ->name('organizations.invitations.destroy');

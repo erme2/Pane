@@ -134,6 +134,29 @@ class OrganizationInvitationController extends Controller
             ->header('ETag', $this->etag($invitation));
     }
 
+    public function show(Request $request, string $organizationId, string $invitationId): JsonResponse
+    {
+        $context = $this->organizationAdministrationContext($request);
+
+        if ($context instanceof JsonResponse) {
+            return $context;
+        }
+
+        $invitation = $this->scopedInvitationOrError($request, $context['organization'], $invitationId);
+
+        if ($invitation instanceof JsonResponse) {
+            return $invitation;
+        }
+
+        $requestId = $this->requestId($request);
+
+        return response()->json([
+            'data' => $this->resource($invitation),
+            'meta' => ['request_id' => $requestId],
+        ])->header('X-Request-Id', $requestId)
+            ->header('ETag', $this->etag($invitation));
+    }
+
     public function resend(Request $request, string $organizationId, string $invitationId): JsonResponse
     {
         $context = $this->organizationAdministrationContext($request);
@@ -181,7 +204,7 @@ class OrganizationInvitationController extends Controller
                 'request_id' => $requestId,
                 'invitation_url' => $this->invitationUrl($context['application'], (string) $result['token']),
             ],
-        ])->header('X-Request-Id', $requestId)
+        ], Response::HTTP_CREATED)->header('X-Request-Id', $requestId)
             ->header('ETag', $this->etag($replacement));
     }
 

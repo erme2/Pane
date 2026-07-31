@@ -80,6 +80,15 @@ class OrganizationInvitationApiTest extends TestCase
         $this
             ->withV1ApplicationSession($application)
             ->withHeader('Origin', 'https://latte.test')
+            ->getJson("/api/v1/organizations/$organization->organization_id/invitations/$invitationId")
+            ->assertOk()
+            ->assertHeader('ETag', (string) $create->headers->get('ETag'))
+            ->assertJsonPath('data.id', $invitationId)
+            ->assertJsonPath('meta.request_id', fn (string $requestId): bool => Str::isUuid($requestId));
+
+        $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
             ->getJson("/api/v1/organizations/$organization->organization_id/invitations")
             ->assertOk()
             ->assertJsonPath('data.0.id', $invitationId)
@@ -89,10 +98,10 @@ class OrganizationInvitationApiTest extends TestCase
             ->withV1ApplicationSession($application)
             ->withHeader('Origin', 'https://latte.test')
             ->withHeader('If-Match', (string) $create->headers->get('ETag'))
-            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/$invitationId/resend");
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/$invitationId/resends");
 
         $resend
-            ->assertOk()
+            ->assertCreated()
             ->assertHeader('ETag')
             ->assertJsonPath('data.attributes.status', OrganizationInvitation::STATUS_PENDING);
 
@@ -151,10 +160,10 @@ class OrganizationInvitationApiTest extends TestCase
             ->withV1ApplicationSession($application)
             ->withHeader('Origin', 'https://customer.example.test')
             ->withHeader('If-Match', (string) $create->headers->get('ETag'))
-            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$create->json('data.id')}/resend");
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$create->json('data.id')}/resends");
 
         $resend
-            ->assertOk()
+            ->assertCreated()
             ->assertJsonPath('meta.invitation_url', fn (string $url): bool => str_starts_with($url, 'https://customer.example.test/auth/login?'));
 
         $this->assertInvitationUrlTargetsApplication(
