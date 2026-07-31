@@ -116,6 +116,53 @@ class OrganizationInvitationApiTest extends TestCase
         );
     }
 
+    public function test_invitation_urls_use_bound_v1_application_for_registered_latte_apps(): void
+    {
+        $organization = $this->tenancy->createOrganization('Customer Workspace', 'customer-workspace-'.Str::uuid());
+        $application = ApplicationRegistration::query()->create([
+            'name' => 'Customer Latte',
+            'kind' => ApplicationRegistration::KIND_LATTE,
+            'organization_id' => $organization->organization_id,
+            'trusted_origin' => 'https://customer.example.test',
+            'redirect_uris' => ['https://customer.example.test/app'],
+            'status' => ApplicationRegistration::STATUS_ACTIVE,
+        ]);
+        $actor = $this->organizationAdministrator($organization);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $create = $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://customer.example.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => 'new.member@example.com',
+                'role' => OrganizationMembership::ROLE_USER,
+            ]);
+
+        $create
+            ->assertCreated()
+            ->assertJsonPath('meta.invitation_url', fn (string $url): bool => str_starts_with($url, 'https://customer.example.test/auth/login?'));
+
+        $this->assertInvitationUrlTargetsApplication(
+            (string) $create->json('meta.invitation_url'),
+            'https://customer.example.test/app'
+        );
+
+        $resend = $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://customer.example.test')
+            ->withHeader('If-Match', (string) $create->headers->get('ETag'))
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$create->json('data.id')}/resend");
+
+        $resend
+            ->assertOk()
+            ->assertJsonPath('meta.invitation_url', fn (string $url): bool => str_starts_with($url, 'https://customer.example.test/auth/login?'));
+
+        $this->assertInvitationUrlTargetsApplication(
+            (string) $resend->json('meta.invitation_url'),
+            'https://customer.example.test/app'
+        );
+    }
+
     public function test_organization_invitation_api_does_not_leak_other_organizations_or_allow_non_admins(): void
     {
         [$application, $organization] = $this->configuredApplicationAndOrganization();
@@ -200,6 +247,15 @@ class OrganizationInvitationApiTest extends TestCase
         $organization = $application->organization()->firstOrFail();
 
         return [$application, $organization];
+    }
+
+    private function assertInvitationUrlTargetsApplication(string $url, string $redirectUri): void
+    {
+        $query = [];
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertIsString($query['invitation_token'] ?? null);
+        $this->assertSame($redirectUri, $query['redirect_to'] ?? null);
     }
 
     private function organizationAdministrator(Organization $organization): User

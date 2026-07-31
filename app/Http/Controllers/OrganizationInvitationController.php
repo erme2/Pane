@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApplicationRegistration;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\OrganizationInvitationService;
-use App\Support\LatteApplicationConfig;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -127,7 +127,7 @@ class OrganizationInvitationController extends Controller
             'data' => $this->resource($invitation),
             'meta' => [
                 'request_id' => $requestId,
-                'invitation_url' => $this->invitationUrl((string) $result['token']),
+                'invitation_url' => $this->invitationUrl($context['application'], (string) $result['token']),
             ],
         ], Response::HTTP_CREATED)
             ->header('X-Request-Id', $requestId)
@@ -174,7 +174,7 @@ class OrganizationInvitationController extends Controller
             'data' => $this->resource($replacement),
             'meta' => [
                 'request_id' => $requestId,
-                'invitation_url' => $this->invitationUrl((string) $result['token']),
+                'invitation_url' => $this->invitationUrl($context['application'], (string) $result['token']),
             ],
         ])->header('X-Request-Id', $requestId)
             ->header('ETag', $this->etag($replacement));
@@ -215,16 +215,18 @@ class OrganizationInvitationController extends Controller
     }
 
     /**
-     * @return array{actor: User, organization: Organization, membership: OrganizationMembership}|JsonResponse
+     * @return array{actor: User, application: ApplicationRegistration, organization: Organization, membership: OrganizationMembership}|JsonResponse
      */
     private function organizationAdministrationContext(Request $request): array|JsonResponse
     {
         $actor = $request->user();
+        $application = $request->attributes->get('pane_v1_application');
         $organization = $request->attributes->get('pane_v1_organization');
         $membership = $request->attributes->get('pane_v1_membership');
 
         if (
             ! $actor instanceof User
+            || ! $application instanceof ApplicationRegistration
             || ! $organization instanceof Organization
             || ! $membership instanceof OrganizationMembership
             || ! $membership->isAdministrator()
@@ -234,6 +236,7 @@ class OrganizationInvitationController extends Controller
 
         return [
             'actor' => $actor,
+            'application' => $application,
             'organization' => $organization,
             'membership' => $membership,
         ];
@@ -408,31 +411,22 @@ class OrganizationInvitationController extends Controller
         return null;
     }
 
-    private function invitationUrl(string $token): string
+    private function invitationUrl(ApplicationRegistration $application, string $token): string
     {
-        return $this->latteFrontendBaseUrl().'/auth/login?'.http_build_query([
+        return rtrim($application->trusted_origin, '/').'/auth/login?'.http_build_query([
             'invitation_token' => $token,
-            'redirect_to' => LatteApplicationConfig::redirectUris()[0],
+            'redirect_to' => $this->invitationRedirectUri($application),
         ], '', '&', PHP_QUERY_RFC3986);
     }
 
-    private function latteFrontendBaseUrl(): string
+    private function invitationRedirectUri(ApplicationRegistration $application): string
     {
-        $normalized = LatteApplicationConfig::normalizeRedirectUri((string) config('services.latte.frontend_url'));
+        $redirectUri = ($application->redirect_uris ?? [])[0] ?? null;
 
-        if ($normalized === null) {
-            return LatteApplicationConfig::trustedOrigin();
+        if (is_string($redirectUri) && $redirectUri !== '') {
+            return $redirectUri;
         }
 
-        $parts = parse_url($normalized);
-
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
-            return LatteApplicationConfig::trustedOrigin();
-        }
-
-        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
-        $path = isset($parts['path']) && $parts['path'] !== '/' ? rtrim($parts['path'], '/') : '';
-
-        return $parts['scheme'].'://'.$parts['host'].$port.$path;
+        return rtrim($application->trusted_origin, '/');
     }
 }
