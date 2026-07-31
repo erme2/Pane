@@ -238,7 +238,7 @@ class OrganizationInvitationService
                 ->first();
 
             if ($activeMembership instanceof OrganizationMembership) {
-                return new InvalidArgumentException('Organization membership already exists.');
+                throw new InvalidArgumentException('Organization membership already exists.');
             }
 
             $membership = $this->tenancy->addOrReactivateMembership(

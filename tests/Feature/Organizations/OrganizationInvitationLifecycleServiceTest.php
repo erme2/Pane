@@ -270,6 +270,71 @@ class OrganizationInvitationLifecycleServiceTest extends TestCase
         $this->assertSame(OrganizationMembership::ROLE_ADMINISTRATOR, $reactivated->role);
     }
 
+    public function test_denied_duplicate_acceptance_rolls_back_workos_user_sync(): void
+    {
+        $organization = $this->createOrganization('Duplicate Acceptance Workspace');
+        $administrator = $this->organizationAdministrator($organization);
+        $member = User::query()->create([
+            'user_type_id' => User::STANDARD_USER_TYPE_ID,
+            'name' => 'Existing Member',
+            'email' => 'existing@example.com',
+            'password' => 'password',
+            'workos_id' => null,
+            'workos_organization_id' => null,
+            'details' => null,
+            'last_login_at' => null,
+            'is_active' => true,
+        ]);
+        $membership = $this->tenancy->addOrReactivateMembership(
+            $organization,
+            $member,
+            OrganizationMembership::ROLE_USER
+        );
+        $this->tenancy->suspendMembership($membership);
+
+        $invitation = $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'existing@example.com',
+            OrganizationMembership::ROLE_ADMINISTRATOR
+        );
+        $this->tenancy->addOrReactivateMembership(
+            $organization,
+            $member,
+            OrganizationMembership::ROLE_USER
+        );
+
+        try {
+            $this->invitations->acceptOrganizationInvitation(
+                $organization,
+                $invitation['token'],
+                [
+                    'id' => 'user_existing',
+                    'email' => 'existing@example.com',
+                    'email_verified' => true,
+                    'first_name' => 'Changed',
+                    'last_name' => 'Name',
+                ],
+                [
+                    'organization_id' => 'org_123',
+                    'authentication_method' => 'sso',
+                ]
+            );
+            $this->fail('Expected duplicate active membership acceptance to fail.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame('Organization membership already exists.', $exception->getMessage());
+        }
+
+        $freshMember = $member->fresh();
+        $this->assertSame('Existing Member', $freshMember->name);
+        $this->assertNull($freshMember->workos_id);
+        $this->assertNull($freshMember->workos_organization_id);
+        $this->assertNull($freshMember->details);
+        $this->assertNull($freshMember->last_login_at);
+        $this->assertSame(OrganizationInvitation::STATUS_PENDING, $invitation['invitation']->fresh()->status);
+        $this->assertNull($invitation['invitation']->fresh()->accepted_at);
+    }
+
     private function createOrganization(string $name): Organization
     {
         return $this->tenancy->createOrganization($name, $name.' '.Str::uuid());
