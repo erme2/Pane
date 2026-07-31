@@ -158,9 +158,14 @@ class OrganizationInvitationController extends Controller
             $result = $this->invitations->resendOrganizationInvitation(
                 $context['actor'],
                 $context['organization'],
-                $invitation
+                $invitation,
+                $invitation->versionTag()
             );
         } catch (DomainException $exception) {
+            if ($exception->getMessage() === OrganizationInvitationService::VERSION_CONFLICT_MESSAGE) {
+                return $this->v1Error($request, 'version_conflict', $exception->getMessage(), Response::HTTP_PRECONDITION_FAILED);
+            }
+
             return str_contains($exception->getMessage(), 'already belongs')
                 ? $this->v1Error($request, 'operation_conflict', $exception->getMessage(), Response::HTTP_CONFLICT)
                 : $this->v1Error($request, 'operation_conflict', $exception->getMessage(), Response::HTTP_CONFLICT);
@@ -204,9 +209,14 @@ class OrganizationInvitationController extends Controller
             $this->invitations->revokeOrganizationInvitation(
                 $context['actor'],
                 $context['organization'],
-                $invitation
+                $invitation,
+                $invitation->versionTag()
             );
         } catch (DomainException $exception) {
+            if ($exception->getMessage() === OrganizationInvitationService::VERSION_CONFLICT_MESSAGE) {
+                return $this->v1Error($request, 'version_conflict', $exception->getMessage(), Response::HTTP_PRECONDITION_FAILED);
+            }
+
             return $this->v1Error($request, 'permission_denied', $exception->getMessage(), Response::HTTP_FORBIDDEN);
         }
 
@@ -306,11 +316,7 @@ class OrganizationInvitationController extends Controller
 
     private function etag(OrganizationInvitation $invitation): string
     {
-        return '"'.hash('sha256', implode('|', [
-            $invitation->getKey(),
-            $invitation->status,
-            $invitation->updated_at?->toJSON(),
-        ])).'"';
+        return '"'.$invitation->versionTag().'"';
     }
 
     /**

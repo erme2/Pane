@@ -5651,7 +5651,13 @@
                                                 "invitation_expired",
                                                 "invitation_revoked",
                                                 "invitation_already_accepted",
-                                                "invitation_email_mismatch"
+                                                "invitation_email_mismatch",
+                                                "invitation_email_unverified",
+                                                "membership_required",
+                                                "permission_denied",
+                                                "organization_inactive",
+                                                "application_not_allowed",
+                                                "operation_conflict"
                                             ]
                                         },
                                         "message": {
@@ -6630,7 +6636,13 @@
                 "invitation_expired",
                 "invitation_revoked",
                 "invitation_already_accepted",
-                "invitation_email_mismatch"
+                "invitation_email_mismatch",
+                "invitation_email_unverified",
+                "membership_required",
+                "permission_denied",
+                "organization_inactive",
+                "application_not_allowed",
+                "operation_conflict"
             ],
             "429": [
                 "rate_limited"

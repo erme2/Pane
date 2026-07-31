@@ -166,7 +166,8 @@ class OrganizationInvitationLifecycleServiceTest extends TestCase
         $second = $this->invitations->resendOrganizationInvitation(
             $administrator,
             $organization,
-            $first['invitation']
+            $first['invitation'],
+            $first['invitation']->versionTag()
         );
 
         $this->assertSame(OrganizationInvitation::STATUS_REVOKED, $first['invitation']->fresh()->status);
@@ -211,6 +212,96 @@ class OrganizationInvitationLifecycleServiceTest extends TestCase
 
         $this->assertSame(OrganizationInvitation::STATUS_EXPIRED, $expired['invitation']->fresh()->status);
         Carbon::setTestNow();
+    }
+
+    public function test_invitation_acceptance_rejects_inactive_organization_before_syncing_user(): void
+    {
+        $organization = $this->createOrganization('Inactive Workspace');
+        $administrator = $this->organizationAdministrator($organization);
+        $invitation = $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'invited@example.com',
+            OrganizationMembership::ROLE_USER
+        );
+        $organization->forceFill(['status' => Organization::STATUS_SUSPENDED])->save();
+
+        try {
+            $this->invitations->acceptOrganizationInvitation(
+                $organization,
+                $invitation['token'],
+                [
+                    'id' => 'user_inactive_organization',
+                    'email' => 'invited@example.com',
+                    'email_verified' => true,
+                ],
+                [
+                    'organization_id' => 'org_123',
+                    'authentication_method' => 'sso',
+                ]
+            );
+            $this->fail('Expected inactive organization invitation acceptance to fail.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame('The application organization is inactive.', $exception->getMessage());
+        }
+
+        $this->assertFalse(User::query()->where('email', 'invited@example.com')->exists());
+        $this->assertSame(OrganizationInvitation::STATUS_PENDING, $invitation['invitation']->fresh()->status);
+        $this->assertSame(1, OrganizationMembership::query()->where('organization_id', $organization->getKey())->count());
+    }
+
+    public function test_invitation_mutations_reject_versions_that_changed_before_the_row_lock(): void
+    {
+        $organization = $this->createOrganization('Versioned Workspace');
+        $administrator = $this->organizationAdministrator($organization);
+        $resendInvitation = $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'resend@example.com',
+            OrganizationMembership::ROLE_USER
+        )['invitation'];
+        $staleResendVersion = $resendInvitation->versionTag();
+        $resendInvitation->forceFill([
+            'status' => OrganizationInvitation::STATUS_REVOKED,
+            'revoked_at' => now(),
+        ])->save();
+
+        try {
+            $this->invitations->resendOrganizationInvitation(
+                $administrator,
+                $organization,
+                $resendInvitation,
+                $staleResendVersion
+            );
+            $this->fail('Expected stale resend version to fail.');
+        } catch (DomainException $exception) {
+            $this->assertSame(OrganizationInvitationService::VERSION_CONFLICT_MESSAGE, $exception->getMessage());
+        }
+
+        $revokeInvitation = $this->invitations->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'revoke@example.com',
+            OrganizationMembership::ROLE_USER
+        )['invitation'];
+        $staleRevokeVersion = $revokeInvitation->versionTag();
+        $revokeInvitation->forceFill(['updated_at' => now()->addSecond()])->save();
+
+        try {
+            $this->invitations->revokeOrganizationInvitation(
+                $administrator,
+                $organization,
+                $revokeInvitation,
+                $staleRevokeVersion
+            );
+            $this->fail('Expected stale revoke version to fail.');
+        } catch (DomainException $exception) {
+            $this->assertSame(OrganizationInvitationService::VERSION_CONFLICT_MESSAGE, $exception->getMessage());
+        }
+
+        $this->assertSame(OrganizationInvitation::STATUS_REVOKED, $resendInvitation->fresh()->status);
+        $this->assertSame(OrganizationInvitation::STATUS_PENDING, $revokeInvitation->fresh()->status);
+        $this->assertSame(2, OrganizationInvitation::query()->count());
     }
 
     public function test_acceptance_reactivates_matching_suspended_membership_but_rejects_active_duplicates(): void

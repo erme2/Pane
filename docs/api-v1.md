@@ -278,7 +278,7 @@ unfiltered upstream errors. Stable v1 codes are:
 | 404 | `resource_not_found` |
 | 409 | `quota_exceeded`, `duplicate_resource`, `table_contract_incompatible`, `operation_conflict` |
 | 412 | `version_conflict` |
-| 422 | `validation_failed`, `connection_policy_rejected`, `connection_test_failed`, `redirect_not_allowed`, `invitation_invalid`, `invitation_expired`, `invitation_revoked`, `invitation_already_accepted`, `invitation_email_mismatch`, `invitation_organization_mismatch` |
+| 422 | `validation_failed`, `connection_policy_rejected`, `connection_test_failed`, `redirect_not_allowed`, `invitation_invalid`, `invitation_expired`, `invitation_revoked`, `invitation_already_accepted`, `invitation_email_mismatch`, `invitation_email_unverified`, `invitation_organization_mismatch`, `membership_required`, `permission_denied`, `organization_inactive`, `application_not_allowed`, `operation_conflict` |
 | 428 | `precondition_required` |
 | 429 | `rate_limited` |
 | 500 | `internal_error` |

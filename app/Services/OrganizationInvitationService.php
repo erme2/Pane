@@ -16,6 +16,8 @@ use InvalidArgumentException;
 
 class OrganizationInvitationService
 {
+    public const string VERSION_CONFLICT_MESSAGE = 'Organization invitation version does not match.';
+
     private const int TOKEN_BYTES = 40;
 
     public function __construct(
@@ -71,12 +73,14 @@ class OrganizationInvitationService
     public function resendOrganizationInvitation(
         User $actor,
         Organization $organization,
-        OrganizationInvitation $invitation
+        OrganizationInvitation $invitation,
+        string $expectedVersion
     ): array {
         $this->assertOrganizationAdministrator($actor, $organization);
 
-        return DB::transaction(function () use ($actor, $organization, $invitation): array {
+        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion): array {
             $locked = $this->lockedInvitation($organization, $invitation);
+            $this->assertExpectedVersion($locked, $expectedVersion);
 
             if ($locked->status === OrganizationInvitation::STATUS_ACCEPTED) {
                 throw new DomainException('Accepted organization invitations cannot be resent.');
@@ -116,12 +120,14 @@ class OrganizationInvitationService
     public function revokeOrganizationInvitation(
         User $actor,
         Organization $organization,
-        OrganizationInvitation $invitation
+        OrganizationInvitation $invitation,
+        string $expectedVersion
     ): OrganizationInvitation {
         $this->assertOrganizationAdministrator($actor, $organization);
 
-        return DB::transaction(function () use ($actor, $organization, $invitation): OrganizationInvitation {
+        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion): OrganizationInvitation {
             $locked = $this->lockedInvitation($organization, $invitation);
+            $this->assertExpectedVersion($locked, $expectedVersion);
 
             if (! $locked->isPending()) {
                 return $locked;
@@ -189,6 +195,15 @@ class OrganizationInvitationService
         }
 
         $result = DB::transaction(function () use ($organization, $tokenHash, $workOsUser, $authentication, $email): User|InvalidArgumentException {
+            $organization = Organization::query()
+                ->whereKey($organization->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $organization instanceof Organization || ! $organization->isActive()) {
+                throw new InvalidArgumentException('The application organization is inactive.');
+            }
+
             $invitation = OrganizationInvitation::query()
                 ->where('organization_id', $organization->getKey())
                 ->where('token_hash', $tokenHash)
@@ -327,6 +342,13 @@ class OrganizationInvitationService
             ->where('organization_id', $organization->getKey())
             ->lockForUpdate()
             ->firstOrFail();
+    }
+
+    private function assertExpectedVersion(OrganizationInvitation $invitation, string $expectedVersion): void
+    {
+        if (! hash_equals($expectedVersion, $invitation->versionTag())) {
+            throw new DomainException(self::VERSION_CONFLICT_MESSAGE);
+        }
     }
 
     private function revokePendingInvitationsForEmail(Organization $organization, string $email): void

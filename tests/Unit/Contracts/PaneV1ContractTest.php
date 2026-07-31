@@ -345,6 +345,12 @@ class PaneV1ContractTest extends TestCase
             'invitation_revoked',
             'invitation_already_accepted',
             'invitation_email_mismatch',
+            'invitation_email_unverified',
+            'membership_required',
+            'permission_denied',
+            'organization_inactive',
+            'application_not_allowed',
+            'operation_conflict',
         ];
 
         $this->assertSame('#/components/responses/Error422AuthCallbackRejected', $operation['responses']['422']['$ref']);

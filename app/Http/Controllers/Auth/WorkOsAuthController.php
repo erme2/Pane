@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -789,27 +790,29 @@ class WorkOsAuthController extends Controller
             return $this->acceptVersionedInvitation($application, $invitationTokenHash, $workOsUser, $authentication);
         }
 
-        $user = $this->syncExistingVersionedUser($authentication);
+        return DB::transaction(function () use ($application, $authentication): User {
+            $user = $this->existingVersionedUser($authentication);
 
-        if ($application->isBurro()) {
-            if (! $user->isPaneAdministrator()) {
-                throw new InvalidArgumentException('Only active Pane administrators can access Burro.');
+            if ($application->isBurro()) {
+                if (! $user->isPaneAdministrator()) {
+                    throw new InvalidArgumentException('Only active Pane administrators can access Burro.');
+                }
+
+                return $this->syncExistingVersionedUser($user, $authentication);
             }
 
-            return $user;
-        }
+            $organization = $this->applications->fixedOrganizationFor($application);
 
-        $organization = $this->applications->fixedOrganizationFor($application);
+            if (! $organization instanceof Organization || ! $organization->isActive()) {
+                throw new InvalidArgumentException('The application organization is inactive.');
+            }
 
-        if (! $organization instanceof Organization || ! $organization->isActive()) {
-            throw new InvalidArgumentException('The application organization is inactive.');
-        }
+            if (! $user->isPaneAdministrator() && ! $organization->activeMembershipFor($user) instanceof OrganizationMembership) {
+                throw new InvalidArgumentException('An active organization membership or invitation is required.');
+            }
 
-        if ($user->isPaneAdministrator() || $organization->activeMembershipFor($user) instanceof OrganizationMembership) {
-            return $user;
-        }
-
-        throw new InvalidArgumentException('An active organization membership or invitation is required.');
+            return $this->syncExistingVersionedUser($user, $authentication);
+        });
     }
 
     /**
@@ -847,7 +850,7 @@ class WorkOsAuthController extends Controller
     /**
      * @param  array<string, mixed>  $authentication
      */
-    private function syncExistingVersionedUser(array $authentication): User
+    private function existingVersionedUser(array $authentication): User
     {
         $workOsUser = $authentication['user'] ?? [];
         $email = $this->normalizeEmail((string) ($workOsUser['email'] ?? ''));
@@ -870,6 +873,16 @@ class WorkOsAuthController extends Controller
             throw new InvalidArgumentException('An active organization membership or invitation is required.');
         }
 
+        return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $authentication
+     */
+    private function syncExistingVersionedUser(User $user, array $authentication): User
+    {
+        $workOsUser = $authentication['user'] ?? [];
+        $email = $this->normalizeEmail((string) ($workOsUser['email'] ?? ''));
         $details = array_filter([
             'workos' => [
                 'first_name' => $workOsUser['first_name'] ?? null,

@@ -92,6 +92,15 @@ class OrganizationInvitation extends Model
         return $this->expires_at->isPast();
     }
 
+    public function versionTag(): string
+    {
+        return hash('sha256', implode('|', [
+            $this->getKey(),
+            $this->status,
+            $this->updated_at?->toJSON(),
+        ]));
+    }
+
     /**
      * @return BelongsTo<Organization, $this>
      */
