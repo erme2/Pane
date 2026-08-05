@@ -18,15 +18,35 @@ WORKOS_CLIENT_ID=client_...
 FRONTEND_URL=https://latte.localhost
 LATTE_REDIRECT_URIS=https://latte.localhost/auth/callback,https://latte.localhost/dashboard
 WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback
-WORKOS_RETURN_TO=https://latte.localhost
+WORKOS_RETURN_TO=
 WORKOS_PROVIDER=authkit
 WORKOS_ORGANIZATION_ID=
 WORKOS_CONNECTION_ID=
 ```
 
-`WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, and `WORKOS_REDIRECT_URI` are required before Pane can generate a login URL. `FRONTEND_URL` controls the trusted Latte origin for v1 browser requests, `LATTE_REDIRECT_URIS` controls the exact v1 `redirect_to` allowlist, and `WORKOS_RETURN_TO` controls the legacy fallback return URL. `WORKOS_PROVIDER` defaults to `authkit`; if it is blank, Pane can use `WORKOS_ORGANIZATION_ID` or `WORKOS_CONNECTION_ID` instead.
+`WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, and `WORKOS_REDIRECT_URI` are required before Pane can generate a login URL. `FRONTEND_URL` controls the trusted Latte origin for v1 browser requests, `LATTE_REDIRECT_URIS` controls the exact v1 `redirect_to` allowlist, and `WORKOS_RETURN_TO` optionally overrides the logout return URL. When `WORKOS_RETURN_TO` is unset, Pane sends logout back to the normalized `FRONTEND_URL` root. `WORKOS_PROVIDER` defaults to `authkit`; if it is blank, Pane can use `WORKOS_ORGANIZATION_ID` or `WORKOS_CONNECTION_ID` instead.
 
 The WorkOS application must include `WORKOS_REDIRECT_URI` in its allowed redirect URLs. For the Docker/local HTTPS setup, that URI should point to Latte, not Pane, because Latte receives the browser callback first.
+
+## Bootstrap the First Latte Invite
+
+Pane owns the configured Latte application and organization. Before the first
+real user can sign in, initialize that organization and create the first
+organization administrator invitation from the server side:
+
+```bash
+php artisan latte:bootstrap-organization first.admin@example.com
+```
+
+The command creates or reuses the configured Latte application/organization,
+temporarily uses the invited email as the bootstrap organization administrator
+actor, revokes any previous pending invite for the same email, and prints a
+fresh invitation URL. The temporary actor is removed after the invitation is
+created, so it does not appear in the member list. Pass `--send` to send the
+invite through Laravel's configured mailer as well. Use the printed URL in the
+browser and sign in to WorkOS with the invited email address.
+If you omit the email argument, the command prompts for the first administrator
+email interactively.
 
 ## Browser Login Flow
 
@@ -54,6 +74,9 @@ The WorkOS application must include `WORKOS_REDIRECT_URI` in its allowed redirec
    ```
 
    Pane also sets a short-lived HTTP-only `pane_workos_state` cookie. This gives Pane a second server-owned value to validate JSON callback requests when the normal Laravel session value is not available as expected.
+   Invitation sign-in also sets a short-lived HTTP-only invitation cookie bound
+   to the same WorkOS state, so the callback can still accept the invitation
+   when the state cookie fallback path is used.
 
 4. Latte redirects the browser to `authorization_url`.
 
@@ -109,7 +132,7 @@ In the local HTTPS Docker setup:
 - Pane should use `WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback`.
 - Pane should use `FRONTEND_URL=https://latte.localhost`.
 - Pane should include every allowed Latte post-login return URL in `LATTE_REDIRECT_URIS`.
-- Pane should use `WORKOS_RETURN_TO=https://latte.localhost` or another legacy fallback return URL.
+- Pane can leave `WORKOS_RETURN_TO` unset to use `https://latte.localhost/`, or set it to another WorkOS-allowed sign-out redirect.
 Latte's local runtime owns certificate generation, browser host entries, and
 the concrete proxy target configuration.
 

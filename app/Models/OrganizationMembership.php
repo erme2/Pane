@@ -111,4 +111,14 @@ class OrganizationMembership extends Model
     {
         return $this->role === self::ROLE_ADMINISTRATOR;
     }
+
+    public function versionTag(): string
+    {
+        return hash('sha256', implode('|', [
+            $this->getKey(),
+            $this->role,
+            $this->status,
+            $this->updated_at?->toJSON(),
+        ]));
+    }
 }

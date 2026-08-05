@@ -35,7 +35,7 @@ return [
         'api_key' => env('WORKOS_API_KEY'),
         'client_id' => env('WORKOS_CLIENT_ID'),
         'redirect_uri' => env('WORKOS_REDIRECT_URI'),
-        'return_to' => env('WORKOS_RETURN_TO', env('APP_URL')),
+        'return_to' => env('WORKOS_RETURN_TO'),
         'provider' => env('WORKOS_PROVIDER', 'authkit'),
         'organization_id' => env('WORKOS_ORGANIZATION_ID'),
         'connection_id' => env('WORKOS_CONNECTION_ID'),

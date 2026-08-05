@@ -226,8 +226,15 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Session deleted",
+                    "200": {
+                        "description": "Logout intent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutIntentResponse"
+                                }
+                            }
+                        },
                         "headers": {
                             "X-Request-Id": {
                                 "$ref": "#/components/headers/RequestId"
@@ -2743,6 +2750,32 @@
                             "state": {
                                 "type": "string",
                                 "minLength": 32
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "LogoutIntentResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "logout_url"
+                        ],
+                        "properties": {
+                            "logout_url": {
+                                "type": "string",
+                                "format": "uri"
                             }
                         },
                         "additionalProperties": false

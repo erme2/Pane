@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\LatteApplicationConfig;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -55,13 +56,9 @@ class WorkOsService
             ->json();
     }
 
-    public function logoutUrl(?string $sessionId = null): string
+    public function logoutUrl(string $sessionId): string
     {
-        $returnTo = config('services.workos.return_to') ?: url('/');
-
-        if (! filled($sessionId)) {
-            return $returnTo;
-        }
+        $returnTo = $this->logoutReturnTo();
 
         $query = array_filter([
             'session_id' => $sessionId,
@@ -69,6 +66,21 @@ class WorkOsService
         ], fn ($value) => filled($value));
 
         return self::API_BASE_URL.'/user_management/sessions/logout?'.http_build_query($query);
+    }
+
+    public function logoutReturnTo(): string
+    {
+        $configured = config('services.workos.return_to');
+
+        if (is_string($configured) && filled($configured)) {
+            $normalized = LatteApplicationConfig::normalizeRedirectUri($configured);
+
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        return LatteApplicationConfig::trustedOrigin().'/';
     }
 
     public function configured(): bool

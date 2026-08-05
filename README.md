@@ -93,13 +93,26 @@ WORKOS_CLIENT_ID=client_...
 FRONTEND_URL=https://latte.localhost
 LATTE_REDIRECT_URIS=https://latte.localhost/auth/callback,https://latte.localhost/dashboard
 WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback
-WORKOS_RETURN_TO=https://latte.localhost
+WORKOS_RETURN_TO=
 WORKOS_PROVIDER=authkit
 SESSION_COOKIE=pane_session
 SESSION_SECURE_COOKIE=false
 ```
 
 Add `WORKOS_REDIRECT_URI` to the Redirects tab for your WorkOS application.
+Also add `https://latte.localhost/` as a Sign-out redirect. When
+`WORKOS_RETURN_TO` is blank, Pane sends WorkOS logout back to the normalized
+`FRONTEND_URL` root.
+
+Create the first Latte organization administrator invite with:
+
+```bash
+php artisan latte:bootstrap-organization first.admin@example.com
+```
+
+Omit the email argument to be prompted interactively.
+The command temporarily uses that same email as the bootstrap actor and removes
+the temporary actor after creating the invitation.
 
 Routes:
 
