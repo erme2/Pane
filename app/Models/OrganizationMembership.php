@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
  * @property int $user_id
  * @property string $role
  * @property string $status
+ * @property int|null $invited_by_user_id
+ * @property Carbon|null $accepted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $suspended_at
@@ -110,5 +112,15 @@ class OrganizationMembership extends Model
     public function isAdministrator(): bool
     {
         return $this->role === self::ROLE_ADMINISTRATOR;
+    }
+
+    public function versionTag(): string
+    {
+        return hash('sha256', implode('|', [
+            $this->getKey(),
+            $this->role,
+            $this->status,
+            $this->updated_at?->toJSON(),
+        ]));
     }
 }

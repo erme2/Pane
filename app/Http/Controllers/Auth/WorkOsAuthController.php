@@ -28,6 +28,8 @@ class WorkOsAuthController extends Controller
 {
     private const STATE_COOKIE = 'pane_workos_state';
 
+    private const INVITATION_TOKEN_HASH_COOKIE = 'pane_workos_invitation';
+
     private const V1_APPLICATION_SESSION_KEY = 'pane_v1_application_id';
 
     private const V1_APPLICATION_SESSION_VERSION_KEY = 'pane_v1_application_session_version';
@@ -63,7 +65,7 @@ class WorkOsAuthController extends Controller
         return $this->versionedAuthenticatedResponse($request);
     }
 
-    public function destroySession(Request $request): Response|JsonResponse
+    public function destroySession(Request $request): JsonResponse
     {
         $application = $this->activeSessionApplication($request);
 
@@ -71,12 +73,33 @@ class WorkOsAuthController extends Controller
             return $application;
         }
 
+        $workOsSessionId = $request->session()->get('workos_session_id');
+
+        if (! is_string($workOsSessionId) || ! filled($workOsSessionId)) {
+            return $this->versionedErrorResponse(
+                $request,
+                'provider_session_missing',
+                'The WorkOS session cannot be closed because Pane did not retain its session id.',
+                Response::HTTP_CONFLICT
+            );
+        }
+
+        $logoutUrl = $this->workOs->logoutUrl($workOsSessionId);
+        $requestId = $this->requestId($request);
+
         Auth::guard()->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return $this->versionedNoContentResponse($request);
+        return response()->json([
+            'data' => [
+                'logout_url' => $logoutUrl,
+            ],
+            'meta' => [
+                'request_id' => $requestId,
+            ],
+        ])->header('X-Request-Id', $requestId);
     }
 
     private function loginIntentResponse(Request $request, bool $versioned): JsonResponse
@@ -130,6 +153,22 @@ class WorkOsAuthController extends Controller
 
         $response = response()->json($payload)
             ->cookie(self::STATE_COOKIE, $state, 10, '/', null, false, true, false, 'lax');
+
+        if ($versioned && is_string($invitationTokenHash)) {
+            $response->cookie(
+                self::INVITATION_TOKEN_HASH_COOKIE,
+                $state.'|'.$invitationTokenHash,
+                10,
+                '/',
+                null,
+                false,
+                true,
+                false,
+                'lax'
+            );
+        } else {
+            $response->cookie(Cookie::forget(self::INVITATION_TOKEN_HASH_COOKIE));
+        }
 
         return $versioned
             ? $response->header('X-Request-Id', $requestId)
@@ -236,7 +275,7 @@ class WorkOsAuthController extends Controller
         }
 
         $invitationTokenHash = $versioned
-            ? $request->session()->get(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY)
+            ? $this->versionedCallbackInvitationTokenHash($request, $state)
             : null;
         $workOsUser = is_array($authentication['user'] ?? null) ? $authentication['user'] : [];
 
@@ -246,6 +285,7 @@ class WorkOsAuthController extends Controller
                 : $this->syncUser($authentication);
         } catch (InvalidArgumentException $exception) {
             $request->session()->forget(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY);
+            Cookie::queue(Cookie::forget(self::INVITATION_TOKEN_HASH_COOKIE));
 
             return $this->callbackErrorResponse(
                 $request,
@@ -275,11 +315,12 @@ class WorkOsAuthController extends Controller
         ]);
         $request->session()->put([
             'workos_completed_state' => $state,
-            'workos_session_id' => $authentication['session_id'] ?? null,
+            'workos_session_id' => $this->workOsSessionId($authentication),
             'workos_organization_id' => $authentication['organization_id'] ?? null,
         ]);
 
         Cookie::queue(Cookie::forget(self::STATE_COOKIE));
+        Cookie::queue(Cookie::forget(self::INVITATION_TOKEN_HASH_COOKIE));
 
         return $versioned
             ? $this->versionedAuthenticatedResponse($request)
@@ -489,7 +530,7 @@ class WorkOsAuthController extends Controller
 
     private function intendedRedirectUrl(Request $request): string
     {
-        $fallback = config('services.workos.return_to') ?: url('/');
+        $fallback = $this->workOs->logoutReturnTo();
         $redirectTo = $request->input('redirect_to', $request->query('redirect_to'));
 
         if (! is_string($redirectTo) || blank($redirectTo)) {
@@ -683,6 +724,63 @@ class WorkOsAuthController extends Controller
         }
 
         return hash('sha256', $token);
+    }
+
+    private function versionedCallbackInvitationTokenHash(Request $request, string $state): ?string
+    {
+        $sessionHash = $request->session()->get(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY);
+
+        if (is_string($sessionHash) && preg_match('/\A[a-f0-9]{64}\z/', $sessionHash) === 1) {
+            return $sessionHash;
+        }
+
+        $cookie = $request->cookie(self::INVITATION_TOKEN_HASH_COOKIE);
+
+        if (! is_string($cookie) || ! str_contains($cookie, '|')) {
+            return null;
+        }
+
+        [$cookieState, $cookieHash] = explode('|', $cookie, 2);
+
+        if (
+            ! filled($cookieState)
+            || ! hash_equals($cookieState, $state)
+            || preg_match('/\A[a-f0-9]{64}\z/', $cookieHash) !== 1
+        ) {
+            return null;
+        }
+
+        return $cookieHash;
+    }
+
+    /**
+     * @param  array<string, mixed>  $authentication
+     */
+    private function workOsSessionId(array $authentication): ?string
+    {
+        $sessionId = $authentication['session_id'] ?? null;
+
+        if (is_string($sessionId) && filled($sessionId)) {
+            return $sessionId;
+        }
+
+        $accessToken = $authentication['access_token'] ?? null;
+
+        if (! is_string($accessToken) || substr_count($accessToken, '.') < 2) {
+            return null;
+        }
+
+        [, $payload] = explode('.', $accessToken, 3);
+        $decoded = base64_decode(strtr($payload, '-_', '+/'), true);
+
+        if (! is_string($decoded)) {
+            return null;
+        }
+
+        $claims = json_decode($decoded, true);
+        $sid = is_array($claims) ? ($claims['sid'] ?? null) : null;
+
+        return is_string($sid) && filled($sid) ? $sid : null;
     }
 
     /**

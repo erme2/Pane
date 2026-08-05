@@ -547,6 +547,27 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
+    public function test_logout_intent_response_returns_provider_logout_url(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $sessionDelete = $this->contract['paths']['/session']['delete'];
+
+        $this->assertArrayHasKey('200', $sessionDelete['responses']);
+        $this->assertArrayNotHasKey('204', $sessionDelete['responses']);
+        $this->assertSame(
+            '#/components/schemas/LogoutIntentResponse',
+            $sessionDelete['responses']['200']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(
+            ['logout_url'],
+            $schemas['LogoutIntentResponse']['properties']['data']['required'],
+        );
+        $this->assertSame(
+            'uri',
+            $schemas['LogoutIntentResponse']['properties']['data']['properties']['logout_url']['format'],
+        );
+    }
+
     public function test_application_status_has_an_exact_concurrent_lifecycle(): void
     {
         $schemas = $this->contract['components']['schemas'];

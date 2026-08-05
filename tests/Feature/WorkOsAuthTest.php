@@ -81,7 +81,7 @@ class WorkOsAuthTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSessionHas('workos_intended_url', 'https://latte.test');
+            ->assertSessionHas('workos_intended_url', 'https://latte.test/');
     }
 
     public function test_login_url_accepts_relative_redirect_to(): void
@@ -714,6 +714,71 @@ class WorkOsAuthTest extends TestCase
         $this->assertStringNotContainsString($token, $callback->getContent());
     }
 
+    public function test_v1_callback_accepts_organization_invitation_hash_from_state_bound_cookie(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
+        config()->set('services.workos.provider', 'authkit');
+        config()->set('services.latte.application_id', (string) Str::uuid());
+        config()->set('services.latte.organization_id', (string) Str::uuid());
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
+
+        $application = app(ApplicationRegistryService::class)->configuredLatteApplication();
+        $organization = $application->organization()->firstOrFail();
+        $tenancy = app(OrganizationTenancyService::class);
+        $administrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $tenancy->addOrReactivateMembership($organization, $administrator, OrganizationMembership::ROLE_ADMINISTRATOR);
+        $result = app(OrganizationInvitationService::class)->inviteOrganizationMember(
+            $administrator,
+            $organization,
+            'Member@Example.COM',
+            OrganizationMembership::ROLE_USER
+        );
+        $token = $result['token'];
+        /** @var OrganizationInvitation $invitation */
+        $invitation = $result['invitation'];
+        $state = 'expected_state';
+        $tokenHash = hash('sha256', $token);
+
+        Http::fake([
+            'api.workos.com/user_management/authenticate' => Http::response([
+                'user' => [
+                    'id' => 'user_cookie_invited',
+                    'email' => 'member@example.com',
+                    'email_verified' => true,
+                    'first_name' => 'Invited',
+                    'last_name' => 'Member',
+                ],
+                'session_id' => 'session_123',
+                'organization_id' => 'org_123',
+                'authentication_method' => 'sso',
+            ]),
+        ]);
+
+        $callback = $this
+            ->withCredentials()
+            ->withSession(array_merge($this->v1ApplicationSession($application), [
+                'workos_state' => $state,
+                'workos_intended_url' => 'https://latte.test/dashboard',
+            ]))
+            ->withCookie('pane_workos_invitation', $state.'|'.$tokenHash)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/auth/callback', [
+                'code' => 'code_123',
+                'state' => $state,
+            ]);
+
+        $callback
+            ->assertOk()
+            ->assertCookieExpired('pane_workos_invitation')
+            ->assertJsonPath('data.user.attributes.email', 'member@example.com')
+            ->assertJsonPath('data.membership.attributes.role', OrganizationMembership::ROLE_USER);
+
+        $this->assertSame(OrganizationInvitation::STATUS_ACCEPTED, $invitation->fresh()->status);
+    }
+
     public function test_v1_callback_does_not_consume_organization_invitation_for_suspended_pane_admin(): void
     {
         config()->set('services.workos.api_key', 'sk_test_123');
@@ -1063,7 +1128,50 @@ class WorkOsAuthTest extends TestCase
         $this->assertNull($response->json('data'));
     }
 
-    public function test_v1_destroy_session_returns_no_content(): void
+    public function test_v1_destroy_session_returns_workos_logout_url(): void
+    {
+        config()->set('services.workos.return_to', null);
+        config()->set('services.latte.frontend_url', 'https://latte.localhost');
+
+        $requestId = (string) Str::uuid();
+
+        $user = new User;
+        $user->forceFill([
+            'user_id' => 123,
+            'user_type_id' => 1,
+            'name' => 'local-admin',
+            'email' => 'local-admin@example.test',
+            'is_active' => true,
+        ]);
+        $user->exists = true;
+
+        $this->withCsrfToken()->actingAs($user);
+
+        $response = $this
+            ->withV1ApplicationSession()
+            ->withSession(['workos_session_id' => 'session_123'])
+            ->withHeader('X-Request-Id', $requestId)
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->deleteJson('/api/v1/session');
+
+        $response
+            ->assertOk()
+            ->assertHeader('X-Request-Id', $requestId)
+            ->assertJsonPath('meta.request_id', $requestId)
+            ->assertJsonStructure(['data' => ['logout_url'], 'meta' => ['request_id']]);
+
+        $this->assertStringStartsWith(
+            'https://api.workos.com/user_management/sessions/logout?',
+            $response->json('data.logout_url')
+        );
+        $this->assertStringContainsString('session_id=session_123', $response->json('data.logout_url'));
+        $this->assertStringContainsString(
+            'return_to=https%3A%2F%2Flatte.localhost%2F',
+            $response->json('data.logout_url')
+        );
+    }
+
+    public function test_v1_destroy_session_rejects_missing_workos_session_id(): void
     {
         $requestId = (string) Str::uuid();
 
@@ -1086,8 +1194,10 @@ class WorkOsAuthTest extends TestCase
             ->deleteJson('/api/v1/session');
 
         $response
-            ->assertNoContent()
-            ->assertHeader('X-Request-Id', $requestId);
+            ->assertConflict()
+            ->assertHeader('X-Request-Id', $requestId)
+            ->assertJsonPath('error.code', 'provider_session_missing')
+            ->assertJsonPath('error.request_id', $requestId);
     }
 
     public function test_v1_destroy_session_rejects_authenticated_session_without_bound_application(): void
@@ -1360,5 +1470,42 @@ class WorkOsAuthTest extends TestCase
             ]);
 
         Http::assertSentCount(1);
+    }
+
+    public function test_json_callback_stores_workos_session_id_from_access_token_sid_claim(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test');
+
+        $payload = rtrim(strtr(base64_encode(json_encode(['sid' => 'session_from_sid']) ?: '{}'), '+/', '-_'), '=');
+
+        Http::fake([
+            'api.workos.com/user_management/authenticate' => Http::response([
+                'user' => [
+                    'id' => 'user_sid',
+                    'email' => 'sid@example.com',
+                    'email_verified' => true,
+                ],
+                'access_token' => 'header.'.$payload.'.signature',
+                'refresh_token' => 'refresh_token',
+                'organization_id' => 'org_123',
+            ]),
+        ]);
+
+        $response = $this
+            ->withSession(['workos_state' => 'expected_state'])
+            ->postJson('/auth/callback', [
+                'code' => 'code_123',
+                'state' => 'expected_state',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSessionHas('workos_session_id', 'session_from_sid')
+            ->assertSessionMissing([
+                'workos_access_token',
+                'workos_refresh_token',
+            ]);
     }
 }

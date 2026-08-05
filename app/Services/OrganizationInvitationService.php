@@ -70,6 +70,58 @@ class OrganizationInvitationService
     /**
      * @return array{invitation: OrganizationInvitation, token: string}
      */
+    public function bootstrapOrganizationAdministratorInvitation(
+        User $actor,
+        Organization $organization,
+        string $email,
+        string $role
+    ): array {
+        $email = $this->normalizeEmail($email);
+
+        if ($role !== OrganizationMembership::ROLE_ADMINISTRATOR) {
+            throw new InvalidArgumentException('Bootstrap organization invitations must use the administrator role.');
+        }
+
+        return DB::transaction(function () use ($actor, $organization, $email, $role): array {
+            $organization = Organization::query()
+                ->whereKey($organization->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $organization instanceof Organization || ! $organization->isActive()) {
+                throw new DomainException('The configured Latte organization is inactive.');
+            }
+
+            $this->revokePendingInvitationsForEmail($organization, $email);
+
+            [$invitation, $token] = $this->createInvitation($actor, $organization, $email, $role);
+
+            $this->audit->record('organization.membership.invite', AuditEvent::OUTCOME_SUCCESS, [
+                'real_actor' => $actor,
+                'effective_user' => $actor,
+                'organization' => $organization,
+                'resource_ids' => [
+                    'organization_invitation_id' => $invitation->getKey(),
+                    'organization_id' => $organization->getKey(),
+                ],
+                'metadata' => [
+                    'email' => $email,
+                    'role' => $role,
+                    'expires_at' => $invitation->expires_at->toJSON(),
+                    'source' => 'latte_bootstrap',
+                ],
+            ]);
+
+            return [
+                'invitation' => $invitation,
+                'token' => $token,
+            ];
+        });
+    }
+
+    /**
+     * @return array{invitation: OrganizationInvitation, token: string}
+     */
     public function resendOrganizationInvitation(
         User $actor,
         Organization $organization,

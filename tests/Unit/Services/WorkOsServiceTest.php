@@ -61,4 +61,35 @@ class WorkOsServiceTest extends TestCase
                 && $request['user_agent'] === 'PHPUnit';
         });
     }
+
+    public function test_it_builds_a_workos_logout_url(): void
+    {
+        config()->set('services.workos.return_to', 'https://latte.test/signed-out');
+
+        $url = (new WorkOsService)->logoutUrl('session_123');
+
+        $this->assertStringStartsWith('https://api.workos.com/user_management/sessions/logout?', $url);
+        $this->assertStringContainsString('session_id=session_123', $url);
+        $this->assertStringContainsString('return_to=https%3A%2F%2Flatte.test%2Fsigned-out', $url);
+    }
+
+    public function test_it_defaults_logout_return_to_the_latte_frontend_root(): void
+    {
+        config()->set('services.workos.return_to', null);
+        config()->set('services.latte.frontend_url', 'https://latte.localhost');
+
+        $url = (new WorkOsService)->logoutUrl('session_123');
+
+        $this->assertStringContainsString('return_to=https%3A%2F%2Flatte.localhost%2F', $url);
+    }
+
+    public function test_it_ignores_invalid_logout_return_to_and_uses_latte_frontend_root(): void
+    {
+        config()->set('services.workos.return_to', 'not a url');
+        config()->set('services.latte.frontend_url', 'https://latte.localhost/app');
+
+        $url = (new WorkOsService)->logoutUrl('session_123');
+
+        $this->assertStringContainsString('return_to=https%3A%2F%2Flatte.localhost%2F', $url);
+    }
 }

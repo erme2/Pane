@@ -141,7 +141,8 @@ suspension, or organization suspension/closure.
   or identity-provider data.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
-- `DELETE /session` logs out and invalidates the Pane session.
+- `DELETE /session` invalidates the Pane session and returns a WorkOS logout URL
+  that clients must navigate to so the provider session is closed as well.
 
 ### Installation scope (Burro)
 
