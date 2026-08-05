@@ -94,6 +94,34 @@ class LatteOrganizationBootstrapCommandTest extends TestCase
         );
     }
 
+    public function test_bootstrap_command_preserves_existing_user_with_invited_email(): void
+    {
+        config()->set('services.latte.application_id', (string) Str::uuid());
+        config()->set('services.latte.organization_id', (string) Str::uuid());
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/auth/callback']);
+
+        $existing = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $existing->forceFill([
+            'email' => 'first.admin@example.com',
+            'name' => 'Existing Person',
+            'password' => 'existing-password-hash',
+            'is_active' => false,
+        ])->save();
+        $existingPassword = $existing->password;
+
+        $this->artisan('latte:bootstrap-organization', [
+            'email' => 'first.admin@example.com',
+        ])->assertExitCode(0);
+
+        $existing->refresh();
+
+        $this->assertSame('Existing Person', $existing->name);
+        $this->assertSame($existingPassword, $existing->password);
+        $this->assertFalse($existing->is_active);
+        $this->assertTrue(User::query()->whereKey($existing->getKey())->exists());
+    }
+
     public function test_bootstrap_command_prompts_for_first_admin_email_when_argument_is_missing(): void
     {
         config()->set('services.latte.application_id', (string) Str::uuid());
@@ -164,6 +192,16 @@ class LatteOrganizationBootstrapCommandTest extends TestCase
         $this->artisan('latte:bootstrap-organization', [
             'email' => 'first.admin@example.com',
             '--role' => 'owner',
+        ])
+            ->expectsOutput('The email and role options must be valid.')
+            ->assertExitCode(1);
+    }
+
+    public function test_bootstrap_command_requires_administrator_role(): void
+    {
+        $this->artisan('latte:bootstrap-organization', [
+            'email' => 'first.admin@example.com',
+            '--role' => OrganizationMembership::ROLE_USER,
         ])
             ->expectsOutput('The email and role options must be valid.')
             ->assertExitCode(1);

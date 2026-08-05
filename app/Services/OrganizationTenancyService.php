@@ -106,6 +106,35 @@ class OrganizationTenancyService
         });
     }
 
+    public function updateMembershipRole(OrganizationMembership $membership, string $role): OrganizationMembership
+    {
+        $this->assertRole($role);
+
+        return DB::transaction(function () use ($membership, $role): OrganizationMembership {
+            $locked = OrganizationMembership::query()
+                ->whereKey($membership->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->role === $role) {
+                return $locked;
+            }
+
+            if (
+                $locked->isActive()
+                && $locked->isAdministrator()
+                && $role !== OrganizationMembership::ROLE_ADMINISTRATOR
+                && $this->activeOrganizationAdministratorCount($locked->organization_id) <= 1
+            ) {
+                throw new DomainException('Cannot demote the final active organization administrator.');
+            }
+
+            $locked->forceFill(['role' => $role])->save();
+
+            return $locked;
+        });
+    }
+
     public function deactivatePaneAdministrator(User $administrator): User
     {
         return DB::transaction(function () use ($administrator): User {

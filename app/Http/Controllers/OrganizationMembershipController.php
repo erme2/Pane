@@ -171,6 +171,18 @@ class OrganizationMembershipController extends Controller
         $targetRole = is_string($role) ? $role : $membership->role;
         $targetStatus = is_string($status) ? $status : $membership->status;
 
+        if ($membership->isActive()) {
+            if ($targetRole !== $membership->role) {
+                $membership = $this->tenancy->updateMembershipRole($membership, $targetRole);
+            }
+
+            if ($targetStatus === OrganizationMembership::STATUS_SUSPENDED) {
+                return $this->tenancy->suspendMembership($membership);
+            }
+
+            return $membership->refresh();
+        }
+
         if ($targetStatus === OrganizationMembership::STATUS_ACTIVE) {
             $user = $membership->user()->firstOrFail();
 
@@ -178,8 +190,7 @@ class OrganizationMembershipController extends Controller
         }
 
         if ($targetRole !== $membership->role) {
-            $user = $membership->user()->firstOrFail();
-            $membership = $this->tenancy->addOrReactivateMembership($organization, $user, $targetRole);
+            $membership = $this->tenancy->updateMembershipRole($membership, $targetRole);
         }
 
         if ($targetStatus === OrganizationMembership::STATUS_SUSPENDED) {

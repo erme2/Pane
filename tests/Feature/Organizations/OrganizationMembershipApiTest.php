@@ -176,6 +176,44 @@ class OrganizationMembershipApiTest extends TestCase
             ->assertJsonPath('error.code', 'version_conflict');
     }
 
+    public function test_membership_role_update_preserves_invitation_history(): void
+    {
+        [$application, $organization] = $this->configuredApplicationAndOrganization();
+        $administrator = $this->organizationAdministrator($organization);
+        $member = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $inviter = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $acceptedAt = now()->subDays(3)->startOfSecond();
+        $membership = $this->tenancy->addOrReactivateMembership(
+            $organization,
+            $member,
+            OrganizationMembership::ROLE_USER,
+            $inviter,
+            $acceptedAt
+        );
+
+        $this->withCsrfToken()->actingAs($administrator);
+
+        $show = $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->getJson("/api/v1/organizations/$organization->organization_id/memberships/$membership->membership_id");
+
+        $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->withHeader('If-Match', (string) $show->headers->get('ETag'))
+            ->patchJson("/api/v1/organizations/$organization->organization_id/memberships/$membership->membership_id", [
+                'role' => OrganizationMembership::ROLE_ADMINISTRATOR,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.attributes.role', OrganizationMembership::ROLE_ADMINISTRATOR);
+
+        $membership->refresh();
+
+        $this->assertSame($inviter->getKey(), $membership->invited_by_user_id);
+        $this->assertTrue($membership->accepted_at->equalTo($acceptedAt));
+    }
+
     public function test_membership_update_enforces_final_active_administrator_safeguards(): void
     {
         [$application, $organization] = $this->configuredApplicationAndOrganization();

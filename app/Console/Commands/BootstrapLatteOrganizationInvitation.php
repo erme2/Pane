@@ -42,7 +42,7 @@ class BootstrapLatteOrganizationInvitation extends Command
             'role' => $role,
         ], [
             'email' => ['required', 'email', 'max:320'],
-            'role' => ['required', 'in:'.implode(',', OrganizationMembership::ROLES)],
+            'role' => ['required', 'in:'.OrganizationMembership::ROLE_ADMINISTRATOR],
         ]);
 
         if ($validator->fails()) {
@@ -60,7 +60,7 @@ class BootstrapLatteOrganizationInvitation extends Command
             return self::FAILURE;
         }
 
-        $actor = $this->bootstrapActor($email);
+        [$actor, $createdActor] = $this->bootstrapActor($email);
 
         try {
             $result = $invitations->bootstrapOrganizationAdministratorInvitation($actor, $organization, $email, $role);
@@ -69,7 +69,7 @@ class BootstrapLatteOrganizationInvitation extends Command
 
             return self::FAILURE;
         } finally {
-            $this->removeBootstrapActor($actor);
+            $this->removeBootstrapActor($actor, $createdActor);
         }
 
         $invitationUrl = $this->invitationUrl($application, (string) $result['token']);
@@ -100,9 +100,18 @@ class BootstrapLatteOrganizationInvitation extends Command
         return self::SUCCESS;
     }
 
-    private function bootstrapActor(string $email): User
+    /**
+     * @return array{User, bool}
+     */
+    private function bootstrapActor(string $email): array
     {
-        $actor = User::query()->firstOrNew(['email' => $email]);
+        $actor = User::query()->where('email', $email)->first();
+
+        if ($actor instanceof User) {
+            return [$actor, false];
+        }
+
+        $actor = new User(['email' => $email]);
         $actor->forceFill([
             'user_type_id' => User::STANDARD_USER_TYPE_ID,
             'name' => $email,
@@ -110,12 +119,12 @@ class BootstrapLatteOrganizationInvitation extends Command
             'is_active' => true,
         ])->save();
 
-        return $actor;
+        return [$actor, true];
     }
 
-    private function removeBootstrapActor(User $actor): void
+    private function removeBootstrapActor(User $actor, bool $createdActor): void
     {
-        if (! $actor->organizationMemberships()->exists()) {
+        if ($createdActor && ! $actor->organizationMemberships()->exists()) {
             $actor->delete();
         }
     }

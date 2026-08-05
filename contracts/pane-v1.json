@@ -3285,6 +3285,8 @@
                         "required": [
                             "organization_id",
                             "user_id",
+                            "user_email",
+                            "user_name",
                             "role",
                             "status",
                             "created_at",
@@ -3295,7 +3297,21 @@
                                 "$ref": "#/components/schemas/Uuid"
                             },
                             "user_id": {
-                                "$ref": "#/components/schemas/Uuid"
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "user_email": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "email"
+                            },
+                            "user_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "role": {
                                 "type": "string",
