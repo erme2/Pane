@@ -38,6 +38,29 @@ class OrganizationInvitationLifecycleServiceTest extends TestCase
         $this->tenancy = app(OrganizationTenancyService::class);
     }
 
+    public function test_bootstrap_organization_invitation_service_requires_administrator_role(): void
+    {
+        $organization = $this->createOrganization('Latte Workspace');
+        $actor = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+
+        try {
+            $this->invitations->bootstrapOrganizationAdministratorInvitation(
+                $actor,
+                $organization,
+                'first.admin@example.com',
+                OrganizationMembership::ROLE_USER
+            );
+            $this->fail('Expected bootstrap organization invitation to require the administrator role.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame(
+                'Bootstrap organization invitations must use the administrator role.',
+                $exception->getMessage(),
+            );
+        }
+
+        $this->assertSame(0, OrganizationInvitation::query()->count());
+    }
+
     public function test_organization_invitation_acceptance_is_email_bound_single_use_and_scoped_to_organization(): void
     {
         $firstOrganization = $this->createOrganization('Acme Workspace');

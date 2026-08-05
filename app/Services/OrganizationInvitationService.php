@@ -77,7 +77,10 @@ class OrganizationInvitationService
         string $role
     ): array {
         $email = $this->normalizeEmail($email);
-        $this->assertRole($role);
+
+        if ($role !== OrganizationMembership::ROLE_ADMINISTRATOR) {
+            throw new InvalidArgumentException('Bootstrap organization invitations must use the administrator role.');
+        }
 
         return DB::transaction(function () use ($actor, $organization, $email, $role): array {
             $organization = Organization::query()
