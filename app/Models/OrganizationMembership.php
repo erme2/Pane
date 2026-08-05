@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
  * @property int $user_id
  * @property string $role
  * @property string $status
+ * @property int|null $invited_by_user_id
+ * @property Carbon|null $accepted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $suspended_at
