@@ -13,8 +13,8 @@ use App\Services\SettingsService;
 use App\Support\SettingDefinition;
 use App\Support\SettingsRegistry;
 use DomainException;
-use InvalidArgumentException;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class SettingsServiceTest extends TestCase

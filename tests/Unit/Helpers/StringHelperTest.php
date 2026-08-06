@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Helpers;
 
-
 use App\Helpers\StringHelper;
 use PHPUnit\Framework\TestCase;
 
@@ -10,7 +9,8 @@ class StringHelperTest extends TestCase
 {
     public function test_capital_case(): void
     {
-        $testClass = new class {
+        $testClass = new class
+        {
             use StringHelper;
         };
         $this->assertEquals('Helloworld', $testClass->capitalCase('helloworld'));
@@ -22,7 +22,8 @@ class StringHelperTest extends TestCase
 
     public function test_pascal_case(): void
     {
-        $testClass = new class {
+        $testClass = new class
+        {
             use StringHelper;
         };
         $this->assertEquals('Helloworld', $testClass->pascalCase('helloworld'));
@@ -34,7 +35,8 @@ class StringHelperTest extends TestCase
 
     public function test_camel_case(): void
     {
-        $testClass = new class {
+        $testClass = new class
+        {
             use StringHelper;
         };
         $this->assertEquals('helloworld', $testClass->camelCase('helloworld'));

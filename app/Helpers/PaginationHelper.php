@@ -15,9 +15,6 @@ trait PaginationHelper
      * Creates and return an array built from the plot data you can use to paginate the data in the database.
      * It will also validate the pagination data and throw a ValidationException if the data is invalid.
      *
-     * @param StoryPlot $plot
-     * @param string $subject
-     * @return array
      * @throws ValidationException
      * @throws SystemException
      */
@@ -34,7 +31,7 @@ trait PaginationHelper
             'page' => isset($plot->requestData['data']['page']) ? (int) $plot->requestData['data']['page'] : 1,
         ];
         $rules = [
-            'limit' => 'integer|min:1|max:' . $this->default('PAGINATION_MAX'),
+            'limit' => 'integer|min:1|max:'.$this->default('PAGINATION_MAX'),
             'order' => 'string|in:asc,desc',
             'sort' => 'string|in:'.implode(',', $mapper->getIndexableFields()),
             'page' => 'integer|min:1',
@@ -44,6 +41,7 @@ trait PaginationHelper
             throw new ValidationException($errors->toArray());
         }
         $data['offset'] = ($data['page'] - 1) * $data['limit'];
+
         return $data;
     }
 }

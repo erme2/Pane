@@ -160,7 +160,7 @@ class AuditEventService
     }
 
     /**
-     * @param array<array-key, mixed> $data
+     * @param  array<array-key, mixed>  $data
      * @return array<string, mixed>
      */
     private function sanitizeMap(array $data): array
@@ -191,7 +191,7 @@ class AuditEventService
     }
 
     /**
-     * @param array<int, string> $columns
+     * @param  array<int, string>  $columns
      * @return array<int, string>
      */
     private function normalizeChangedColumns(array $columns): array

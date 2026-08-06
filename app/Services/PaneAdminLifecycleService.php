@@ -177,8 +177,8 @@ class PaneAdminLifecycleService
     }
 
     /**
-     * @param array<string, mixed> $workOsUser
-     * @param array<string, mixed> $authentication
+     * @param  array<string, mixed>  $workOsUser
+     * @param  array<string, mixed>  $authentication
      */
     public function acceptPaneAdministratorInvitation(
         string $token,
@@ -189,8 +189,8 @@ class PaneAdminLifecycleService
     }
 
     /**
-     * @param array<string, mixed> $workOsUser
-     * @param array<string, mixed> $authentication
+     * @param  array<string, mixed>  $workOsUser
+     * @param  array<string, mixed>  $authentication
      */
     public function acceptPaneAdministratorInvitationHash(
         string $tokenHash,

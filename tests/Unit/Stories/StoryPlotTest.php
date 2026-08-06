@@ -19,8 +19,11 @@ class StoryPlotTest extends TestCase
     ];
 
     private $wrongContentType = 'wrong/content-type';
+
     private $lowInvalidStatusCode = 99;
+
     private $highInvalidStatusCode = 600;
+
     private $stringInvalidStatusCode = 'string';
 
     private $testRequest = [
@@ -33,9 +36,9 @@ class StoryPlotTest extends TestCase
                 'name' => 'test',
                 'age' => 99,
                 'address' => 'test address',
-            ]
+            ],
         ],
-        'headers' =>  [
+        'headers' => [
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'test' => 'fake',
@@ -43,19 +46,20 @@ class StoryPlotTest extends TestCase
         'method' => Request::METHOD_PATCH, // just a random method
     ];
 
-
     /**
      * @covers \App\Stories\StoryPlot::__construct
      *
      * @return void
+     *
      * @throws \Exception
+     *
      * @covers \App\Stories\StoryPlot::__construct
      */
     public function test__construct()
     {
 
         // basic (json)
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $this->assertInstanceOf(StoryPlot::class, $plot);
 
         // explicit (json)
@@ -72,12 +76,11 @@ class StoryPlotTest extends TestCase
      * @covers \App\Stories\StoryPlot::getContentType
      * @covers \App\Stories\StoryPlot::setContentType
      *
-     * @return void
      * @throws SystemException
      */
-    public function testSetGetContentType_basic(): void
+    public function test_set_get_content_type_basic(): void
     {
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $this->assertEquals('application/json', $plot->getContentType());
 
         // invalid content type
@@ -85,7 +88,7 @@ class StoryPlotTest extends TestCase
             $plot->setContentType('application/xml');
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
-            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX."Invalid content type: application/xml", $e->getMessage());
+            $this->assertEquals(SystemException::ERROR_MESSAGE_PREFIX.'Invalid content type: application/xml', $e->getMessage());
         }
 
         // valid content type
@@ -97,13 +100,12 @@ class StoryPlotTest extends TestCase
      * @covers \App\Stories\StoryPlot::getStatus
      * @covers \App\Stories\StoryPlot::setStatus
      *
-     * @return void
      * @throws SystemException
      */
-    public function testSetGetStatus_basic(): void
+    public function test_set_get_status_basic(): void
     {
         // empty
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $this->assertEquals(0, $plot->getStatus());
 
         // basic success
@@ -113,7 +115,7 @@ class StoryPlotTest extends TestCase
 
         // wrong status code (too low)
         try {
-            $plot = new StoryPlot();
+            $plot = new StoryPlot;
             $plot->setStatus($this->lowInvalidStatusCode);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
@@ -122,7 +124,7 @@ class StoryPlotTest extends TestCase
 
         // wrong status code (too high)
         try {
-            $plot = new StoryPlot();
+            $plot = new StoryPlot;
             $plot->setStatus($this->highInvalidStatusCode);
         } catch (\Exception $e) {
             $this->assertInstanceOf(SystemException::class, $e);
@@ -131,7 +133,7 @@ class StoryPlotTest extends TestCase
 
         // wrong status code (string)
         try {
-            $plot = new StoryPlot();
+            $plot = new StoryPlot;
             $plot->setStatus($this->stringInvalidStatusCode);
         } catch (\Error $e) {
             $this->assertInstanceOf(\Error::class, $e);
@@ -143,7 +145,6 @@ class StoryPlotTest extends TestCase
      * @covers \App\Stories\StoryPlot::getHeaters
      * @covers \App\Stories\StoryPlot::setRequestData
      *
-     * @return void
      * @throws SystemException
      */
     public function test_set_request_data(): void
@@ -154,7 +155,7 @@ class StoryPlotTest extends TestCase
             $this->testRequest['data'],
             $this->testRequest['headers']
         );
-        $testPlot = new StoryPlot();
+        $testPlot = new StoryPlot;
         $testPlot->setRequestData($fakeRequest);
 
         $this->assertEquals($this->testRequest['method'], $testPlot->requestData['method']);
@@ -166,7 +167,7 @@ class StoryPlotTest extends TestCase
     public function test_error(): void
     {
         $message = 'this is an error';
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->error($message);
         $logs = $plot->getLogs();
         $this->assertIsArray($logs);
@@ -177,7 +178,7 @@ class StoryPlotTest extends TestCase
     public function test_info(): void
     {
         $message = 'this is a info message';
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->info($message);
         $logs = $plot->getLogs();
         $this->assertIsArray($logs);
@@ -188,7 +189,7 @@ class StoryPlotTest extends TestCase
     public function test_warnings(): void
     {
         $message = 'this is a warning message';
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->warning($message);
         $logs = $plot->getLogs();
         $this->assertIsArray($logs);
@@ -196,12 +197,12 @@ class StoryPlotTest extends TestCase
         $this->assertEquals($message, $logs['warnings'][0]);
     }
 
-   public function test_getLogs(): void
+    public function test_get_logs(): void
     {
         $error = 'this is a error message';
         $warning = 'this is a warning message';
         $info = 'this is a info message';
-        $plot = new StoryPlot();
+        $plot = new StoryPlot;
         $plot->error($error);
         $plot->warning($warning);
         $plot->info($info);

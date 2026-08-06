@@ -14,10 +14,6 @@ class DeleteAction extends AbstractAction
     use ActionHelper;
 
     /**
-     * @param string $subject
-     * @param StoryPlot $plot
-     * @param mixed|null $key
-     * @return StoryPlot
      * @throws SystemException
      */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
@@ -27,7 +23,7 @@ class DeleteAction extends AbstractAction
         $keyName = $model->getPrimaryKey($subject);
 
         if (empty($key)) {
-            throw new SystemException("Key is required", Response::HTTP_BAD_REQUEST);
+            throw new SystemException('Key is required', Response::HTTP_BAD_REQUEST);
         } else {
             try {
                 $errors = Validator::make(
@@ -46,13 +42,14 @@ class DeleteAction extends AbstractAction
                         $plot->data['message'] = "Record not found with {$model->getKeyName()}: $key";
                     }
                 }
-            // we need to catch ValidationException separately to rethrow it, so that it can be handled appropriately by the caller.
+                // we need to catch ValidationException separately to rethrow it, so that it can be handled appropriately by the caller.
             } catch (ValidationException $e) {
                 throw $e;
             } catch (\Exception $e) {
                 throw new SystemException($e->getMessage());
             }
         }
+
         return $plot;
     }
 }

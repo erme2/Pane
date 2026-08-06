@@ -2,28 +2,20 @@
 
 namespace App\Mappers;
 
-use App\Exceptions\SystemException;
-use App\Helpers\ActionHelper;
 use App\Helpers\CoreHelper;
 use App\Helpers\MapperHelper;
 use App\Helpers\StringHelper;
-use App\Models\Field;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * Class AbstractMapper
  * this class will be extended by all mappers
- *
- * @package App\Mappers
  */
-
 abstract class AbstractMapper
 {
     use CoreHelper, MapperHelper, StringHelper;
 
     const string MAP_TABLES_PREFIX = 'map_';
+
     const array TABLES = [
         'tables' => 'tables',
         'fields' => 'fields',
@@ -37,6 +29,7 @@ abstract class AbstractMapper
         'audit_events' => 'audit_events',
         'test_table' => 'test_table',
     ];
+
     const array FIELD_TYPES = [
         'number' => 1,
         'string' => 2,
@@ -47,6 +40,7 @@ abstract class AbstractMapper
         'password' => 7,
         'json' => 8,
     ];
+
     const array VALIDATION_TYPES = [
         'unique' => 1,
         'exists' => 2,
@@ -54,7 +48,9 @@ abstract class AbstractMapper
         'min' => 4,
         'email' => 5,
     ];
+
     const string PASSWORD_REPLACEMENT = '********';
+
     public string $name;
 
     public function __construct(string $name)

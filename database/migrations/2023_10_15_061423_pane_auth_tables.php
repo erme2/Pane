@@ -1,11 +1,11 @@
 <?php
 
-use App\Mappers\AbstractMapper;
 use App\Helpers\SystemMigrationsHelper;
+use App\Mappers\AbstractMapper;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -21,27 +21,27 @@ return new class extends Migration
         Schema::create(
             $this->getUsersTableName(),
             function (Blueprint $table) {
-            $table->unsignedInteger('user_id')->autoIncrement();
-            $table->unsignedInteger('user_type_id')->index();
-            $table->string('name')->unique()->index();
-            $table->string('email')->unique()->index();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->json('details')->nullable();
-            $table->json('settings')->nullable();
-            $table->boolean('is_active')->default(false);
-            $table->dateTimeTz('last_login_at')->nullable();
-            $table->timestamps();
-        });
+                $table->unsignedInteger('user_id')->autoIncrement();
+                $table->unsignedInteger('user_type_id')->index();
+                $table->string('name')->unique()->index();
+                $table->string('email')->unique()->index();
+                $table->timestamp('email_verified_at')->nullable();
+                $table->string('password');
+                $table->json('details')->nullable();
+                $table->json('settings')->nullable();
+                $table->boolean('is_active')->default(false);
+                $table->dateTimeTz('last_login_at')->nullable();
+                $table->timestamps();
+            });
         Schema::create(
             $this->getUsersTypesTableName(),
             function (Blueprint $table) {
-            $table->unsignedInteger('user_type_id')->autoIncrement();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->json('details')->nullable();
-            $table->timestamps();
-        });
+                $table->unsignedInteger('user_type_id')->autoIncrement();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->json('details')->nullable();
+                $table->timestamps();
+            });
 
         DB::table($this->getUsersTypesTableName())->insert([
             [
@@ -347,7 +347,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['slug'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => $this->getUsersTypesTableName().',slug'
+                'value' => $this->getUsersTypesTableName().',slug',
             ],
             [
                 'field_id' => $this->insertKeys['user_types']['fields']['slug'],

@@ -428,6 +428,9 @@
                     "404": {
                         "$ref": "#/components/responses/NotFound"
                     },
+                    "409": {
+                        "$ref": "#/components/responses/Error409DuplicateResource"
+                    },
                     "412": {
                         "$ref": "#/components/responses/VersionConflict"
                     },
@@ -3220,6 +3223,8 @@
                             "slug",
                             "status",
                             "database_limit",
+                            "active_database_connections",
+                            "over_database_limit",
                             "created_at",
                             "updated_at"
                         ],
@@ -3241,6 +3246,13 @@
                             "database_limit": {
                                 "type": "integer",
                                 "minimum": 0
+                            },
+                            "active_database_connections": {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            "over_database_limit": {
+                                "type": "boolean"
                             },
                             "created_at": {
                                 "type": "string",
@@ -6850,6 +6862,9 @@
             ],
             "404": [
                 "resource_not_found"
+            ],
+            "409": [
+                "duplicate_resource"
             ],
             "412": [
                 "version_conflict"

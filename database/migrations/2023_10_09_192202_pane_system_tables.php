@@ -1,15 +1,16 @@
 <?php
 
-use App\Mappers\AbstractMapper;
 use App\Helpers\SystemMigrationsHelper;
-use Illuminate\Support\Facades\DB;
+use App\Mappers\AbstractMapper;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     use SystemMigrationsHelper;
+
     private array $insertKeys = [];
 
     /**
@@ -49,44 +50,44 @@ return new class extends Migration
     {
         Schema::create($this->getTablesTableName(),
             function (Blueprint $table) {
-            $table->unsignedInteger('table_id')->autoIncrement();
-            $table->string('name', 255)->index();
-            $table->string('sql_name', 255)->nullable();
-            $table->text('description')->nullable();
-        });
+                $table->unsignedInteger('table_id')->autoIncrement();
+                $table->string('name', 255)->index();
+                $table->string('sql_name', 255)->nullable();
+                $table->text('description')->nullable();
+            });
         Schema::create($this->getFieldsTableName(),
             function (Blueprint $table) {
-            $table->unsignedBigInteger('field_id')->autoIncrement();
-            $table->unsignedInteger('table_id')->index();
-            $table->unsignedSmallInteger('field_type_id')->index();
-            $table->string('name', 255)->index();
-            $table->string('sql_name', 255)->nullable();
-            $table->text('description')->nullable();
-            $table->string('format')->nullable();
-            $table->boolean('primary')->default(false);
-            $table->boolean('index')->default(false);
-            $table->boolean('sortable')->default(false);
-            $table->boolean('nullable')->default(false);
-            $table->string('default')->nullable();
-        });
+                $table->unsignedBigInteger('field_id')->autoIncrement();
+                $table->unsignedInteger('table_id')->index();
+                $table->unsignedSmallInteger('field_type_id')->index();
+                $table->string('name', 255)->index();
+                $table->string('sql_name', 255)->nullable();
+                $table->text('description')->nullable();
+                $table->string('format')->nullable();
+                $table->boolean('primary')->default(false);
+                $table->boolean('index')->default(false);
+                $table->boolean('sortable')->default(false);
+                $table->boolean('nullable')->default(false);
+                $table->string('default')->nullable();
+            });
         Schema::create($this->getFieldsTypesTableName(),
             function (Blueprint $table) {
-            $table->unsignedSmallInteger('field_type_id')->autoIncrement();
-            $table->string('name', 255);
-        });
+                $table->unsignedSmallInteger('field_type_id')->autoIncrement();
+                $table->string('name', 255);
+            });
         Schema::create($this->getFieldsValidationsTableName(),
             function (Blueprint $table) {
-            $table->unsignedInteger('field_validation_id')->autoIncrement();
-            $table->unsignedBigInteger('field_id')->index();
-            $table->unsignedSmallInteger('validation_type_id');
-            $table->string('value', 255)->nullable();
-            $table->string('message', 255)->nullable();
-        });
+                $table->unsignedInteger('field_validation_id')->autoIncrement();
+                $table->unsignedBigInteger('field_id')->index();
+                $table->unsignedSmallInteger('validation_type_id');
+                $table->string('value', 255)->nullable();
+                $table->string('message', 255)->nullable();
+            });
         Schema::create($this->getValidationsTypesTableName(),
             function (Blueprint $table) {
-            $table->unsignedInteger('validation_type_id')->autoIncrement();
-            $table->string('name', 255);
-        });
+                $table->unsignedInteger('validation_type_id')->autoIncrement();
+                $table->string('name', 255);
+            });
     }
 
     private function tablesInserts(): void
@@ -94,34 +95,34 @@ return new class extends Migration
         // tables
         $this->insertKeys['tables']['tables'] =
             DB::table($this->getTablesTableName())->insertGetId([
-            'name' => AbstractMapper::TABLES['tables'],
-            'sql_name' => $this->getTablesTableName(),
-            'description' => "pane system table for storing tables",
-        ]);
+                'name' => AbstractMapper::TABLES['tables'],
+                'sql_name' => $this->getTablesTableName(),
+                'description' => 'pane system table for storing tables',
+            ]);
         $this->insertKeys['tables']['fields'] =
             DB::table($this->getTablesTableName())->insertGetId([
-            'name' => AbstractMapper::TABLES['fields'],
-            'sql_name' => $this->getFieldsTableName(),
-            'description' => "pane system table for storing fields",
-        ]);
+                'name' => AbstractMapper::TABLES['fields'],
+                'sql_name' => $this->getFieldsTableName(),
+                'description' => 'pane system table for storing fields',
+            ]);
         $this->insertKeys['tables']['field_types'] =
             DB::table($this->getTablesTableName())->insertGetId([
-            'name' => AbstractMapper::TABLES['field_types'],
-            'sql_name' => $this->getFieldsTypesTableName(),
-            'description' => "pane system table for storing field types",
-        ]);
+                'name' => AbstractMapper::TABLES['field_types'],
+                'sql_name' => $this->getFieldsTypesTableName(),
+                'description' => 'pane system table for storing field types',
+            ]);
         $this->insertKeys['tables']['field_validations'] =
             DB::table($this->getTablesTableName())->insertGetId([
-            'name' => AbstractMapper::TABLES['field_validations'],
-            'sql_name' => $this->getFieldsValidationsTableName(),
-            'description' => "pane system table for storing field validations rules",
-        ]);
+                'name' => AbstractMapper::TABLES['field_validations'],
+                'sql_name' => $this->getFieldsValidationsTableName(),
+                'description' => 'pane system table for storing field validations rules',
+            ]);
         $this->insertKeys['tables']['validation_types'] =
             DB::table($this->getTablesTableName())->insertGetId([
-            'name' => AbstractMapper::TABLES['validation_types'],
-            'sql_name' => $this->getValidationsTypesTableName(),
-            'description' => "pane system table for storing validations rule types",
-        ]);
+                'name' => AbstractMapper::TABLES['validation_types'],
+                'sql_name' => $this->getValidationsTypesTableName(),
+                'description' => 'pane system table for storing validations rule types',
+            ]);
     }
 
     private function fieldTypesInserts(): void
@@ -357,20 +358,20 @@ return new class extends Migration
         // validation types
         $this->insertKeys['fields']['validation_types']['validation_type_id'] =
         DB::table($this->getFieldsTableName())->insertGetId([
-                'table_id' => $this->insertKeys['tables']['validation_types'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
-                'name' => 'validation_type_id',
-                'primary' => true,
-                'index' => true,
-            ]);
+            'table_id' => $this->insertKeys['tables']['validation_types'],
+            'field_type_id' => AbstractMapper::FIELD_TYPES['number'],
+            'name' => 'validation_type_id',
+            'primary' => true,
+            'index' => true,
+        ]);
         $this->insertKeys['fields']['validation_types']['name'] =
         DB::table($this->getFieldsTableName())->insertGetId([
-                'table_id' => $this->insertKeys['tables']['validation_types'],
-                'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
-                'name' => 'name',
-                'primary' => false,
-                'index' => false,
-            ]);
+            'table_id' => $this->insertKeys['tables']['validation_types'],
+            'field_type_id' => AbstractMapper::FIELD_TYPES['string'],
+            'name' => 'name',
+            'primary' => false,
+            'index' => false,
+        ]);
     }
 
     private function fieldValidationTypesInserts(): void
@@ -390,7 +391,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => $this->getTablesTableName().",name",
+                'value' => $this->getTablesTableName().',name',
             ],
             [
                 'field_id' => $this->insertKeys['fields']['tables']['name'],
@@ -422,12 +423,12 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['fields']['table_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => $this->getTablesTableName().",table_id",
+                'value' => $this->getTablesTableName().',table_id',
             ],
             [
                 'field_id' => $this->insertKeys['fields']['fields']['field_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => $this->getFieldsTypesTableName().",field_type_id",
+                'value' => $this->getFieldsTypesTableName().',field_type_id',
             ],
         ]);
     }
@@ -439,7 +440,7 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['field_types']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['unique'],
-                'value' => $this->getFieldsTypesTableName().",name",
+                'value' => $this->getFieldsTypesTableName().',name',
             ],
             [
                 'field_id' => $this->insertKeys['fields']['field_types']['name'],
@@ -450,7 +451,7 @@ return new class extends Migration
                 'field_id' => $this->insertKeys['fields']['field_types']['name'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['max'],
                 'value' => '255',
-            ]
+            ],
         ]);
     }
 
@@ -461,12 +462,12 @@ return new class extends Migration
             [
                 'field_id' => $this->insertKeys['fields']['field_validations']['field_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['fields'].",field_id",
+                'value' => AbstractMapper::TABLES['fields'].',field_id',
             ],
             [
                 'field_id' => $this->insertKeys['fields']['field_validations']['validation_type_id'],
                 'validation_type_id' => AbstractMapper::VALIDATION_TYPES['exists'],
-                'value' => AbstractMapper::TABLES['validation_types'].",validation_type_id",
+                'value' => AbstractMapper::TABLES['validation_types'].',validation_type_id',
             ],
         ]);
     }
