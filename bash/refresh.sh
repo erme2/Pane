@@ -44,9 +44,13 @@ fi
 CONFIG_FILE=".env.${LOAD_CONFIG_FILE}"
 ENV_FILE="--env=${LOAD_CONFIG_FILE}"
 
+INHERITED_APP_KEY="${APP_KEY:-}"
 source ${CONFIG_FILE}
 
-if [ -z "${APP_KEY:-}" ]; then
+if [ -z "${APP_KEY:-}" ] && [ -n "${INHERITED_APP_KEY}" ]; then
+    APP_KEY="${INHERITED_APP_KEY}"
+    export APP_KEY
+elif [ -z "${APP_KEY:-}" ]; then
     APP_KEY=$(php -r 'echo implode("", ["base", "64"]).":".base64_encode(random_bytes(32));')
     export APP_KEY
 fi

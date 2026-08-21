@@ -18,4 +18,14 @@ class EnvironmentSecretContractTest extends TestCase
             self::assertMatchesRegularExpression('/^APP_KEY=$/m', $contents, $path.' should leave APP_KEY blank.');
         }
     }
+
+    public function test_refresh_script_preserves_inherited_app_key_when_template_is_blank(): void
+    {
+        $root = dirname(__DIR__, 3);
+        $script = file_get_contents($root.'/bash/refresh.sh');
+
+        self::assertStringContainsString('INHERITED_APP_KEY="${APP_KEY:-}"', $script);
+        self::assertStringContainsString('[ -z "${APP_KEY:-}" ] && [ -n "${INHERITED_APP_KEY}" ]', $script);
+        self::assertStringContainsString('APP_KEY="${INHERITED_APP_KEY}"', $script);
+    }
 }
