@@ -6,7 +6,7 @@ Pane uses `.env.example` as the template for local and deployed environment file
 
 - `APP_NAME` names the application in framework output.
 - `APP_ENV` controls environment-sensitive behavior. Use `local` or `testing` for local/test runs. Use `production`, `staging`, or another non-local value for deployed environments.
-- `APP_KEY` is the Laravel encryption key. Generate a real value for every environment.
+- `APP_KEY` is the Laravel encryption key. Keep it blank in committed templates and generate a real value for every local, CI, staging, and production environment.
 - `APP_DEBUG` must be `false` in production. Pane fails closed when production debug is enabled.
 
 ## URLs And Trusted Hosts
@@ -28,6 +28,12 @@ TRUSTED_HOSTS=
 ```env
 APP_URL=https://pane.example.com
 TRUSTED_HOSTS=pane.staging.example.com,pane.internal.example.com
+```
+
+After copying any committed environment template to a real environment file, generate an environment-specific key:
+
+```bash
+php artisan key:generate --force
 ```
 
 ## Session And Cookies

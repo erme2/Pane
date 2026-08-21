@@ -6,6 +6,7 @@ Run all scripts from the Pane repository root. The scripts assume Laravel depend
 
 ```bash
 cp .env.testing .env
+php artisan key:generate --force
 ```
 
 ## Script Overview
