@@ -24,6 +24,11 @@ done
 
 LOAD_CONFIG_FILE="--env=${CONF_FILE}"
 
+if [ -z "${APP_KEY:-}" ]; then
+    APP_KEY=$(php -r 'echo implode("", ["base", "64"]).":".base64_encode(random_bytes(32));')
+    export APP_KEY
+fi
+
 if [ ${VERBOSE} = 'yes' ]
 then
     echo "Running tests with seeder:"

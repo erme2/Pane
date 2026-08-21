@@ -46,6 +46,11 @@ ENV_FILE="--env=${LOAD_CONFIG_FILE}"
 
 source ${CONFIG_FILE}
 
+if [ -z "${APP_KEY:-}" ]; then
+    APP_KEY=$(php -r 'echo implode("", ["base", "64"]).":".base64_encode(random_bytes(32));')
+    export APP_KEY
+fi
+
 if [ ${SHOW_OPTIONS} = 'yes' ]
 then
     read -p "Do you want to run this script? (y/n): " confirm

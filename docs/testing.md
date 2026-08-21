@@ -36,6 +36,7 @@ A unit contract test checks that database-backed dependencies do not drift back 
 
 The default testing environment is `.env.testing`:
 
+- `APP_KEY=` stays blank in the committed template. Generate a local key after copying it to `.env`, or let CI generate an ephemeral key during the test workflow.
 - `DB_CONNECTION=sqlite` keeps tests off a live MariaDB or MySQL service.
 - `DB_DATABASE=database.sqlite` points Laravel at the local SQLite test database under `database/database.sqlite`.
 - `CACHE_DRIVER=array` keeps Laravel cache state in memory during testing.
