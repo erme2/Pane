@@ -12,10 +12,7 @@ use Illuminate\Support\Facades\Validator;
  * Class ValidateAction
  * This action will validate the data in the request against the validation rules
  * defined in the mapper for the given subject.
- *
- * @package App\Actions
  */
-
 class ValidateAction extends AbstractAction
 {
     use ActionHelper;
@@ -24,10 +21,6 @@ class ValidateAction extends AbstractAction
      * Will validate the data in the request against the validation rules
      * defined in the mapper for the given subject.
      *
-     * @param string $subject
-     * @param StoryPlot $plot
-     * @param mixed|null $key
-     * @return StoryPlot
      * @throws ValidationException
      * @throws SystemException
      */
@@ -36,7 +29,7 @@ class ValidateAction extends AbstractAction
         $mapper = $this->getMapper($subject);
 
         // if it's an update we need to add the primary key to the data array
-        if (!$this->isCreate($plot)) {
+        if (! $this->isCreate($plot)) {
             $plot->requestData['data'][$this->getModel($subject)->getKeyName()] = $key;
         }
         $errors = Validator::make(
@@ -48,6 +41,7 @@ class ValidateAction extends AbstractAction
         if ($errors->any()) {
             throw new ValidationException($errors->toArray());
         }
+
         return $plot;
-     }
+    }
 }

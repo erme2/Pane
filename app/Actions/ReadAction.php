@@ -12,21 +12,15 @@ use Illuminate\Support\Facades\Validator;
 /**
  * Class ReadAction
  * This action will read the data from the database and return it in the response
- *
- * @package App\Actions
  */
 class ReadAction extends AbstractAction
 {
     use PaginationHelper;
 
     /**
-    * @param string $subject
-    * @param StoryPlot $plot
-    * @param mixed|null $key
-    * @return StoryPlot
-    * @throws SystemException
-    * @throws ValidationException
-    */
+     * @throws SystemException
+     * @throws ValidationException
+     */
     public function exec(string $subject, StoryPlot $plot, mixed $key = null): StoryPlot
     {
         $mapper = $this->getMapper($subject);

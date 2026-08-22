@@ -266,6 +266,23 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
+    public function test_organization_resource_exposes_lifecycle_and_quota_state(): void
+    {
+        $attributes = $this->contract['components']['schemas']['OrganizationResource']['properties']['attributes'];
+
+        $this->assertSame(
+            ['active', 'suspended', 'closed'],
+            $attributes['properties']['status']['enum'],
+        );
+        $this->assertContains('database_limit', $attributes['required']);
+        $this->assertContains('active_database_connections', $attributes['required']);
+        $this->assertContains('over_database_limit', $attributes['required']);
+        $this->assertSame(0, $attributes['properties']['database_limit']['minimum']);
+        $this->assertSame(0, $attributes['properties']['active_database_connections']['minimum']);
+        $this->assertSame('boolean', $attributes['properties']['over_database_limit']['type']);
+        $this->assertStringContainsString('over quota; new connection creation', $this->documentation);
+    }
+
     public function test_organization_invitation_operations_use_delivery_url_responses(): void
     {
         $collection = $this->contract['paths']['/organizations/{organization_id}/invitations'];

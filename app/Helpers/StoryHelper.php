@@ -8,10 +8,7 @@ use Illuminate\Support\Str;
 
 /**
  * Helper for App/Stories.
- *
- * @package App\Helpers
  */
-
 trait StoryHelper
 {
     use StringHelper;
@@ -19,8 +16,8 @@ trait StoryHelper
     /**
      * loads the requested action class and returns it
      *
-     * @param string $name
      * @return object|mixed
+     *
      * @throws SystemException
      */
     public function loadAction(string $name): object
@@ -31,8 +28,8 @@ trait StoryHelper
     /**
      * loads the requested story class and returns it
      *
-     * @param string $name
      * @return object|mixed
+     *
      * @throws SystemException
      */
     public function loadStory(Request $request, string $name): object
@@ -43,9 +40,8 @@ trait StoryHelper
     /**
      * loads the requested class using the name and the type
      *
-     * @param string $name
-     * @param string $type
      * @return mixed
+     *
      * @throws SystemException
      */
     private function loadObject(string $name, string $type, $argument = null): object

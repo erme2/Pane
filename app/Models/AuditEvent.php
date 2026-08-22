@@ -6,11 +6,12 @@ use App\Support\PaneTable;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
  * @property string $audit_event_id
- * @property \Illuminate\Support\Carbon $occurred_at
+ * @property Carbon $occurred_at
  * @property int|null $real_actor_user_id
  * @property int|null $effective_user_id
  * @property string|null $organization_id

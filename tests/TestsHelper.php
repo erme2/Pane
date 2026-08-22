@@ -3,7 +3,6 @@
 namespace Tests;
 
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 trait TestsHelper
@@ -22,8 +21,7 @@ trait TestsHelper
             'SERVER_PORT' => 80,
         ],
         ?string $content = null
-    )
-    {
+    ) {
         $return = new Request;
         $return = $return->createFromBase(
             SymfonyRequest::create(
@@ -36,11 +34,11 @@ trait TestsHelper
                 $content
             )
         );
-        if (!empty($headers)) {
+        if (! empty($headers)) {
             $return->headers->replace($headers);
         }
         $return->query->replace($params);
+
         return $return;
     }
-
 }

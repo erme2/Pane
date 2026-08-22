@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Helpers\ActionHelper;
-
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,7 +14,8 @@ class TestTableSeeder extends Seeder
     public static function getStaticRecords($sqlString = false): array
     {
         $testArray = ['this', 'is', 'an', 'array'];
-        $testJson = (object)['some' => 'JSON'];
+        $testJson = (object) ['some' => 'JSON'];
+
         return [
             [
                 'name' => 'Test Table',
@@ -34,7 +34,8 @@ class TestTableSeeder extends Seeder
     public static function randomRecord(bool $sqlString = false, array $presets = []): array
     {
         $array = ['this', 'is', 'an', 'array'];
-        $object = (object) ["some" => "JSON"];
+        $object = (object) ['some' => 'JSON'];
+
         return [
             'name' => $presets['name'] ?? fake()->name(),
             'description' => $presets['description'] ?? fake()->realText(100),
@@ -47,7 +48,6 @@ class TestTableSeeder extends Seeder
             'numero' => $presets['numero'] ?? random_int(1, 100),
         ];
     }
-
 
     /**
      * Run the database seeds.

@@ -8,13 +8,11 @@ trait ModelHelper
 {
     /**
      * Get the primary key for the model.
-     *
-     * @return string|array
      */
     public function getPrimaryKey(string $tableName): array|string|null
     {
         $return = [];
-        foreach ((new Field())->getFields($tableName) as $field) {
+        foreach ((new Field)->getFields($tableName) as $field) {
             if ($field->primary) {
                 $return[] = $field->name;
             }
@@ -24,8 +22,10 @@ trait ModelHelper
             if (count($return) > 1) {
                 return $return;
             }
+
             return $return[0];
         }
+
         return null;
     }
 }

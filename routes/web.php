@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationInvitationController;
 use App\Http\Controllers\OrganizationMembershipController;
 use App\Http\Controllers\PaneAdminInvitationController;
@@ -43,6 +44,14 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('installation.applications.update');
         Route::delete('/installation/applications/{applicationId}', [ApplicationController::class, 'destroy'])
             ->name('installation.applications.destroy');
+        Route::get('/installation/organizations', [OrganizationController::class, 'list'])
+            ->name('installation.organizations.index');
+        Route::post('/installation/organizations', [OrganizationController::class, 'store'])
+            ->name('installation.organizations.store');
+        Route::get('/installation/organizations/{organizationId}', [OrganizationController::class, 'show'])
+            ->name('installation.organizations.show');
+        Route::patch('/installation/organizations/{organizationId}', [OrganizationController::class, 'update'])
+            ->name('installation.organizations.update');
         Route::get('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'list'])
             ->name('installation.pane-admin-invitations.index');
         Route::post('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'store'])

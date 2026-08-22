@@ -149,6 +149,11 @@ suspension, or organization suspension/closure.
 - `/installation/organizations` and
   `/installation/organizations/{organization_id}` manage organization
   lifecycle and database limits.
+  Organization responses expose the current active database connection count
+  and whether current usage is over the configured limit. Lowering a limit
+  below current usage preserves existing connections and marks the organization
+  over quota; new connection creation or reactivation remains blocked until
+  usage is compliant.
 - `/installation/applications` and
   `/installation/applications/{application_id}` manage registrations, trusted
   origins, redirects, and immutable fixed-organization binding.

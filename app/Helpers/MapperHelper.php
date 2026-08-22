@@ -11,107 +11,100 @@ use Illuminate\Support\Str;
 
 /**
  * Helper for App/Mappers.
- *
- * @package App\Helpers
  */
-
 trait MapperHelper
 {
     use CoreHelper;
 
     /**
      * checks if the field is required and updates the rules array
-     *
-     * @param array $rules
-     * @param Field $field
-     * @return array
      */
     public function checkIfRequired(array $rules, Field $field): array
     {
-        if (!$field->nullable) {
+        if (! $field->nullable) {
             $rules[] = 'required';
         }
+
         return $rules;
     }
 
     /**
      * Extract data from model to an object (entity)
      *
-     * @param Model $model
      * @return \stdClass
+     *
      * @throws SystemException
      * @throws \JsonException
      */
     public function extractFromModel(Model $model): object
     {
-        $return = new \stdClass();
+        $return = new \stdClass;
         foreach ($this->getFields($this->name) as $field) {
             switch ($field->type) {
-                case "array":
+                case 'array':
                     $return->{$field->name} = json_decode($model->{$field->name}, true, 512, JSON_THROW_ON_ERROR);
                     break;
-                case "json":
+                case 'json':
                     $return->{$field->name} = json_decode($model->{$field->name}, false, 512, JSON_THROW_ON_ERROR);
                     break;
-                case "boolean":
+                case 'boolean':
                     $return->{$field->name} = (bool) $model->{$field->name};
                     break;
-                case "date":
+                case 'date':
                     $return->{$field->name} = new \DateTime($model->{$field->name});
                     break;
-                case "number":
+                case 'number':
                     $return->{$field->name} = (float) $model->{$field->name};
                     break;
-                case "password":
+                case 'password':
                     $return->{$field->name} = AbstractMapper::PASSWORD_REPLACEMENT;
                     break;
-                case "string":
-                case "text":
+                case 'string':
+                case 'text':
                     $return->{$field->name} = (string) $model->{$field->name};
                     break;
                 default:
                     throw new SystemException("Unknown field type: $field->type");
             }
         }
+
         return $return;
     }
 
     /**
      * fills the model with data
      *
-     * @param Model $model
-     * @param array $data
-     * @param bool $isCreate
-     * @return Model
+     * @param  bool  $isCreate
+     *
      * @throws SystemException
      */
     public function fillModel(Model $model, array $data): Model
     {
         foreach ($this->getFields($this->name) as $field) {
-            if (isset($data[$field->name]) && (!$field->primary)) {
+            if (isset($data[$field->name]) && (! $field->primary)) {
                 switch ($field->type) {
-                    case "array":
+                    case 'array':
                         $model->{$field->name} = (string) json_encode($data[$field->name]);
                         break;
-                    case "json":
+                    case 'json':
                         $model->{$field->name} = (string) json_encode(
                             json_decode($data[$field->name], false, 512, JSON_THROW_ON_ERROR)
                         );
                         break;
-                    case "boolean":
+                    case 'boolean':
                         $model->{$field->name} = (bool) $data[$field->name];
                         break;
-                    case "date":
+                    case 'date':
                         $model->{$field->name} = date('Y-m-d H:i:s', strtotime($data[$field->name]));
                         break;
-                    case "number":
+                    case 'number':
                         $model->{$field->name} = (float) $data[$field->name];
                         break;
-                    case "password":
+                    case 'password':
                         $model->{$field->name} = bcrypt($data[$field->name]);
                         break;
-                    case "string":
-                    case "text":
+                    case 'string':
+                    case 'text':
                         $model->{$field->name} = (string) $data[$field->name];
                         break;
                     default:
@@ -119,15 +112,13 @@ trait MapperHelper
                 }
             }
         }
+
         return $model;
     }
 
     /**
      * search for additional validation rules and updates the rules array
      *
-     * @param array $rules
-     * @param Field $field
-     * @return array
      * @throws SystemException
      */
     public function getAdditionalValidationRules(array $rules, Field $field): array
@@ -138,9 +129,9 @@ trait MapperHelper
             $type = $validationField->getValidationType();
 
             $rules[] = match ($type->name) {
-                "exists", "max", "min", "unique" => $type->name . ':' . $validationField->value,
-                "email" => $validationField->value ? 'email:'.$validationField->value : 'email:dns',
-                "array", "json", "string", => $type->name,
+                'exists', 'max', 'min', 'unique' => $type->name.':'.$validationField->value,
+                'email' => $validationField->value ? 'email:'.$validationField->value : 'email:dns',
+                'array', 'json', 'string', => $type->name,
                 default => throw new SystemException("Validation rule not found for $type->name"),
             };
         }
@@ -150,22 +141,17 @@ trait MapperHelper
 
     /**
      * get the fields of a table
-     *
-     * @param string $name
-     * @return Collection
      */
     public function getFields(?string $name = null): Collection
     {
         $name = $name ?: $this->name;
+
         return new Field()->getFields(Str::snake($name));
     }
 
     /**
      * checks for the field type and updates the rules array
      *
-     * @param array $rules
-     * @param Field $field
-     * @return array
      * @throws SystemException
      */
     public function getTypeRules(array $rules, Field $field): array
@@ -189,7 +175,8 @@ trait MapperHelper
                     break;
                 default:
                     throw new SystemException("Validation rule not found for $field->type");
-                }
+            }
+
             return $rules;
         }
         throw new SystemException('Invalid field type');
@@ -198,8 +185,8 @@ trait MapperHelper
     /**
      * Get validation messages for model
      *
-     * @param bool $withPrimary
-     * @return array
+     * @param  bool  $withPrimary
+     *
      * @throws SystemException
      */
     public function getValidationMessages(bool $isCreate): array
@@ -211,26 +198,24 @@ trait MapperHelper
                 continue;
             }
             // we will not update passwords, so we will not validate them on update calls
-            if ($field->type === 'password' && !$isCreate) {
+            if ($field->type === 'password' && ! $isCreate) {
                 continue;
             }
             // walking through the validation fields
             foreach ($field->getValidationFields($field) as $validationField) {
                 $type = $validationField->getValidationType();
-                if (!empty($validationField->message)) {
+                if (! empty($validationField->message)) {
                     $return["$field->name.$type->name"] = $validationField->message;
                 }
             }
         }
+
         return $return;
     }
 
     /**
      * Get validation rules or messages for model
      *
-     * @param bool $isCreate
-     * @param bool $onlyPrimary
-     * @return array
      * @throws SystemException
      */
     public function getValidationRules(bool $isCreate, bool $onlyPrimary = false): array
@@ -250,7 +235,7 @@ trait MapperHelper
 
                 // primary field type
                 if ($field->type === 'number') {
-                     $array[$field->name][] = 'numeric';
+                    $array[$field->name][] = 'numeric';
                 }
             }
 
@@ -260,7 +245,7 @@ trait MapperHelper
             }
 
             // passwords will not be updated so we will not validate them on update calls
-            if (!$isCreate && $field->type === 'password') {
+            if (! $isCreate && $field->type === 'password') {
                 continue;
             }
 
@@ -273,40 +258,37 @@ trait MapperHelper
             // checking for the field type
             $array[$field->name] = $this->getTypeRules($array[$field->name] ?? [], $field);
         }
+
         return $this->getValidationRulesInLaravelFormat($array, $return);
     }
 
     /**
      * Get indexable fields for model
-     *
-     * @return array
      */
     public function getIndexableFields(): array
     {
         $return = [];
-        //* @var $field Field */
+        // * @var $field Field */
         foreach ($this->getFields($this->name) as $field) {
             if ($field->index || $field->primary || $field->sortable || $field->hasValidation('unique')) {
                 $return[] = $field->name;
             }
         }
+
         return $return;
     }
 
     /**
      * format the validation rules in a way that Laravel can understand
-     *
-     * @param array $data
-     * @param array $return
-     * @return array
      */
     public function getValidationRulesInLaravelFormat(array $data, array $return): array
     {
         foreach ($data as $key => $value) {
-            if (!empty($value)) {
+            if (! empty($value)) {
                 $return[$key] = implode('|', array_unique($value));
             }
         }
+
         return $return;
     }
 }

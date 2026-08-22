@@ -10,12 +10,9 @@ use Illuminate\Http\Response;
  * Class CrudStory
  * this is the base class for all CRUD stories, based on the request method it will
  * execute the actions to create, read, update or delete a record
- *
- * @package App\Stories
  */
 class CrudStory extends AbstractStory
 {
-
     /**
      * defines the actions to be executed in the story
      *
@@ -35,20 +32,20 @@ class CrudStory extends AbstractStory
                     'save',
                 ];
                 break;
-            // update
+                // update
             case Request::METHOD_PUT:
                 $this->actions = [
                     'validate',
                     'save',
                 ];
                 break;
-            // read
+                // read
             case Request::METHOD_GET:
                 $this->actions = [
                     'read',
                 ];
                 break;
-            // delete
+                // delete
             case Request::METHOD_DELETE:
                 $this->actions = [
                     'delete',
@@ -57,7 +54,7 @@ class CrudStory extends AbstractStory
             default:
                 throw new SystemException(
                     "Method not allowed (method: {$this->plot->requestData['method']} object: ".
-                    get_class($this).")", 405);
+                    get_class($this).')', 405);
         }
     }
 }

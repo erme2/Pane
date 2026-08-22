@@ -8,15 +8,13 @@ use Illuminate\Http\Response;
 /**
  * Trait ResponseHelper
  * This trait is used to build a standard response for the API.
- *
- * @package App\Helpers
  */
 trait ResponseHelper
 {
     const CONTENT_TYPES = [
         'json' => 'application/json',
-//        'xml' => 'application/xml',
-//        'html' => 'text/html',
+        //        'xml' => 'application/xml',
+        //        'html' => 'text/html',
     ];
 
     private Response $response;
@@ -26,17 +24,15 @@ trait ResponseHelper
      * property called $response you will be able to use to build
      * and return a response.
      *
-     *  @return void
+     * @return void
      */
     public function __construct()
     {
-        $this->response = new Response();
+        $this->response = new Response;
     }
 
     /**
      * Returns the response object.
-     *
-     * @return Response
      */
     public function getResponse(): Response
     {
@@ -45,9 +41,6 @@ trait ResponseHelper
 
     /**
      * Returns the status text for the given status code.
-     *
-     * @param int $status
-     * @return string
      */
     public function getStatusText(int $status): string
     {
@@ -56,14 +49,11 @@ trait ResponseHelper
 
     /**
      * Returns a standard success response.
-     *
-     * @param StoryPlot $storyPlot
-     * @return Response
      */
     public function success(StoryPlot $storyPlot): Response
     {
         // if the status is not set, set it to 200 OK
-        if (!$storyPlot->getStatus()) {
+        if (! $storyPlot->getStatus()) {
             $storyPlot->setStatus(Response::HTTP_OK);
         }
         $content = [
@@ -83,9 +73,6 @@ trait ResponseHelper
 
     /**
      * Returns a standard error response.
-     *
-     * @param \Throwable $exception
-     * @return Response
      */
     public function error(\Throwable $exception): Response
     {
@@ -103,6 +90,7 @@ trait ResponseHelper
                 'status' => $this->getStatusText($statusID),
                 'data' => $errorData,
             ]);
+
         return $this->response;
     }
 }

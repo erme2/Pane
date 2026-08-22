@@ -5,8 +5,11 @@ namespace App\Helpers;
 trait DefaultsHelper
 {
     public const PAGINATION_LIMIT = 25;
+
     public const PAGINATION_MAX = 100;
+
     public const PAGINATION_OFFSET = 0;
+
     public const PAGINATION_ORDER = 'asc';
 
     public function default(string $key)

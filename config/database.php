@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
+use Pdo\Mysql;
 
 return [
 
@@ -40,7 +41,7 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
-//            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            //            'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'database' => database_path(env('DB_DATABASE')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
@@ -62,7 +63,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                \Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CERT'),
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CERT'),
             ]) : [],
         ],
 

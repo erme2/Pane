@@ -15,8 +15,8 @@ class SettingDefinition
     public const string ADMINISTRATOR_ORGANIZATION = 'organization_administrator';
 
     /**
-     * @param array<int, string> $scopes
-     * @param array<int, string> $administrators
+     * @param  array<int, string>  $scopes
+     * @param  array<int, string>  $administrators
      */
     public function __construct(
         public readonly string $key,
