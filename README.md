@@ -127,3 +127,7 @@ Pane does not store WorkOS access or refresh tokens in the Laravel session after
 For the full Latte and Pane callback sequence, see [WorkOS and Latte Authentication](docs/workos-latte-auth.md).
 
 For how that authenticated session gates CRUD routes, see [CRUD Authentication and Authorization](docs/crud-authentication.md).
+
+## License
+
+Pane is licensed under GPL-3.0-only.
