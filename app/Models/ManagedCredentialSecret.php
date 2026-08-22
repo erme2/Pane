@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
  * @property string $purpose
  * @property string $status
  * @property array<string, mixed> $envelope
+ * @property array<string, mixed> $redacted_envelope
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -47,6 +48,14 @@ class ManagedCredentialSecret extends Model
         'envelope' => 'array',
     ];
 
+    protected $hidden = [
+        'envelope',
+    ];
+
+    protected $appends = [
+        'redacted_envelope',
+    ];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -69,5 +78,18 @@ class ManagedCredentialSecret extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'organization_id', 'organization_id');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getRedactedEnvelopeAttribute(): array
+    {
+        return [
+            'version' => $this->envelope['version'] ?? null,
+            'algorithm' => $this->envelope['algorithm'] ?? null,
+            'key_id' => $this->envelope['key_id'] ?? null,
+            'ciphertext_configured' => isset($this->envelope['ciphertext']),
+        ];
     }
 }
