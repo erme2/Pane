@@ -187,6 +187,27 @@ class OrganizationLifecycleApiTest extends TestCase
             ->assertJsonPath('error.code', 'duplicate_resource');
     }
 
+    public function test_organization_update_rechecks_expected_version_after_locking_the_row(): void
+    {
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $organization = $this->tenancy->createOrganization('Concurrent Workspace', 'concurrent-workspace-'.Str::uuid(), 1);
+        $staleVersion = $organization->versionTag();
+
+        $this->tenancy->updateOrganization($actor, $organization, [
+            'name' => 'Updated Concurrent Workspace',
+        ], $staleVersion);
+
+        try {
+            $this->tenancy->updateOrganization($actor, $organization, [
+                'status' => Organization::STATUS_SUSPENDED,
+            ], $staleVersion);
+            $this->fail('Expected stale organization update to be rejected.');
+        } catch (DomainException $exception) {
+            $this->assertSame(OrganizationTenancyService::VERSION_CONFLICT_MESSAGE, $exception->getMessage());
+            $this->assertSame(Organization::STATUS_ACTIVE, $organization->fresh()->status);
+        }
+    }
+
     public function test_inactive_organizations_block_existing_sessions_and_connection_slot_reservation(): void
     {
         $user = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);

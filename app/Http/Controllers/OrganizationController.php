@@ -160,12 +160,16 @@ class OrganizationController extends Controller
         }
 
         try {
-            $updated = $this->tenancy->updateOrganization($actor, $organization, $attributes);
+            $updated = $this->tenancy->updateOrganization($actor, $organization, $attributes, $this->expectedVersion($request));
         } catch (InvalidArgumentException $exception) {
             return $this->v1Error($request, 'validation_failed', $exception->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (QueryException $exception) {
             return $this->duplicateSlugError($request, $exception);
         } catch (DomainException $exception) {
+            if ($exception->getMessage() === OrganizationTenancyService::VERSION_CONFLICT_MESSAGE) {
+                return $this->v1Error($request, 'version_conflict', 'The resource version does not match the If-Match header.', Response::HTTP_PRECONDITION_FAILED);
+            }
+
             return $this->v1Error($request, 'permission_denied', $exception->getMessage(), Response::HTTP_FORBIDDEN);
         }
 
@@ -316,15 +320,7 @@ class OrganizationController extends Controller
 
     private function etag(Organization $organization): string
     {
-        return '"'.hash('sha256', implode('|', [
-            $organization->getKey(),
-            $organization->name,
-            $organization->slug,
-            $organization->status,
-            $organization->database_limit,
-            $organization->active_database_connections,
-            $organization->updated_at?->toJSON(),
-        ])).'"';
+        return '"'.$organization->versionTag().'"';
     }
 
     /**
@@ -419,6 +415,11 @@ class OrganizationController extends Controller
         }
 
         return null;
+    }
+
+    private function expectedVersion(Request $request): string
+    {
+        return trim((string) $request->header('If-Match'), '"');
     }
 
     /**

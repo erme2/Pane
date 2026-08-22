@@ -97,6 +97,19 @@ class Organization extends Model
         return $this->active_database_connections > $this->database_limit;
     }
 
+    public function versionTag(): string
+    {
+        return hash('sha256', implode('|', [
+            $this->getKey(),
+            $this->name,
+            $this->slug,
+            $this->status,
+            $this->database_limit,
+            $this->active_database_connections,
+            $this->updated_at?->toJSON(),
+        ]));
+    }
+
     public function activeMembershipFor(User $user): ?OrganizationMembership
     {
         $membership = $this->activeMemberships()

@@ -14,6 +14,8 @@ use InvalidArgumentException;
 
 class OrganizationTenancyService
 {
+    public const string VERSION_CONFLICT_MESSAGE = 'Organization version does not match.';
+
     public function __construct(private readonly AuditEventService $audit) {}
 
     public function createOrganization(string $name, string $slug, int $databaseLimit = 1): Organization
@@ -40,15 +42,19 @@ class OrganizationTenancyService
     /**
      * @param  array{name?: string, slug?: string, status?: string, database_limit?: int}  $attributes
      */
-    public function updateOrganization(User $actor, Organization $organization, array $attributes): Organization
+    public function updateOrganization(User $actor, Organization $organization, array $attributes, ?string $expectedVersion = null): Organization
     {
         $this->assertPaneAdministrator($actor, 'Only active Pane administrators can manage organizations.');
 
-        return DB::transaction(function () use ($actor, $organization, $attributes): Organization {
+        return DB::transaction(function () use ($actor, $organization, $attributes, $expectedVersion): Organization {
             $locked = Organization::query()
                 ->whereKey($organization->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if (is_string($expectedVersion) && ! hash_equals($expectedVersion, $locked->versionTag())) {
+                throw new DomainException(self::VERSION_CONFLICT_MESSAGE);
+            }
 
             $changes = [];
 
