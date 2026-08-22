@@ -48,4 +48,9 @@ return [
         'redirect_uris' => env('LATTE_REDIRECT_URIS'),
     ],
 
+    'managed_credentials' => [
+        'active_key_id' => env('PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID'),
+        'keys' => env('PANE_MANAGED_CREDENTIAL_KEYS'),
+    ],
+
 ];

@@ -13,6 +13,7 @@ class PaneTableTest extends TestCase
         config()->set('database.table_prefix', 'tenant_');
 
         $this->assertSame('tenant_applications', PaneTable::name(PaneTable::APPLICATIONS));
+        $this->assertSame('tenant_managed_credential_secrets', PaneTable::name(PaneTable::MANAGED_CREDENTIAL_SECRETS));
         $this->assertSame('tenant_admin_invitations', PaneTable::name(PaneTable::PANE_ADMIN_INVITATIONS));
         $this->assertSame('tenant_installation_locks', PaneTable::name(PaneTable::PANE_INSTALLATION_LOCKS));
     }

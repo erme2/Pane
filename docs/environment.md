@@ -8,6 +8,15 @@ Pane uses `.env.example` as the template for local and deployed environment file
 - `APP_ENV` controls environment-sensitive behavior. Use `local` or `testing` for local/test runs. Use `production`, `staging`, or another non-local value for deployed environments.
 - `APP_KEY` is the Laravel encryption key. Keep it blank in committed templates and generate a real value for every local, CI, staging, and production environment.
 - `APP_DEBUG` must be `false` in production. Pane fails closed when production debug is enabled.
+- `PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID` selects the external managed-credential key used for new managed-database secret writes.
+- `PANE_MANAGED_CREDENTIAL_KEYS` is a JSON object mapping key IDs to `base64:` encoded 32-byte keys. Keep this material outside Pane's primary database and separate from `APP_KEY`; retain old key IDs during rotation so existing envelopes can still decrypt.
+
+Example managed-credential key configuration:
+
+```env
+PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID=2026-08-primary
+PANE_MANAGED_CREDENTIAL_KEYS={"2026-07-primary":"base64:old-32-byte-key-material","2026-08-primary":"base64:new-32-byte-key-material"}
+```
 
 ## URLs And Trusted Hosts
 
