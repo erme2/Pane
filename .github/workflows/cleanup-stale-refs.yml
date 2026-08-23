@@ -1,0 +1,16 @@
+name: Cleanup stale branches and pull requests
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    uses: erme2/yaup/.github/workflows/cleanup-stale-refs.yml@main
+    secrets:
+      STALE_REF_MAX_AGE: ${{ secrets.STALE_REF_MAX_AGE }}

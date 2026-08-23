@@ -8,6 +8,10 @@
 /storage/*.key
 /vendor
 .env
+.env.*
+!.env.example
+!.env.testing
+!.env.docker
 .env.backup
 .env.production
 .env.local

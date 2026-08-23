@@ -28,4 +28,14 @@ class EnvironmentSecretContractTest extends TestCase
         self::assertStringContainsString('[ -z "${APP_KEY:-}" ] && [ -n "${INHERITED_APP_KEY}" ]', $script);
         self::assertStringContainsString('APP_KEY="${INHERITED_APP_KEY}"', $script);
     }
+
+    public function test_local_environment_files_are_excluded_from_docker_build_context(): void
+    {
+        $root = dirname(__DIR__, 3);
+        $dockerignore = file_get_contents($root.'/.dockerignore');
+
+        self::assertMatchesRegularExpression('/^\.env$/m', $dockerignore);
+        self::assertMatchesRegularExpression('/^\.env\.\*$/m', $dockerignore);
+        self::assertStringContainsString('!.env.example', $dockerignore);
+    }
 }
