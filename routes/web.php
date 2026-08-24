@@ -7,6 +7,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationInvitationController;
 use App\Http\Controllers\OrganizationMembershipController;
 use App\Http\Controllers\PaneAdminInvitationController;
+use App\Http\Controllers\ReleaseMetadataController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,6 +26,7 @@ Route::get('/', [Controller::class, 'index']);
 
 // Versioned browser session API used by Latte.
 Route::prefix('/api/v1')->name('api.v1.')->group(function () {
+    Route::get('/release', [ReleaseMetadataController::class, 'show'])->name('release.show');
     Route::post('/csrf-cookie', [WorkOsAuthController::class, 'csrfCookie'])->name('csrf-cookie');
     Route::post('/auth/login-intents', [WorkOsAuthController::class, 'loginIntent'])->name('auth.login-intents');
     Route::post('/auth/callback', [WorkOsAuthController::class, 'completeV1Callback'])

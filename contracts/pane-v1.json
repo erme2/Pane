@@ -53,6 +53,44 @@
                 ]
             }
         },
+        "/release": {
+            "get": {
+                "operationId": "getReleaseMetadata",
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "Pane release metadata",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReleaseMetadataResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "X-Request-Id": {
+                                "$ref": "#/components/headers/RequestId"
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "Get Release Metadata",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ]
+            }
+        },
         "/auth/login-intents": {
             "post": {
                 "operationId": "createLoginIntent",
@@ -2662,6 +2700,70 @@
                 "properties": {
                     "request_id": {
                         "$ref": "#/components/schemas/Uuid"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ReleaseMetadataResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "attributes"
+                        ],
+                        "properties": {
+                            "type": {
+                                "const": "release"
+                            },
+                            "attributes": {
+                                "$ref": "#/components/schemas/ReleaseMetadata"
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ReleaseMetadata": {
+                "type": "object",
+                "required": [
+                    "application",
+                    "version",
+                    "ref",
+                    "commit",
+                    "built_at"
+                ],
+                "properties": {
+                    "application": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "type": "string"
+                    },
+                    "ref": {
+                        "type": "string"
+                    },
+                    "commit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "built_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
                     }
                 },
                 "additionalProperties": false
@@ -6689,6 +6791,14 @@
         }
     },
     "x-pane-operation-errors": {
+        "getReleaseMetadata": {
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
         "issueCsrfCookie": {
             "403": [
                 "application_not_allowed"

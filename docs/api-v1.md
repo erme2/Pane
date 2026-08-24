@@ -120,6 +120,16 @@ suspension, or organization suspension/closure.
 
 ## Route families
 
+### Release metadata
+
+- `GET /release` is a public read-only smoke-check endpoint. It returns Pane's
+  application name plus non-secret release metadata: version, ref, commit SHA,
+  and build timestamp when available. Local development derives version/ref and
+  commit from Git when possible, then falls back to `dev` and `local`.
+  Deployment should run `php artisan release:cache` with GitHub workflow data
+  and ship the generated cache file. The endpoint must not expose environment
+  variables or secret values.
+
 ### Shared session
 
 - `POST /csrf-cookie` initializes CSRF protection from a request whose browser
