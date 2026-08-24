@@ -72,3 +72,17 @@ php artisan key:generate --force
 - `WORKOS_RETURN_TO` optionally overrides the WorkOS logout return URL. When it is unset, Pane sends users back to the normalized `FRONTEND_URL` root, for example `https://latte.localhost/`.
 
 For the full WorkOS and Latte browser flow, see [WorkOS and Latte Authentication](workos-latte-auth.md).
+
+## Release Metadata
+
+Release metadata is not part of the application `.env` contract. Pane exposes
+non-secret build metadata through `GET /api/v1/release`. Local checkouts derive
+version/ref/commit from Git when possible. GitHub Actions deploys should cache
+release metadata from workflow context with:
+
+```bash
+php artisan release:cache --release-version="$GITHUB_REF_NAME" \
+  --ref="$GITHUB_REF_NAME" \
+  --commit="$GITHUB_SHA" \
+  --built-at="<timestamp>"
+```

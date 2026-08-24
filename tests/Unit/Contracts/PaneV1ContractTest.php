@@ -32,6 +32,7 @@ class PaneV1ContractTest extends TestCase
     {
         $this->assertSame('3.1.0', $this->contract['openapi']);
         $this->assertSame('/api/v1', $this->contract['servers'][0]['url']);
+        $this->assertArrayHasKey('/release', $this->contract['paths']);
         $this->assertArrayHasKey('/installation/organizations', $this->contract['paths']);
         $this->assertArrayHasKey(
             '/organizations/{organization_id}/connections/{connection_id}/tables/{table_id}/rows/{row_key}',
@@ -75,9 +76,11 @@ class PaneV1ContractTest extends TestCase
     public function test_authentication_csrf_and_session_routes_are_versioned(): void
     {
         $this->assertArrayHasKey('/csrf-cookie', $this->contract['paths']);
+        $this->assertArrayHasKey('/release', $this->contract['paths']);
         $this->assertArrayHasKey('/auth/login-intents', $this->contract['paths']);
         $this->assertArrayHasKey('/auth/callback', $this->contract['paths']);
         $this->assertArrayHasKey('/session', $this->contract['paths']);
+        $this->assertSame([], $this->contract['paths']['/release']['get']['security']);
         $this->assertSame(
             '#/components/schemas/AuthCallbackInput',
             $this->contract['paths']['/auth/callback']['post']['requestBody']['content']['application/json']['schema']['$ref'],

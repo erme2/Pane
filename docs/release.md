@@ -32,6 +32,17 @@ The compatible pair must be recorded in release notes.
 If a top-level coordinated artifact is needed later, name it with the release
 prefix and the shared version, for example `release-0.1.0-alpha.1`.
 
+## Release Metadata
+
+Pane exposes non-secret build metadata at `GET /api/v1/release`. Deployment
+tooling should derive version/ref/commit from GitHub release context, using
+`GITHUB_REF_NAME` and `GITHUB_SHA`, then run
+`php artisan release:cache --release-version="$GITHUB_REF_NAME" --ref="$GITHUB_REF_NAME" --commit="$GITHUB_SHA" --built-at="<timestamp>"`
+before shipping the release artifact. The command writes
+`bootstrap/cache/pane-release.php`, which is ignored by git and can be included
+in the deployed release. Smoke checks should read this endpoint and record the
+deployed version/ref/commit without logging secrets.
+
 ## First Alpha Release Notes Template
 
 Use this template for the first alpha release notes and adapt it for later
