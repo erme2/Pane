@@ -78,6 +78,8 @@ The script verifies:
 - PHP and Composer are available.
 - PHP version and required extensions are compatible.
 - Production environment keys are present without printing their values.
+- The selected `-e` environment file is also used for the Laravel boot/cache
+  check through a temporary `.env.*` file that is removed before exit.
 - Placeholder production secrets are rejected.
 - `APP_ENV`, `APP_DEBUG`, HTTPS URLs, and secure session cookies are safe for
   production.

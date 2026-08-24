@@ -32,6 +32,15 @@ if [ ! -f "${ENV_FILE}" ]; then
     fail "${ENV_FILE} was not found"
 fi
 
+TEMP_LARAVEL_ENV_NAME="hostinger-preflight-$$"
+TEMP_LARAVEL_ENV_FILE=".env.${TEMP_LARAVEL_ENV_NAME}"
+
+cleanup() {
+    rm -f "${TEMP_LARAVEL_ENV_FILE}"
+}
+
+trap cleanup EXIT
+
 require_command php
 require_command composer
 
@@ -243,8 +252,11 @@ try {
 $pass('database connectivity check passed');
 PHP
 
-php artisan config:clear --env=production >/dev/null
-pass "Laravel configuration cache can be cleared"
+umask 077
+cp "${ENV_FILE}" "${TEMP_LARAVEL_ENV_FILE}"
+
+php artisan config:clear --env="${TEMP_LARAVEL_ENV_NAME}" >/dev/null
+pass "Laravel can boot with the selected environment file"
 
 composer check-platform-reqs --no-dev >/dev/null
 pass "Composer production platform requirements are satisfied"

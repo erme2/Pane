@@ -52,6 +52,10 @@ Options:
 - `-e`: environment file to inspect; defaults to `.env`.
 - `-d`: run the live MySQL/MariaDB connectivity check; defaults to `yes`.
 
+When `-e` points at a staged environment file, the script copies it to a
+temporary Laravel-recognized `.env.*` file for the Laravel boot/cache check and
+removes that temporary file before exit.
+
 Use `-d no` only while preparing a host before database credentials are
 available.
 

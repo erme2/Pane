@@ -26,6 +26,9 @@ class HostingerRuntimeDocumentationTest extends TestCase
         self::assertStringContainsString('FRONTEND_URL=https://latte.erme2.com', $hostingerDoc);
         self::assertStringContainsString('SESSION_SECURE_COOKIE=true', $hostingerDoc);
         self::assertStringContainsString('./bash/hostinger-preflight.sh -e .env.production -d no', $hostingerDoc);
+        self::assertStringContainsString('temporary `.env.*` file', $hostingerDoc);
+        self::assertStringContainsString('TEMP_LARAVEL_ENV_NAME="hostinger-preflight-$$"', $script);
+        self::assertStringContainsString('php artisan config:clear --env="${TEMP_LARAVEL_ENV_NAME}"', $script);
         self::assertStringContainsString('composer check-platform-reqs --no-dev', $script);
         self::assertStringContainsString('PDO($dsn', $script);
         self::assertStringContainsString('PANE_MANAGED_CREDENTIAL_KEYS', $script);
