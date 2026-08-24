@@ -59,4 +59,14 @@ class HostingerDeployWorkflowTest extends TestCase
         $this->assertStringContainsString('$PANE_PRODUCTION_URL/api/v1/release', $this->workflow);
         $this->assertStringContainsString('https://github.com/erme2/Pane/issues/99', $this->workflow);
     }
+
+    public function test_deploy_metadata_rejects_shell_significant_release_and_ref_values(): void
+    {
+        $this->assertStringContainsString('validate_release_value()', $this->workflow);
+        $this->assertStringContainsString('*[!A-Za-z0-9._/@+-]*)', $this->workflow);
+        $this->assertStringContainsString('$name contains unsupported characters', $this->workflow);
+        $this->assertStringContainsString('validate_release_value release_version "$release_version"', $this->workflow);
+        $this->assertStringContainsString('validate_release_value GITHUB_REF_NAME "$GITHUB_REF_NAME"', $this->workflow);
+        $this->assertStringContainsString('GITHUB_SHA contains unsupported characters', $this->workflow);
+    }
 }

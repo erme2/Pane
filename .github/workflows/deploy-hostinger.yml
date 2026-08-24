@@ -71,10 +71,32 @@ jobs:
       - name: Prepare release metadata
         run: |
           set -euo pipefail
+          validate_release_value() {
+            name="$1"
+            value="$2"
+            if [ -z "$value" ]; then
+              echo "$name is required" >&2
+              exit 1
+            fi
+            case "$value" in
+              *[!A-Za-z0-9._/@+-]*)
+                echo "$name contains unsupported characters" >&2
+                exit 1
+                ;;
+            esac
+          }
           release_version="${{ inputs.release_version }}"
           if [ -z "$release_version" ]; then
             release_version="$GITHUB_REF_NAME"
           fi
+          validate_release_value release_version "$release_version"
+          validate_release_value GITHUB_REF_NAME "$GITHUB_REF_NAME"
+          case "$GITHUB_SHA" in
+            *[!A-Fa-f0-9]*)
+              echo "GITHUB_SHA contains unsupported characters" >&2
+              exit 1
+              ;;
+          esac
           built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           php artisan release:cache \
             --release-version="$release_version" \

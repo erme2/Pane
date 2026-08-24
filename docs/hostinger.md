@@ -88,7 +88,9 @@ inside that directory and deploys the full application tree there.
 The workflow has manual inputs for:
 
 - the protected GitHub Environment;
-- an optional release version, defaulting to the selected Git ref name;
+- an optional release version, defaulting to the selected Git ref name. Release
+  metadata values may contain only letters, numbers, `.`, `_`, `/`, `@`, `+`,
+  and `-`;
 - whether the Hostinger preflight should run the live database connectivity
   check;
 - whether production migrations should run after preflight passes.
