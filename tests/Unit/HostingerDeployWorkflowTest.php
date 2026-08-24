@@ -65,6 +65,9 @@ class HostingerDeployWorkflowTest extends TestCase
         $this->assertStringContainsString('validate_release_value()', $this->workflow);
         $this->assertStringContainsString('*[!A-Za-z0-9._/@+-]*)', $this->workflow);
         $this->assertStringContainsString('$name contains unsupported characters', $this->workflow);
+        $this->assertStringContainsString('RELEASE_VERSION_INPUT: ${{ inputs.release_version }}', $this->workflow);
+        $this->assertStringContainsString('release_version="$RELEASE_VERSION_INPUT"', $this->workflow);
+        $this->assertStringNotContainsString('release_version="${{ inputs.release_version }}"', $this->workflow);
         $this->assertStringContainsString('validate_release_value release_version "$release_version"', $this->workflow);
         $this->assertStringContainsString('validate_release_value GITHUB_REF_NAME "$GITHUB_REF_NAME"', $this->workflow);
         $this->assertStringContainsString('GITHUB_SHA contains unsupported characters', $this->workflow);

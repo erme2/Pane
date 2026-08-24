@@ -69,6 +69,8 @@ jobs:
         run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --classmap-authoritative
 
       - name: Prepare release metadata
+        env:
+          RELEASE_VERSION_INPUT: ${{ inputs.release_version }}
         run: |
           set -euo pipefail
           validate_release_value() {
@@ -85,7 +87,7 @@ jobs:
                 ;;
             esac
           }
-          release_version="${{ inputs.release_version }}"
+          release_version="$RELEASE_VERSION_INPUT"
           if [ -z "$release_version" ]; then
             release_version="$GITHUB_REF_NAME"
           fi
