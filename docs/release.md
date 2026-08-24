@@ -43,6 +43,23 @@ before shipping the release artifact. The command writes
 in the deployed release. Smoke checks should read this endpoint and record the
 deployed version/ref/commit without logging secrets.
 
+## Pane Hostinger Deployment
+
+Use the manual `Deploy Pane to Hostinger` GitHub Actions workflow for Pane
+alpha deployments. The workflow is gated by a protected GitHub Environment,
+materializes the `PANE_PRODUCTION_ENV` secret only as a temporary runner file,
+uploads the release to
+`/home/u253124519/domains/erme2.com/public_html/pane`, and removes the
+runner-side environment file at the end of the job.
+
+The production `.env` is not part of release metadata, is not uploaded as an
+artifact, and must not appear in logs or release notes. Store the canonical copy
+in the password manager and update the protected GitHub Environment secret
+before dispatching a release when values change.
+
+The workflow records deployed version/ref/commit and smoke-check status in the
+GitHub step summary. Rollback and backup decisions are tracked by Pane #99.
+
 ## First Alpha Release Notes Template
 
 Use this template for the first alpha release notes and adapt it for later

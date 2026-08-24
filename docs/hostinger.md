@@ -51,6 +51,56 @@ the production environment, and keep older key IDs available during rotation.
 Do not print or paste `APP_KEY`, WorkOS secrets, database credentials, or
 managed-credential keys in tickets, logs, release notes, or support messages.
 
+## GitHub Actions Deployment
+
+Pane deploys to Hostinger through the manual
+`.github/workflows/deploy-hostinger.yml` workflow. Run it from the GitHub
+Actions UI and select the protected `production` Environment. The Environment
+must require human approval before secrets are exposed to the job.
+
+Create these protected GitHub Environment secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `PANE_PRODUCTION_ENV` | Full production Laravel `.env` content. Keep a copy in the password manager and update this secret before release when production values change. |
+| `PANE_HOSTINGER_HOST` | Hostinger SSH host. |
+| `PANE_HOSTINGER_USER` | Hostinger SSH user. |
+| `PANE_HOSTINGER_PORT` | Hostinger SSH port. |
+| `PANE_HOSTINGER_SSH_KEY` | Private SSH key used only for deployment. |
+| `PANE_HOSTINGER_DEPLOY_PATH` | Must be `/home/u253124519/domains/erme2.com/public_html/pane`. |
+
+The workflow writes `PANE_PRODUCTION_ENV` to a temporary runner file, validates
+it with `bash/hostinger-preflight.sh -e "$PANE_ENV_FILE" -d no`, uploads the
+release to Hostinger with `rsync`, copies the temporary env file to `.env` on
+the host with restrictive permissions, and removes the runner-side file before
+the job exits. It must not upload `.env` as an artifact or print secret values.
+
+The deploy path is fixed to:
+
+```text
+/home/u253124519/domains/erme2.com/public_html/pane
+```
+
+Until the Hostinger web server is changed to point directly at Laravel's
+`public/` directory, the workflow preserves Laravel's normal `public/` layout
+inside that directory and deploys the full application tree there.
+
+The workflow has manual inputs for:
+
+- the protected GitHub Environment;
+- an optional release version, defaulting to the selected Git ref name. Release
+  metadata values may contain only letters, numbers, `.`, `_`, `/`, `@`, `+`,
+  and `-`;
+- whether the Hostinger preflight should run the live database connectivity
+  check;
+- whether production migrations should run after preflight passes.
+
+After upload, the workflow runs the Hostinger preflight on the remote directory,
+optionally runs migrations, caches Laravel config/routes/views, and smoke
+checks `/`, `/api/v1/release`, `/api/v1/session`, and
+`/api/v1/installation/applications`. View caching is skipped when the deployed
+tree has no `resources/views` directory.
+
 ## Preflight Script
 
 Run the preflight from the repository root after the production `.env` file is
