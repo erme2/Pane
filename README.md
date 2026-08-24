@@ -47,6 +47,11 @@ Pane and Latte releases use coordinated pre-release channels and repo-local
 tags. See [Release Policy](docs/release.md) before tagging an alpha, beta,
 release candidate, or stable release.
 
+The first Pane alpha targets Hostinger. See
+[Hostinger Runtime Preparation](docs/hostinger.md) for required PHP extensions,
+Composer, SSH/database assumptions, Laravel `public/` web-root handling,
+production `.env` safety checks, and the preflight script.
+
 ## Local development requirements
 
 - Docker Desktop with Docker Compose

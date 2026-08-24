@@ -14,6 +14,7 @@ php artisan key:generate --force
 | Script | Purpose |
 | --- | --- |
 | `bash/clear.sh` | Clears Laravel caches and compiled framework artifacts for one environment. |
+| `bash/hostinger-preflight.sh` | Checks Hostinger production runtime prerequisites without printing secret values. |
 | `bash/refresh.sh` | Rebuilds the configured database, runs migrations, and optionally loads test schema and seed data. |
 | `bash/test.sh` | Runs the Laravel test suite, optionally refreshing the database before the run. |
 
@@ -30,6 +31,33 @@ Options:
 - `-f`: Laravel environment name; defaults to `testing`.
 
 Use this when cached configuration, routes, or views are stale during local development or testing.
+
+## `bash/hostinger-preflight.sh`
+
+Checks the Hostinger production runtime before the first alpha release. It
+verifies PHP, Composer, required PHP extensions, production environment safety
+settings, writable Laravel directories, managed-credential key configuration,
+database connectivity, and Composer production platform requirements.
+
+The script reports only key names and pass/fail state. It must not print
+`APP_KEY`, WorkOS secrets, database credentials, managed-credential keys, or
+other secret values.
+
+```bash
+./bash/hostinger-preflight.sh [-e env-file] [-d yes|no]
+```
+
+Options:
+
+- `-e`: environment file to inspect; defaults to `.env`.
+- `-d`: run the live MySQL/MariaDB connectivity check; defaults to `yes`.
+
+When `-e` points at a staged environment file, the script copies it to a
+temporary Laravel-recognized `.env.*` file for the Laravel boot/cache check and
+removes that temporary file before exit.
+
+Use `-d no` only while preparing a host before database credentials are
+available.
 
 ## `bash/refresh.sh`
 

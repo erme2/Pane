@@ -38,4 +38,20 @@ class EnvironmentSecretContractTest extends TestCase
         self::assertMatchesRegularExpression('/^\.env\.\*$/m', $dockerignore);
         self::assertStringContainsString('!.env.example', $dockerignore);
     }
+
+    public function test_hostinger_preflight_reports_secret_keys_without_printing_values(): void
+    {
+        $root = dirname(__DIR__, 3);
+        $script = file_get_contents($root.'/bash/hostinger-preflight.sh');
+        $doc = file_get_contents($root.'/docs/hostinger.md');
+
+        self::assertStringContainsString('production environment values are present and safe to report by key name', $script);
+        self::assertStringContainsString('FAIL: {$message}', $script);
+        self::assertStringContainsString('must not print', $doc);
+        self::assertStringContainsString('Do not print or paste `APP_KEY`, WorkOS secrets, database credentials, or', $doc);
+        self::assertStringNotContainsString('DB_PASSWORD=${', $script);
+        self::assertStringNotContainsString('WORKOS_API_KEY=${', $script);
+        self::assertStringNotContainsString('APP_KEY=${', $script);
+        self::assertStringNotContainsString('PANE_MANAGED_CREDENTIAL_KEYS=${', $script);
+    }
 }
