@@ -39,7 +39,7 @@ jobs:
 
     env:
       PANE_PRODUCTION_URL: https://pane.erme2.com
-      PANE_ENV_FILE: ${{ runner.temp }}/pane-production.env
+      PANE_ENV_FILE: $RUNNER_TEMP/pane-production.env
       PANE_BUILD_AT: ''
       PANE_RELEASE_VERSION: ''
 
