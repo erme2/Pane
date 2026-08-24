@@ -24,7 +24,7 @@ return new class extends Migration
             $table->dateTimeTz('revoked_at')->nullable();
             $table->timestamps();
 
-            $table->index(['organization_id', 'email', 'status']);
+            $table->index(['organization_id', 'email', 'status'], 'org_invites_org_email_status_index');
         });
     }
 

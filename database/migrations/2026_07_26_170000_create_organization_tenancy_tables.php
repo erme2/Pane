@@ -32,7 +32,7 @@ return new class extends Migration
             $table->json('details')->nullable();
             $table->timestamps();
 
-            $table->unique(['organization_id', 'user_id']);
+            $table->unique(['organization_id', 'user_id'], 'org_members_org_user_unique');
         });
     }
 

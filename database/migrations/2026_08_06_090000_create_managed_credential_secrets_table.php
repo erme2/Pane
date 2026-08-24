@@ -19,7 +19,7 @@ return new class extends Migration
             $table->json('envelope');
             $table->timestamps();
 
-            $table->index(['organization_id', 'purpose', 'status']);
+            $table->index(['organization_id', 'purpose', 'status'], 'managed_secrets_org_purpose_status_index');
         });
     }
 
