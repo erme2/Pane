@@ -39,7 +39,6 @@ jobs:
 
     env:
       PANE_PRODUCTION_URL: https://pane.erme2.com
-      PANE_ENV_FILE: $RUNNER_TEMP/pane-production.env
       PANE_BUILD_AT: ''
       PANE_RELEASE_VERSION: ''
 
@@ -67,6 +66,9 @@ jobs:
 
       - name: Install production dependencies
         run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --classmap-authoritative
+
+      - name: Prepare deploy workspace
+        run: echo "PANE_ENV_FILE=$RUNNER_TEMP/pane-production.env" >> "$GITHUB_ENV"
 
       - name: Prepare release metadata
         env:
