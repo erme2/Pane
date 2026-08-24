@@ -38,7 +38,8 @@ class HostingerDeployWorkflowTest extends TestCase
 
     public function test_deploy_workflow_does_not_publish_environment_files_as_artifacts(): void
     {
-        $this->assertStringContainsString('PANE_ENV_FILE: $RUNNER_TEMP/pane-production.env', $this->workflow);
+        $this->assertStringContainsString('echo "PANE_ENV_FILE=$RUNNER_TEMP/pane-production.env" >> "$GITHUB_ENV"', $this->workflow);
+        $this->assertStringNotContainsString('PANE_ENV_FILE: $RUNNER_TEMP/pane-production.env', $this->workflow);
         $this->assertStringNotContainsString('PANE_ENV_FILE: ${{ runner.temp }}/pane-production.env', $this->workflow);
         $this->assertStringContainsString('printf \'%s\\n\' "${PANE_PRODUCTION_ENV}" > "$PANE_ENV_FILE"', $this->workflow);
         $this->assertStringContainsString('rm -f "$PANE_ENV_FILE" ~/.ssh/pane_hostinger', $this->workflow);
