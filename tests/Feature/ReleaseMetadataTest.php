@@ -12,7 +12,7 @@ class ReleaseMetadataTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('release.cache_path', '/private/tmp/pane-release-test-'.getmypid().'.php');
+        Config::set('release.cache_path', sys_get_temp_dir().'/pane-release-test-'.getmypid().'.php');
         app(ReleaseMetadata::class)->clearCache();
     }
 
