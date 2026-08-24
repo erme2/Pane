@@ -50,7 +50,8 @@ release candidate, or stable release.
 The first Pane alpha targets Hostinger. See
 [Hostinger Runtime Preparation](docs/hostinger.md) for required PHP extensions,
 Composer, SSH/database assumptions, Laravel `public/` web-root handling,
-production `.env` safety checks, and the preflight script.
+production `.env` safety checks, the preflight script, and the manual GitHub
+Actions deployment workflow.
 
 ## Local development requirements
 

@@ -1,0 +1,227 @@
+name: Deploy Pane to Hostinger
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub Environment that holds production deployment secrets
+        required: true
+        default: production
+        type: environment
+      release_version:
+        description: Release version to expose from /api/v1/release; defaults to the selected ref name
+        required: false
+        type: string
+      check_database:
+        description: Run the Hostinger preflight database connectivity check
+        required: true
+        default: true
+        type: boolean
+      run_migrations:
+        description: Run production database migrations after remote preflight passes
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pane-hostinger-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Pane
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+
+    env:
+      PANE_PRODUCTION_URL: https://pane.erme2.com
+      PANE_ENV_FILE: ${{ runner.temp }}/pane-production.env
+      PANE_BUILD_AT: ''
+      PANE_RELEASE_VERSION: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: ctype, curl, dom, fileinfo, filter, mbstring, openssl, pdo_mysql, tokenizer, xml
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-prod-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-prod-
+
+      - name: Install production dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --classmap-authoritative
+
+      - name: Prepare release metadata
+        run: |
+          set -euo pipefail
+          release_version="${{ inputs.release_version }}"
+          if [ -z "$release_version" ]; then
+            release_version="$GITHUB_REF_NAME"
+          fi
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          php artisan release:cache \
+            --release-version="$release_version" \
+            --ref="$GITHUB_REF_NAME" \
+            --commit="$GITHUB_SHA" \
+            --built-at="$built_at"
+          {
+            echo "PANE_RELEASE_VERSION=$release_version"
+            echo "PANE_BUILD_AT=$built_at"
+          } >> "$GITHUB_ENV"
+
+      - name: Materialize production environment
+        env:
+          PANE_PRODUCTION_ENV: ${{ secrets.PANE_PRODUCTION_ENV }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PANE_PRODUCTION_ENV}" ]; then
+            echo "PANE_PRODUCTION_ENV is required" >&2
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "${PANE_PRODUCTION_ENV}" > "$PANE_ENV_FILE"
+
+      - name: Validate production environment key contract
+        run: ./bash/hostinger-preflight.sh -e "$PANE_ENV_FILE" -d no
+
+      - name: Configure SSH
+        env:
+          PANE_HOSTINGER_HOST: ${{ secrets.PANE_HOSTINGER_HOST }}
+          PANE_HOSTINGER_USER: ${{ secrets.PANE_HOSTINGER_USER }}
+          PANE_HOSTINGER_PORT: ${{ secrets.PANE_HOSTINGER_PORT }}
+          PANE_HOSTINGER_SSH_KEY: ${{ secrets.PANE_HOSTINGER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          for key in PANE_HOSTINGER_HOST PANE_HOSTINGER_USER PANE_HOSTINGER_PORT PANE_HOSTINGER_SSH_KEY; do
+            if [ -z "${!key}" ]; then
+              echo "$key is required" >&2
+              exit 1
+            fi
+          done
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$PANE_HOSTINGER_SSH_KEY" > ~/.ssh/pane_hostinger
+          chmod 600 ~/.ssh/pane_hostinger
+          ssh-keyscan -p "$PANE_HOSTINGER_PORT" -H "$PANE_HOSTINGER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Validate Hostinger deployment target
+        env:
+          PANE_HOSTINGER_DEPLOY_PATH: ${{ secrets.PANE_HOSTINGER_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PANE_HOSTINGER_DEPLOY_PATH" ]; then
+            echo "PANE_HOSTINGER_DEPLOY_PATH is required" >&2
+            exit 1
+          fi
+          if [ "$PANE_HOSTINGER_DEPLOY_PATH" != "/home/u253124519/domains/erme2.com/public_html/pane" ]; then
+            echo "PANE_HOSTINGER_DEPLOY_PATH must match the prepared Hostinger Pane directory" >&2
+            exit 1
+          fi
+
+      - name: Upload Pane release to Hostinger
+        env:
+          PANE_HOSTINGER_HOST: ${{ secrets.PANE_HOSTINGER_HOST }}
+          PANE_HOSTINGER_USER: ${{ secrets.PANE_HOSTINGER_USER }}
+          PANE_HOSTINGER_PORT: ${{ secrets.PANE_HOSTINGER_PORT }}
+          PANE_HOSTINGER_DEPLOY_PATH: ${{ secrets.PANE_HOSTINGER_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/pane_hostinger -p "$PANE_HOSTINGER_PORT" \
+            "$PANE_HOSTINGER_USER@$PANE_HOSTINGER_HOST" \
+            "mkdir -p '$PANE_HOSTINGER_DEPLOY_PATH'"
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/pane_hostinger -p $PANE_HOSTINGER_PORT" \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='node_modules/' \
+            --exclude='storage/' \
+            ./ "$PANE_HOSTINGER_USER@$PANE_HOSTINGER_HOST:$PANE_HOSTINGER_DEPLOY_PATH/"
+          scp -i ~/.ssh/pane_hostinger -P "$PANE_HOSTINGER_PORT" \
+            "$PANE_ENV_FILE" \
+            "$PANE_HOSTINGER_USER@$PANE_HOSTINGER_HOST:$PANE_HOSTINGER_DEPLOY_PATH/.env.tmp"
+
+      - name: Finalize Hostinger deployment
+        env:
+          PANE_HOSTINGER_HOST: ${{ secrets.PANE_HOSTINGER_HOST }}
+          PANE_HOSTINGER_USER: ${{ secrets.PANE_HOSTINGER_USER }}
+          PANE_HOSTINGER_PORT: ${{ secrets.PANE_HOSTINGER_PORT }}
+          PANE_HOSTINGER_DEPLOY_PATH: ${{ secrets.PANE_HOSTINGER_DEPLOY_PATH }}
+          CHECK_DATABASE: ${{ inputs.check_database && 'yes' || 'no' }}
+          RUN_MIGRATIONS: ${{ inputs.run_migrations && 'yes' || 'no' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/pane_hostinger -p "$PANE_HOSTINGER_PORT" \
+            "$PANE_HOSTINGER_USER@$PANE_HOSTINGER_HOST" \
+            "cd '$PANE_HOSTINGER_DEPLOY_PATH' && \
+             chmod 600 .env.tmp && \
+             mv .env.tmp .env && \
+             mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache && \
+             chmod -R u+rwX storage bootstrap/cache && \
+             ./bash/hostinger-preflight.sh -e .env -d '$CHECK_DATABASE' && \
+             php artisan config:clear && \
+             php artisan route:clear && \
+             php artisan view:clear && \
+             php artisan release:cache --release-version='$PANE_RELEASE_VERSION' --ref='$GITHUB_REF_NAME' --commit='$GITHUB_SHA' --built-at='$PANE_BUILD_AT' && \
+             if [ '$RUN_MIGRATIONS' = 'yes' ]; then php artisan migrate --force; fi && \
+             php artisan config:cache && \
+             php artisan route:cache && \
+             if [ -d resources/views ]; then php artisan view:cache; else echo 'No Blade views to cache'; fi"
+
+      - name: Smoke check production
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "$PANE_PRODUCTION_URL/" >/dev/null
+          release_payload="$(curl --fail --silent --show-error "$PANE_PRODUCTION_URL/api/v1/release")"
+          php -r '
+          $payload = json_decode(stream_get_contents(STDIN), true);
+          if (! is_array($payload) || ($payload["data"]["type"] ?? null) !== "release") {
+              fwrite(STDERR, "release metadata smoke check failed\n");
+              exit(1);
+          }
+          if (($payload["data"]["attributes"]["version"] ?? null) !== getenv("PANE_RELEASE_VERSION")) {
+              fwrite(STDERR, "release metadata version mismatch\n");
+              exit(1);
+          }
+          ' <<< "$release_payload"
+          session_status="$(curl --silent --show-error --output /tmp/pane-session.json --write-out '%{http_code}' -H 'Accept: application/json' "$PANE_PRODUCTION_URL/api/v1/session")"
+          test "$session_status" = "401"
+          installation_status="$(curl --silent --show-error --output /tmp/pane-installation.json --write-out '%{http_code}' -H 'Accept: application/json' "$PANE_PRODUCTION_URL/api/v1/installation/applications")"
+          test "$installation_status" = "401"
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "### Pane Hostinger deployment"
+            echo ""
+            echo "- Environment: ${{ inputs.environment }}"
+            echo "- URL: $PANE_PRODUCTION_URL"
+            echo "- Version: $PANE_RELEASE_VERSION"
+            echo "- Ref: $GITHUB_REF_NAME"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Built at: $PANE_BUILD_AT"
+            echo "- Migrations: ${{ inputs.run_migrations && 'run' || 'skipped' }}"
+            echo "- Rollback runbook: https://github.com/erme2/Pane/issues/99"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove runner-side production environment
+        if: always()
+        run: rm -f "$PANE_ENV_FILE" ~/.ssh/pane_hostinger
