@@ -38,7 +38,7 @@ class TrustedHostAccessTest extends TestCase
         $this->assertNotEmpty($host);
 
         $this->getWithHost($host)
-            ->assertStatus(Response::HTTP_OK);
+            ->assertRedirect('/docs');
     }
 
     public function test_trusted_hosts_from_env_can_access_site(): void
@@ -48,7 +48,7 @@ class TrustedHostAccessTest extends TestCase
         $this->assertNotEmpty($host);
 
         $this->getWithHost($host)
-            ->assertStatus(Response::HTTP_OK);
+            ->assertRedirect('/docs');
     }
 
     public function test_host_missing_from_env_is_rejected(): void

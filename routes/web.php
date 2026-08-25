@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\Route;
 
 // index
 Route::get('/', [Controller::class, 'index']);
+Route::get('/docs', [Controller::class, 'docs'])->name('docs');
+Route::get('/docs/openapi.json', [Controller::class, 'openApi'])->name('docs.openapi');
+Route::get('/status', [Controller::class, 'status'])->name('status');
 
 // Versioned browser session API used by Latte.
 Route::prefix('/api/v1')->name('api.v1.')->group(function () {

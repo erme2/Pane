@@ -23,5 +23,7 @@ class EnvironmentDocumentationTest extends TestCase
         $this->assertStringContainsString('WORKOS_REDIRECT_URI=https://latte.localhost/auth/callback', $envExample);
         $this->assertStringContainsString('WORKOS_REDIRECT_URI', $doc);
         $this->assertStringContainsString('SESSION_SECURE_COOKIE', $doc);
+        $this->assertStringContainsString('GET /docs', $doc);
+        $this->assertStringContainsString('PANE_STATUS_PASSWORD', $doc);
     }
 }

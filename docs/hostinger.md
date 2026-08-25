@@ -38,6 +38,7 @@ APP_DEBUG=false
 SESSION_SECURE_COOKIE=true
 APP_URL=https://pane.erme2.com
 FRONTEND_URL=https://latte.erme2.com
+PANE_STATUS_PASSWORD=<strong random password>
 ```
 
 Generate a unique Laravel key on the host:
@@ -53,10 +54,11 @@ managed-credential keys in tickets, logs, release notes, or support messages.
 
 ## GitHub Actions Deployment
 
-Pane deploys to Hostinger through the manual
-`.github/workflows/deploy-hostinger.yml` workflow. Run it from the GitHub
-Actions UI and select the protected `production` Environment. The Environment
-must require human approval before secrets are exposed to the job.
+Pane deploys to Hostinger through the
+`.github/workflows/deploy-hostinger.yml` workflow. Merges to `main` deploy
+automatically to the protected `production` Environment. The workflow can also
+be run manually from the GitHub Actions UI. The Environment must require human
+approval before secrets are exposed to the job.
 
 Create these protected GitHub Environment secrets:
 
@@ -85,12 +87,18 @@ Until the Hostinger web server is changed to point directly at Laravel's
 `public/` directory, the workflow preserves Laravel's normal `public/` layout
 inside that directory and deploys the full application tree there.
 
-The workflow has manual inputs for:
+The workflow runs automatically when changes are merged to `main`. Automatic
+`main` deployments use the `production` GitHub Environment, run the live
+database preflight, run production migrations, and expose
+`0.1.0-alpha.<GITHUB_RUN_NUMBER>` from `/api/v1/release`.
+
+The workflow can also be run manually with inputs for:
 
 - the protected GitHub Environment;
-- an optional release version, defaulting to the selected Git ref name. Release
-  metadata values may contain only letters, numbers, `.`, `_`, `/`, `@`, `+`,
-  and `-`;
+- an optional release version. When it is omitted, `main` runs default to
+  `0.1.0-alpha.<GITHUB_RUN_NUMBER>` and non-main manual runs default to the
+  selected Git ref name without a leading `v`. Release metadata values may
+  contain only letters, numbers, `.`, `_`, `/`, `@`, `+`, and `-`;
 - whether the Hostinger preflight should run the live database connectivity
   check;
 - whether production migrations should run after preflight passes.

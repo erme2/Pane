@@ -36,8 +36,11 @@ prefix and the shared version, for example `release-0.1.0-alpha.1`.
 
 Pane exposes non-secret build metadata at `GET /api/v1/release`. Deployment
 tooling should derive version/ref/commit from GitHub release context, using
-`GITHUB_REF_NAME` and `GITHUB_SHA`, then run
-`php artisan release:cache --release-version="$GITHUB_REF_NAME" --ref="$GITHUB_REF_NAME" --commit="$GITHUB_SHA" --built-at="<timestamp>"`
+`GITHUB_REF_NAME`, `GITHUB_SHA`, and `GITHUB_RUN_NUMBER`. Automatic `main`
+deployments use `0.1.0-alpha.<GITHUB_RUN_NUMBER>` as the release version.
+Manual dispatches may still pass an explicit release version, typically a
+tagged version such as `0.1.0-alpha.1`. Deployment then runs
+`php artisan release:cache --release-version="$release_version" --ref="$GITHUB_REF_NAME" --commit="$GITHUB_SHA" --built-at="<timestamp>"`
 before shipping the release artifact. The command writes
 `bootstrap/cache/pane-release.php`, which is ignored by git and can be included
 in the deployed release. Smoke checks should read this endpoint and record the
@@ -45,10 +48,14 @@ deployed version/ref/commit without logging secrets.
 
 ## Pane Hostinger Deployment
 
-Use the manual `Deploy Pane to Hostinger` GitHub Actions workflow for Pane
-alpha deployments. The workflow is gated by a protected GitHub Environment,
-materializes the `PANE_PRODUCTION_ENV` secret only as a temporary runner file,
-uploads the release to
+Merging to Pane `main` automatically runs the `Deploy Pane to Hostinger`
+GitHub Actions workflow against the `production` environment. Automatic `main`
+deployments run the database preflight and production migrations. The workflow
+can still be run manually for controlled redeploys or explicit tagged release
+versions.
+
+The workflow is gated by a protected GitHub Environment, materializes the
+`PANE_PRODUCTION_ENV` secret only as a temporary runner file, uploads the release to
 `/home/u253124519/domains/erme2.com/public_html/pane`, and removes the
 runner-side environment file at the end of the job.
 

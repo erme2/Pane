@@ -70,6 +70,8 @@ php artisan key:generate --force
 - `LATTE_REDIRECT_URIS` is a comma-separated list of exact, normalized Latte return URLs that v1 login intents may use.
 - `WORKOS_REDIRECT_URI` should point to Latte's callback route in the Latte/Pane browser flow, for example `https://latte.localhost/auth/callback`.
 - `WORKOS_RETURN_TO` optionally overrides the WorkOS logout return URL. When it is unset, Pane sends users back to the normalized `FRONTEND_URL` root, for example `https://latte.localhost/`.
+- `GET /` redirects public visitors to the built-in `GET /docs` OpenAPI documentation page.
+- `PANE_STATUS_USERNAME` and `PANE_STATUS_PASSWORD` protect `GET /status` with HTTP Basic auth. Production must set `PANE_STATUS_PASSWORD`; the page sends no-store cache headers.
 
 For the full WorkOS and Latte browser flow, see [WorkOS and Latte Authentication](workos-latte-auth.md).
 
@@ -78,10 +80,11 @@ For the full WorkOS and Latte browser flow, see [WorkOS and Latte Authentication
 Release metadata is not part of the application `.env` contract. Pane exposes
 non-secret build metadata through `GET /api/v1/release`. Local checkouts derive
 version/ref/commit from Git when possible. GitHub Actions deploys should cache
-release metadata from workflow context with:
+release metadata from workflow context. Automatic `main` deployments use
+`0.1.0-alpha.<GITHUB_RUN_NUMBER>` as the release version:
 
 ```bash
-php artisan release:cache --release-version="$GITHUB_REF_NAME" \
+php artisan release:cache --release-version="0.1.0-alpha.$GITHUB_RUN_NUMBER" \
   --ref="$GITHUB_REF_NAME" \
   --commit="$GITHUB_SHA" \
   --built-at="<timestamp>"

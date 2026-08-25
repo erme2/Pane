@@ -124,6 +124,7 @@ $required = [
     'APP_DEBUG',
     'APP_URL',
     'SESSION_SECURE_COOKIE',
+    'PANE_STATUS_PASSWORD',
     'DB_CONNECTION',
     'DB_HOST',
     'DB_PORT',
