@@ -63,6 +63,10 @@ return [
 
     'trusted_hosts' => array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', '')))),
 
+    'status_username' => env('PANE_STATUS_USERNAME', 'pane'),
+
+    'status_password' => env('PANE_STATUS_PASSWORD'),
+
     'asset_url' => env('ASSET_URL'),
 
     /*

@@ -38,6 +38,7 @@ APP_DEBUG=false
 SESSION_SECURE_COOKIE=true
 APP_URL=https://pane.erme2.com
 FRONTEND_URL=https://latte.erme2.com
+PANE_STATUS_PASSWORD=<strong random password>
 ```
 
 Generate a unique Laravel key on the host:
@@ -53,10 +54,11 @@ managed-credential keys in tickets, logs, release notes, or support messages.
 
 ## GitHub Actions Deployment
 
-Pane deploys to Hostinger through the manual
-`.github/workflows/deploy-hostinger.yml` workflow. Run it from the GitHub
-Actions UI and select the protected `production` Environment. The Environment
-must require human approval before secrets are exposed to the job.
+Pane deploys to Hostinger through the
+`.github/workflows/deploy-hostinger.yml` workflow. Merges to `main` deploy
+automatically to the protected `production` Environment. The workflow can also
+be run manually from the GitHub Actions UI. The Environment must require human
+approval before secrets are exposed to the job.
 
 Create these protected GitHub Environment secrets:
 
