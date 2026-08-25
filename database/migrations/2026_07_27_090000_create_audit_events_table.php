@@ -48,9 +48,10 @@ return new class extends Migration
     private function createAppendOnlyTriggers(string $tableName): void
     {
         $driver = DB::connection()->getDriverName();
-        $table = $this->quoteIdentifier($tableName);
-        $updateTrigger = $this->quoteIdentifier($this->triggerName($tableName, 'prevent_update'));
-        $deleteTrigger = $this->quoteIdentifier($this->triggerName($tableName, 'prevent_delete'));
+        $physicalTableName = $this->physicalTableName($tableName);
+        $table = $this->quoteIdentifier($physicalTableName);
+        $updateTrigger = $this->quoteIdentifier($this->triggerName($physicalTableName, 'prevent_update'));
+        $deleteTrigger = $this->quoteIdentifier($this->triggerName($physicalTableName, 'prevent_delete'));
         $message = $this->quoteLiteral(self::APPEND_ONLY_MESSAGE);
 
         if ($driver === 'sqlite') {
@@ -72,9 +73,16 @@ return new class extends Migration
 
     private function dropAppendOnlyTriggers(string $tableName): void
     {
+        $physicalTableName = $this->physicalTableName($tableName);
+
         foreach (['prevent_update', 'prevent_delete'] as $suffix) {
-            DB::unprepared('DROP TRIGGER IF EXISTS '.$this->quoteIdentifier($this->triggerName($tableName, $suffix)));
+            DB::unprepared('DROP TRIGGER IF EXISTS '.$this->quoteIdentifier($this->triggerName($physicalTableName, $suffix)));
         }
+    }
+
+    private function physicalTableName(string $tableName): string
+    {
+        return DB::connection()->getTablePrefix().$tableName;
     }
 
     private function triggerName(string $tableName, string $suffix): string
