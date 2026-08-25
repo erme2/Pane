@@ -159,7 +159,21 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "$PANE_HOSTINGER_SSH_KEY" > ~/.ssh/pane_hostinger
           chmod 600 ~/.ssh/pane_hostinger
-          ssh-keyscan -p "$PANE_HOSTINGER_PORT" -H "$PANE_HOSTINGER_HOST" >> ~/.ssh/known_hosts
+          host_key_file="$RUNNER_TEMP/pane-hostinger-known-hosts"
+          host_key_scanned=no
+          for attempt in 1 2 3; do
+            if ssh-keyscan -T 20 -p "$PANE_HOSTINGER_PORT" -H "$PANE_HOSTINGER_HOST" > "$host_key_file" && [ -s "$host_key_file" ]; then
+              cat "$host_key_file" >> ~/.ssh/known_hosts
+              host_key_scanned=yes
+              break
+            fi
+            echo "Hostinger SSH host key scan failed; retrying ($attempt/3)" >&2
+            sleep 10
+          done
+          if [ "$host_key_scanned" != "yes" ]; then
+            echo "Unable to scan Hostinger SSH host key. Check PANE_HOSTINGER_HOST, PANE_HOSTINGER_PORT, and Hostinger SSH availability." >&2
+            exit 1
+          fi
 
       - name: Validate Hostinger deployment target
         env:

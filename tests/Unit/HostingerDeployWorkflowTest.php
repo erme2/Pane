@@ -38,6 +38,16 @@ class HostingerDeployWorkflowTest extends TestCase
         }
     }
 
+    public function test_deploy_workflow_retries_hostinger_ssh_host_key_scan(): void
+    {
+        $this->assertStringContainsString('for attempt in 1 2 3; do', $this->workflow);
+        $this->assertStringContainsString('ssh-keyscan -T 20 -p "$PANE_HOSTINGER_PORT" -H "$PANE_HOSTINGER_HOST"', $this->workflow);
+        $this->assertStringContainsString('host_key_scanned=yes', $this->workflow);
+        $this->assertStringContainsString('if [ "$host_key_scanned" != "yes" ]; then', $this->workflow);
+        $this->assertStringContainsString('Hostinger SSH host key scan failed; retrying', $this->workflow);
+        $this->assertStringContainsString('Unable to scan Hostinger SSH host key', $this->workflow);
+    }
+
     public function test_deploy_workflow_does_not_publish_environment_files_as_artifacts(): void
     {
         $this->assertStringContainsString('echo "PANE_ENV_FILE=$RUNNER_TEMP/pane-production.env" >> "$GITHUB_ENV"', $this->workflow);
