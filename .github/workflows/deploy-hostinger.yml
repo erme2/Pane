@@ -1,6 +1,9 @@
 name: Deploy Pane to Hostinger
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -27,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pane-hostinger-${{ inputs.environment }}
+  group: pane-hostinger-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
   cancel-in-progress: false
 
 jobs:
@@ -35,9 +38,10 @@ jobs:
     name: Deploy Pane
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ inputs.environment }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
 
     env:
+      PANE_DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
       PANE_PRODUCTION_URL: https://pane.erme2.com
       PANE_BUILD_AT: ''
       PANE_RELEASE_VERSION: ''
@@ -91,10 +95,20 @@ jobs:
           }
           release_version="$RELEASE_VERSION_INPUT"
           if [ -z "$release_version" ]; then
-            release_version="$GITHUB_REF_NAME"
+            if [ "$GITHUB_REF_NAME" = "main" ]; then
+              release_version="0.1.0-alpha.$GITHUB_RUN_NUMBER"
+            else
+              release_version="${GITHUB_REF_NAME#v}"
+            fi
           fi
           validate_release_value release_version "$release_version"
           validate_release_value GITHUB_REF_NAME "$GITHUB_REF_NAME"
+          case "$GITHUB_RUN_NUMBER" in
+            *[!0-9]*)
+              echo "GITHUB_RUN_NUMBER contains unsupported characters" >&2
+              exit 1
+              ;;
+          esac
           case "$GITHUB_SHA" in
             *[!A-Fa-f0-9]*)
               echo "GITHUB_SHA contains unsupported characters" >&2
@@ -191,8 +205,8 @@ jobs:
           PANE_HOSTINGER_USER: ${{ secrets.PANE_HOSTINGER_USER }}
           PANE_HOSTINGER_PORT: ${{ secrets.PANE_HOSTINGER_PORT }}
           PANE_HOSTINGER_DEPLOY_PATH: ${{ secrets.PANE_HOSTINGER_DEPLOY_PATH }}
-          CHECK_DATABASE: ${{ inputs.check_database && 'yes' || 'no' }}
-          RUN_MIGRATIONS: ${{ inputs.run_migrations && 'yes' || 'no' }}
+          CHECK_DATABASE: ${{ (github.event_name == 'push' || inputs.check_database) && 'yes' || 'no' }}
+          RUN_MIGRATIONS: ${{ (github.event_name == 'push' || inputs.run_migrations) && 'yes' || 'no' }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/pane_hostinger -p "$PANE_HOSTINGER_PORT" \
@@ -238,13 +252,13 @@ jobs:
           {
             echo "### Pane Hostinger deployment"
             echo ""
-            echo "- Environment: ${{ inputs.environment }}"
+            echo "- Environment: $PANE_DEPLOY_ENV"
             echo "- URL: $PANE_PRODUCTION_URL"
             echo "- Version: $PANE_RELEASE_VERSION"
             echo "- Ref: $GITHUB_REF_NAME"
             echo "- Commit: $GITHUB_SHA"
             echo "- Built at: $PANE_BUILD_AT"
-            echo "- Migrations: ${{ inputs.run_migrations && 'run' || 'skipped' }}"
+            echo "- Migrations: ${{ (github.event_name == 'push' || inputs.run_migrations) && 'run' || 'skipped' }}"
             echo "- Rollback runbook: https://github.com/erme2/Pane/issues/99"
           } >> "$GITHUB_STEP_SUMMARY"
 

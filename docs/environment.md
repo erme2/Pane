@@ -78,10 +78,11 @@ For the full WorkOS and Latte browser flow, see [WorkOS and Latte Authentication
 Release metadata is not part of the application `.env` contract. Pane exposes
 non-secret build metadata through `GET /api/v1/release`. Local checkouts derive
 version/ref/commit from Git when possible. GitHub Actions deploys should cache
-release metadata from workflow context with:
+release metadata from workflow context. Automatic `main` deployments use
+`0.1.0-alpha.<GITHUB_RUN_NUMBER>` as the release version:
 
 ```bash
-php artisan release:cache --release-version="$GITHUB_REF_NAME" \
+php artisan release:cache --release-version="0.1.0-alpha.$GITHUB_RUN_NUMBER" \
   --ref="$GITHUB_REF_NAME" \
   --commit="$GITHUB_SHA" \
   --built-at="<timestamp>"

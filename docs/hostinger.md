@@ -85,12 +85,18 @@ Until the Hostinger web server is changed to point directly at Laravel's
 `public/` directory, the workflow preserves Laravel's normal `public/` layout
 inside that directory and deploys the full application tree there.
 
-The workflow has manual inputs for:
+The workflow runs automatically when changes are merged to `main`. Automatic
+`main` deployments use the `production` GitHub Environment, run the live
+database preflight, run production migrations, and expose
+`0.1.0-alpha.<GITHUB_RUN_NUMBER>` from `/api/v1/release`.
+
+The workflow can also be run manually with inputs for:
 
 - the protected GitHub Environment;
-- an optional release version, defaulting to the selected Git ref name. Release
-  metadata values may contain only letters, numbers, `.`, `_`, `/`, `@`, `+`,
-  and `-`;
+- an optional release version. When it is omitted, `main` runs default to
+  `0.1.0-alpha.<GITHUB_RUN_NUMBER>` and non-main manual runs default to the
+  selected Git ref name without a leading `v`. Release metadata values may
+  contain only letters, numbers, `.`, `_`, `/`, `@`, `+`, and `-`;
 - whether the Hostinger preflight should run the live database connectivity
   check;
 - whether production migrations should run after preflight passes.
