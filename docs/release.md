@@ -48,8 +48,9 @@ deployed version/ref/commit without logging secrets.
 
 ## Pane Hostinger Deployment
 
-Merging to Pane `main` automatically runs the `Deploy Pane to Hostinger`
-GitHub Actions workflow against the `production` environment. Automatic `main`
+Merging to Pane `main` automatically runs the cleanup workflow first. When
+`Cleanup stale branches and pull requests` succeeds, GitHub Actions runs
+`Deploy Pane to Hostinger` against the `production` environment. Automatic
 deployments run the database preflight and production migrations. The workflow
 can still be run manually for controlled redeploys or explicit tagged release
 versions.

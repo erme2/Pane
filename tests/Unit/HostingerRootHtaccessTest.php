@@ -31,7 +31,8 @@ class HostingerRootHtaccessTest extends TestCase
     public function test_root_htaccess_denies_sensitive_project_files_before_rewriting(): void
     {
         $this->assertMatchesRegularExpression('/RewriteRule \(\^\|\/\)\\\\\. - \[F\]/', $this->htaccess);
-        $this->assertStringContainsString('RewriteRule ^(app|bootstrap|config|database|docs|routes|storage|tests|vendor)(/|$) - [F]', $this->htaccess);
+        $this->assertStringContainsString('RewriteRule ^(app|bootstrap|config|database|routes|storage|tests|vendor)(/|$) - [F]', $this->htaccess);
+        $this->assertStringNotContainsString('database|docs|routes', $this->htaccess);
         $this->assertStringContainsString('RewriteRule ^(artisan|composer\.(json|lock)|phpunit\.xml|phpstan.*|Dockerfile.*|docker-compose\.yml)$ - [F]', $this->htaccess);
     }
 }
