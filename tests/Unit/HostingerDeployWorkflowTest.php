@@ -62,7 +62,7 @@ class HostingerDeployWorkflowTest extends TestCase
 
     public function test_deploy_workflow_targets_prepared_hostinger_directory_and_runs_release_checks(): void
     {
-        $this->assertStringContainsString('/home/u253124519/domains/erme2.com/public_html/pane', $this->workflow);
+        $this->assertStringContainsString('/home/u253124519/public_html/pane', $this->workflow);
         $this->assertStringContainsString('./bash/hostinger-preflight.sh -e "$PANE_ENV_FILE" -d no', $this->workflow);
         $this->assertStringContainsString("./bash/hostinger-preflight.sh -e .env -d '\$CHECK_DATABASE'", $this->workflow);
         $this->assertStringContainsString('php artisan release:cache', $this->workflow);
