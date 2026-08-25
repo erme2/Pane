@@ -69,7 +69,7 @@ Create these protected GitHub Environment secrets:
 | `PANE_HOSTINGER_USER` | Hostinger SSH user. |
 | `PANE_HOSTINGER_PORT` | Hostinger SSH port. |
 | `PANE_HOSTINGER_SSH_KEY` | Private SSH key used only for deployment. |
-| `PANE_HOSTINGER_DEPLOY_PATH` | Must be `/home/u253124519/domains/erme2.com/public_html/pane`. |
+| `PANE_HOSTINGER_DEPLOY_PATH` | Must be `/home/u253124519/public_html/pane`. |
 
 The workflow writes `PANE_PRODUCTION_ENV` to a temporary runner file, validates
 it with `bash/hostinger-preflight.sh -e "$PANE_ENV_FILE" -d no`, uploads the
@@ -80,7 +80,7 @@ the job exits. It must not upload `.env` as an artifact or print secret values.
 The deploy path is fixed to:
 
 ```text
-/home/u253124519/domains/erme2.com/public_html/pane
+/home/u253124519/public_html/pane
 ```
 
 Until the Hostinger web server is changed to point directly at Laravel's

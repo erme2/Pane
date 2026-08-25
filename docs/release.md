@@ -56,7 +56,7 @@ versions.
 
 The workflow is gated by a protected GitHub Environment, materializes the
 `PANE_PRODUCTION_ENV` secret only as a temporary runner file, uploads the release to
-`/home/u253124519/domains/erme2.com/public_html/pane`, and removes the
+`/home/u253124519/public_html/pane`, and removes the
 runner-side environment file at the end of the job.
 
 The production `.env` is not part of release metadata, is not uploaded as an
