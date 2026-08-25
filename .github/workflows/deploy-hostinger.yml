@@ -229,7 +229,22 @@ jobs:
       - name: Smoke check production
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error "$PANE_PRODUCTION_URL/" >/dev/null
+          docs_payload="$(curl --fail --silent --show-error --location "$PANE_PRODUCTION_URL/")"
+          case "$docs_payload" in
+            *SwaggerUIBundle*'/docs/openapi.json'*) ;;
+            *)
+              echo "docs smoke check failed" >&2
+              exit 1
+              ;;
+          esac
+          openapi_payload="$(curl --fail --silent --show-error "$PANE_PRODUCTION_URL/docs/openapi.json")"
+          php -r '
+          $payload = json_decode(stream_get_contents(STDIN), true);
+          if (! is_array($payload) || ($payload["openapi"] ?? null) !== "3.1.0") {
+              fwrite(STDERR, "OpenAPI contract smoke check failed\n");
+              exit(1);
+          }
+          ' <<< "$openapi_payload"
           release_payload="$(curl --fail --silent --show-error "$PANE_PRODUCTION_URL/api/v1/release")"
           php -r '
           $payload = json_decode(stream_get_contents(STDIN), true);

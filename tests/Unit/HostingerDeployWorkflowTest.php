@@ -61,6 +61,9 @@ class HostingerDeployWorkflowTest extends TestCase
         $this->assertStringContainsString('php artisan route:cache', $this->workflow);
         $this->assertStringContainsString('if [ -d resources/views ]; then php artisan view:cache; else echo \'No Blade views to cache\'; fi', $this->workflow);
         $this->assertStringContainsString('PANE_PRODUCTION_URL: https://pane.erme2.com', $this->workflow);
+        $this->assertStringContainsString('curl --fail --silent --show-error --location "$PANE_PRODUCTION_URL/"', $this->workflow);
+        $this->assertStringContainsString('$PANE_PRODUCTION_URL/docs/openapi.json', $this->workflow);
+        $this->assertStringContainsString('OpenAPI contract smoke check failed', $this->workflow);
         $this->assertStringContainsString('$PANE_PRODUCTION_URL/api/v1/release', $this->workflow);
         $this->assertStringContainsString('https://github.com/erme2/Pane/issues/99', $this->workflow);
     }
