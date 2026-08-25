@@ -1,7 +1,11 @@
 name: Deploy Pane to Hostinger
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Cleanup stale branches and pull requests
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -36,6 +40,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy Pane
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
@@ -43,12 +48,16 @@ jobs:
     env:
       PANE_DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
       PANE_PRODUCTION_URL: https://pane.erme2.com
+      PANE_SOURCE_REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.event.workflow_run.head_branch }}
+      PANE_SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
       PANE_BUILD_AT: ''
       PANE_RELEASE_VERSION: ''
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.workflow_run.head_sha }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -76,7 +85,7 @@ jobs:
 
       - name: Prepare release metadata
         env:
-          RELEASE_VERSION_INPUT: ${{ inputs.release_version }}
+          RELEASE_VERSION_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.release_version || '' }}
         run: |
           set -euo pipefail
           validate_release_value() {
@@ -95,31 +104,31 @@ jobs:
           }
           release_version="$RELEASE_VERSION_INPUT"
           if [ -z "$release_version" ]; then
-            if [ "$GITHUB_REF_NAME" = "main" ]; then
+            if [ "$PANE_SOURCE_REF_NAME" = "main" ]; then
               release_version="0.1.0-alpha.$GITHUB_RUN_NUMBER"
             else
-              release_version="${GITHUB_REF_NAME#v}"
+              release_version="${PANE_SOURCE_REF_NAME#v}"
             fi
           fi
           validate_release_value release_version "$release_version"
-          validate_release_value GITHUB_REF_NAME "$GITHUB_REF_NAME"
+          validate_release_value PANE_SOURCE_REF_NAME "$PANE_SOURCE_REF_NAME"
           case "$GITHUB_RUN_NUMBER" in
             *[!0-9]*)
               echo "GITHUB_RUN_NUMBER contains unsupported characters" >&2
               exit 1
               ;;
           esac
-          case "$GITHUB_SHA" in
+          case "$PANE_SOURCE_SHA" in
             *[!A-Fa-f0-9]*)
-              echo "GITHUB_SHA contains unsupported characters" >&2
+              echo "PANE_SOURCE_SHA contains unsupported characters" >&2
               exit 1
               ;;
           esac
           built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           php artisan release:cache \
             --release-version="$release_version" \
-            --ref="$GITHUB_REF_NAME" \
-            --commit="$GITHUB_SHA" \
+            --ref="$PANE_SOURCE_REF_NAME" \
+            --commit="$PANE_SOURCE_SHA" \
             --built-at="$built_at"
           {
             echo "PANE_RELEASE_VERSION=$release_version"
@@ -219,8 +228,8 @@ jobs:
           PANE_HOSTINGER_USER: ${{ secrets.PANE_HOSTINGER_USER }}
           PANE_HOSTINGER_PORT: ${{ secrets.PANE_HOSTINGER_PORT }}
           PANE_HOSTINGER_DEPLOY_PATH: ${{ secrets.PANE_HOSTINGER_DEPLOY_PATH }}
-          CHECK_DATABASE: ${{ (github.event_name == 'push' || inputs.check_database) && 'yes' || 'no' }}
-          RUN_MIGRATIONS: ${{ (github.event_name == 'push' || inputs.run_migrations) && 'yes' || 'no' }}
+          CHECK_DATABASE: ${{ (github.event_name == 'workflow_run' || inputs.check_database) && 'yes' || 'no' }}
+          RUN_MIGRATIONS: ${{ (github.event_name == 'workflow_run' || inputs.run_migrations) && 'yes' || 'no' }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/pane_hostinger -p "$PANE_HOSTINGER_PORT" \
@@ -234,7 +243,7 @@ jobs:
              php artisan config:clear && \
              php artisan route:clear && \
              php artisan view:clear && \
-             php artisan release:cache --release-version='$PANE_RELEASE_VERSION' --ref='$GITHUB_REF_NAME' --commit='$GITHUB_SHA' --built-at='$PANE_BUILD_AT' && \
+             php artisan release:cache --release-version='$PANE_RELEASE_VERSION' --ref='$PANE_SOURCE_REF_NAME' --commit='$PANE_SOURCE_SHA' --built-at='$PANE_BUILD_AT' && \
              if [ '$RUN_MIGRATIONS' = 'yes' ]; then php artisan migrate --force; fi && \
              php artisan config:cache && \
              php artisan route:cache && \
@@ -284,10 +293,10 @@ jobs:
             echo "- Environment: $PANE_DEPLOY_ENV"
             echo "- URL: $PANE_PRODUCTION_URL"
             echo "- Version: $PANE_RELEASE_VERSION"
-            echo "- Ref: $GITHUB_REF_NAME"
-            echo "- Commit: $GITHUB_SHA"
+            echo "- Ref: $PANE_SOURCE_REF_NAME"
+            echo "- Commit: $PANE_SOURCE_SHA"
             echo "- Built at: $PANE_BUILD_AT"
-            echo "- Migrations: ${{ (github.event_name == 'push' || inputs.run_migrations) && 'run' || 'skipped' }}"
+            echo "- Migrations: ${{ (github.event_name == 'workflow_run' || inputs.run_migrations) && 'run' || 'skipped' }}"
             echo "- Rollback runbook: https://github.com/erme2/Pane/issues/99"
           } >> "$GITHUB_STEP_SUMMARY"
 

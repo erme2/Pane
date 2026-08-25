@@ -87,10 +87,11 @@ Until the Hostinger web server is changed to point directly at Laravel's
 `public/` directory, the workflow preserves Laravel's normal `public/` layout
 inside that directory and deploys the full application tree there.
 
-The workflow runs automatically when changes are merged to `main`. Automatic
-`main` deployments use the `production` GitHub Environment, run the live
-database preflight, run production migrations, and expose
-`0.1.0-alpha.<GITHUB_RUN_NUMBER>` from `/api/v1/release`.
+The workflow runs automatically after the `Cleanup stale branches and pull
+requests` workflow succeeds on `main`. Automatic `main` deployments use the
+`production` GitHub Environment, run the live database preflight, run
+production migrations, and expose `0.1.0-alpha.<GITHUB_RUN_NUMBER>` from
+`/api/v1/release`.
 
 The workflow can also be run manually with inputs for:
 
@@ -105,7 +106,7 @@ The workflow can also be run manually with inputs for:
 
 After upload, the workflow runs the Hostinger preflight on the remote directory,
 optionally runs migrations, caches Laravel config/routes/views, and smoke
-checks `/`, `/api/v1/release`, `/api/v1/session`, and
+checks `/`, `/docs/openapi.json`, `/api/v1/release`, `/api/v1/session`, and
 `/api/v1/installation/applications`. View caching is skipped when the deployed
 tree has no `resources/views` directory.
 

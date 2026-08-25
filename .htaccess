@@ -2,7 +2,7 @@
     RewriteEngine On
 
     RewriteRule (^|/)\. - [F]
-    RewriteRule ^(app|bootstrap|config|database|docs|routes|storage|tests|vendor)(/|$) - [F]
+    RewriteRule ^(app|bootstrap|config|database|routes|storage|tests|vendor)(/|$) - [F]
     RewriteRule ^(artisan|composer\.(json|lock)|phpunit\.xml|phpstan.*|Dockerfile.*|docker-compose\.yml)$ - [F]
 
     RewriteRule ^$ public/ [L]
