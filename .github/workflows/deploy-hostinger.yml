@@ -184,7 +184,7 @@ jobs:
             echo "PANE_HOSTINGER_DEPLOY_PATH is required" >&2
             exit 1
           fi
-          if [ "$PANE_HOSTINGER_DEPLOY_PATH" != "/home/u253124519/domains/erme2.com/public_html/pane" ]; then
+          if [ "$PANE_HOSTINGER_DEPLOY_PATH" != "/home/u253124519/public_html/pane" ]; then
             echo "PANE_HOSTINGER_DEPLOY_PATH must match the prepared Hostinger Pane directory" >&2
             exit 1
           fi
