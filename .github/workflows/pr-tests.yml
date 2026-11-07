@@ -3,6 +3,7 @@ name: PR tests
 on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
+  workflow_call:
 
 permissions:
   contents: read

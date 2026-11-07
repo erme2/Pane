@@ -32,6 +32,32 @@ The compatible pair must be recorded in release notes.
 If a top-level coordinated artifact is needed later, name it with the release
 prefix and the shared version, for example `release-0.1.0-alpha.1`.
 
+## Automatic Tags
+
+Every pull request merged into Pane `main` gets a release tag. The
+`Tag main release` workflow runs on each push to `main`, skips commits that do
+not belong to a merged pull request, runs the PR test suite against the merge
+commit, and only then calls `bash/release-tag.sh` to tag it:
+
+- With no tags yet, the first tag is `v0.1.0-alpha.1`.
+- Pre-release tags bump the numeric suffix: `v0.1.0-alpha.1` becomes
+  `v0.1.0-alpha.2`.
+- Stable tags bump the patch: `v0.1.0` becomes `v0.1.1`.
+- Tags are annotated, point at the merge commit, and are never moved or reused.
+- Tag jobs are serialized. If two merges land close together and the newer one
+  is tagged first, the older commit is not tagged separately because the newer
+  tag already contains it. If another run pushes the computed tag first, the
+  script fetches tags again and picks the next free version.
+
+Starting a new channel (beta, rc, stable) or a new base version stays a manual
+step. Tag the latest `main` merge commit by hand, for example
+`git tag -a v0.1.0-beta.1 -m "Pane v0.1.0-beta.1" <sha>` and
+`git push origin refs/tags/v0.1.0-beta.1`. Later merges continue from it
+(`v0.1.0-beta.2`, ...).
+
+erme2/deploy's **Deploy Pane** workflow deploys Pane's latest tag when no `ref`
+is given, so each merge produces a deployable version.
+
 ## Release Metadata
 
 Pane exposes non-secret build metadata at `GET /api/v1/release`. Deployment

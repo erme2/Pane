@@ -15,6 +15,7 @@ php artisan key:generate --force
 | --- | --- |
 | `bash/clear.sh` | Clears Laravel caches and compiled framework artifacts for one environment. |
 | `bash/hostinger-preflight.sh` | Checks Hostinger production runtime prerequisites without printing secret values. |
+| `bash/release-tag.sh` | Creates and pushes the next `v<version>` release tag for a commit. |
 | `bash/refresh.sh` | Rebuilds the configured database, runs migrations, and optionally loads test schema and seed data. |
 | `bash/test.sh` | Runs the Laravel test suite, optionally refreshing the database before the run. |
 
@@ -58,6 +59,27 @@ removes that temporary file before exit.
 
 Use `-d no` only while preparing a host before database credentials are
 available.
+
+## `bash/release-tag.sh`
+
+Creates the next release tag described in `docs/release.md` and pushes it. The
+`Tag main release` GitHub Actions workflow runs it after every merged pull
+request; run it by hand only to repair a missed tag.
+
+```bash
+./bash/release-tag.sh [-c commit] [-r remote] [-p yes|no]
+```
+
+Options:
+
+- `-c`: commit to tag; defaults to `HEAD`.
+- `-r`: remote to fetch tags from and push to; defaults to `origin`.
+- `-p`: `no` prints the next tag from local tags without fetching, tagging, or
+  pushing; defaults to `yes`.
+
+The script exits without tagging when the commit already has a `v*` tag or is
+already contained in the latest tag. It fails when the latest tag is not
+`vX.Y.Z` or `vX.Y.Z-<label>.<n>`; push the next tag manually in that case.
 
 ## `bash/refresh.sh`
 
