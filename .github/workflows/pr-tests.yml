@@ -38,6 +38,13 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
+      # Fails the PR when a locked package has a known security advisory.
+      # Pull requests only: when Tag main release reuses this workflow, a newly
+      # published advisory would only block tags, not the vulnerable code.
+      - name: Audit dependencies
+        if: ${{ github.event_name == 'pull_request' }}
+        run: composer audit --locked --no-interaction
+
       - name: Prepare test environment
         run: |
           cp .env.testing .env

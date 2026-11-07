@@ -18,6 +18,7 @@ class CiWorkflowTest extends TestCase
         $this->assertStringContainsString('composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader', $workflow);
         $this->assertStringContainsString('./bash/test.sh -o no -f no', $workflow);
         $this->assertStringContainsString("\n  workflow_call:\n", $workflow);
+        $this->assertStringContainsString("if: \${{ github.event_name == 'pull_request' }}\n        run: composer audit --locked --no-interaction", $workflow);
     }
 
     public function test_tag_workflow_tags_merged_prs_after_tests_one_at_a_time(): void

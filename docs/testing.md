@@ -22,6 +22,12 @@ Run the full suite the same way CI does:
 ./bash/test.sh -o no -f no
 ```
 
+PR CI also runs `composer analyse` and `composer audit --locked`. The audit fails the pull request when a locked package has a known security advisory, so run it locally after changing dependencies:
+
+```bash
+composer audit --locked
+```
+
 Use `-f yes` when you want the run to stop on the first failure. Use `-r no` only when the test database has already been refreshed and you intentionally want to reuse it during local iteration.
 
 ## Suite Boundaries
