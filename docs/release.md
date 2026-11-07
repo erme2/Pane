@@ -36,7 +36,9 @@ prefix and the shared version, for example `release-0.1.0-alpha.1`.
 
 Every pull request merged into Pane `main` gets a release tag. The
 `Tag main release` workflow runs on each push to `main`, skips commits that do
-not belong to a merged pull request, runs the PR test suite against the merge
+not belong to a merged pull request (`bash/release-merged-pr.sh`, which retries
+for about 80 seconds because GitHub links a pushed commit to its pull request a
+few seconds after the merge), runs the PR test suite against the merge
 commit, and only then calls `bash/release-tag.sh` to tag it:
 
 - With no tags yet, the first tag is `v0.1.0-alpha.1`. It goes on the oldest

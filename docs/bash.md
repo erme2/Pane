@@ -15,6 +15,7 @@ php artisan key:generate --force
 | --- | --- |
 | `bash/clear.sh` | Clears Laravel caches and compiled framework artifacts for one environment. |
 | `bash/hostinger-preflight.sh` | Checks Hostinger production runtime prerequisites without printing secret values. |
+| `bash/release-merged-pr.sh` | Checks whether a `main` commit is a merged pull request's merge result, retrying while GitHub links them. |
 | `bash/release-tag-gate.sh` | Decides whether an earlier `main` commit gets its own release tag (gate for `release-tag.sh`). |
 | `bash/release-tag.sh` | Creates and pushes the next `v<version>` release tag for a commit, and for earlier untagged merges. |
 | `bash/refresh.sh` | Rebuilds the configured database, runs migrations, and optionally loads test schema and seed data. |
@@ -96,10 +97,29 @@ older than the latest tag (versions only go up). It fails when the latest tag
 is not `vX.Y.Z` or `vX.Y.Z-<label>.<n>`; push the next tag manually in that
 case.
 
+## `bash/release-merged-pr.sh`
+
+Used by the `Tag main release` workflow and by `release-tag-gate.sh`. It exits
+`0` when the commit is the merge result (`merge_commit_sha`) of a pull request
+merged into `main`, and `10` when it isn't (a direct push, or an intermediate
+commit of a rebase merge). GitHub links a pushed commit to its pull request a
+few seconds after the push, so an empty answer is retried before the commit is
+treated as a direct push.
+
+```bash
+GITHUB_REPOSITORY=erme2/Pane GH_TOKEN=... ./bash/release-merged-pr.sh <sha>
+```
+
+Environment:
+
+- `RELEASE_MERGED_PR_ATTEMPTS`: lookups before giving up; defaults to `9`.
+- `RELEASE_MERGED_PR_INTERVAL`: seconds between lookups; defaults to `10`.
+
 ## `bash/release-tag-gate.sh`
 
-Gate used by the `Tag main release` workflow as `release-tag.sh -g`. For an
-earlier commit on `main`, it exits `0` when the commit is the merge result
+Gate used by the `Tag main release` workflow as `release-tag.sh -g`. It checks
+the pull request with `release-merged-pr.sh`. For an earlier commit on `main`,
+it exits `0` when the commit is the merge result
 (`merge_commit_sha`) of a pull request merged into `main` and its own
 `Test main / test` check passed. It exits `10` when the commit is not a merge
 result (a direct push, or an intermediate commit of a rebase merge) or the

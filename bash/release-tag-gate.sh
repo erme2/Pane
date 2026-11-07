@@ -31,13 +31,10 @@ if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
     exit 2
 fi
 
-# Only the PR's merge result is pushed to main as a tip and tested. The other
-# commits of a multi-commit rebase merge belong to the PR but aren't.
-merged=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/pulls" \
-    --jq "[.[] | select(.merged_at != null and .base.ref == \"main\" and .merge_commit_sha == \"$sha\")] | length")
-if [[ "$merged" -eq 0 ]]; then
-    echo "$sha is not the merge result of a pull request into main."
-    exit "$SKIP"
+status=0
+"$(dirname "$0")/release-merged-pr.sh" "$sha" || status=$?
+if [[ "$status" -ne 0 ]]; then
+    exit "$status"
 fi
 
 deadline=$((SECONDS + TIMEOUT))
