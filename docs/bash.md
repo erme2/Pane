@@ -68,7 +68,8 @@ Creates the next release tag described in `docs/release.md` and pushes it. The
 request; run it by hand only to repair a missed tag.
 
 ```bash
-./bash/release-tag.sh [-c commit] [-r remote] [-p yes|no] [-g gate-command]
+./bash/release-tag.sh [-c commit] [-r remote] [-p yes|no] [-g gate-command] \
+  [-m marker-path]
 ```
 
 Options:
@@ -80,11 +81,15 @@ Options:
 - `-g`: gate command for earlier commits, run as `<gate-command> <sha>`. Exit
   `0` tags the commit, exit `10` skips it, any other exit stops the script
   without tagging. Without a gate, every earlier untagged commit is tagged.
+- `-m`: rollout marker path; defaults to `.github/workflows/tag-main.yml`.
+  With no tags yet, the backfill starts at the first first-parent commit that
+  contains this path. An empty value disables backfill before the first tag.
 
 Before tagging the commit, the script tags, oldest first, every untagged
 first-parent commit between the latest tag and that commit that the gate
-accepts, so each merge gets its own version. With no tags yet, or when the
-latest tag is not an ancestor of the commit, it only tags the commit itself.
+accepts, so each merge gets its own version. With no tags yet, it backfills
+from the rollout marker instead. When the latest tag is not an ancestor of the
+commit, it only tags the commit itself.
 
 The script exits without tagging when the commit already has a `v*` tag or is
 older than the latest tag (versions only go up). It fails when the latest tag
@@ -94,9 +99,11 @@ case.
 ## `bash/release-tag-gate.sh`
 
 Gate used by the `Tag main release` workflow as `release-tag.sh -g`. For an
-earlier commit on `main`, it exits `0` when the commit belongs to a merged pull
-request into `main` and its own `Test main / test` check passed, and `10` when
-there is no merged pull request or the check did not pass. It polls while the
+earlier commit on `main`, it exits `0` when the commit is the merge result
+(`merge_commit_sha`) of a pull request merged into `main` and its own
+`Test main / test` check passed. It exits `10` when the commit is not a merge
+result (a direct push, or an intermediate commit of a rebase merge) or the
+check did not pass. It polls while the
 check is queued or running and exits `1` after the timeout.
 
 ```bash

@@ -27,7 +27,7 @@ class CiWorkflowTest extends TestCase
         $this->assertIsString($workflow);
         $this->assertStringContainsString("push:\n    branches: [main]", $workflow);
         $this->assertStringContainsString('repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls', $workflow);
-        $this->assertStringContainsString('select(.merged_at != null and .base.ref == "main")', $workflow);
+        $this->assertStringContainsString('select(.merged_at != null and .base.ref == \\"main\\" and .merge_commit_sha == \\"$GITHUB_SHA\\")', $workflow);
         $this->assertStringContainsString('uses: ./.github/workflows/pr-tests.yml', $workflow);
         $this->assertStringContainsString('needs: [merged-pr, test]', $workflow);
         $this->assertStringContainsString("group: pane-release-tag\n      cancel-in-progress: false", $workflow);

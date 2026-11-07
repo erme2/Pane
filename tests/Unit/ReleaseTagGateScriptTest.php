@@ -17,13 +17,20 @@ class ReleaseTagGateScriptTest extends TestCase
         $this->dir = sys_get_temp_dir().'/pane-release-gate-'.bin2hex(random_bytes(6));
         mkdir($this->dir.'/bin', 0700, true);
 
-        // Fake gh: pull requests come from merged.txt; each check-runs call
-        // pops the next line of states.txt (the last line repeats).
+        if (trim((string) shell_exec('command -v jq')) === '') {
+            self::markTestSkipped('jq is required to apply the gate\'s --jq filter.');
+        }
+
+        // Fake gh: pull requests run the gate's real --jq filter over
+        // pulls.json; each check-runs call pops the next line of states.txt
+        // (the last line repeats).
         file_put_contents($this->dir.'/bin/gh', implode("\n", [
             '#!/usr/bin/env bash',
             'echo "$*" >> '.escapeshellarg($this->dir.'/calls.log'),
-            'case "$*" in',
-            '  *"/pulls"*) cat '.escapeshellarg($this->dir.'/merged.txt').';;',
+            'filter=',
+            'while [ $# -gt 0 ]; do if [ "$1" = --jq ]; then filter=$2; fi; shift; done',
+            'case "$(tail -n 1 '.escapeshellarg($this->dir.'/calls.log').')" in',
+            '  *"/pulls"*) jq -r "$filter" '.escapeshellarg($this->dir.'/pulls.json').';;',
             '  *"/check-runs"*)',
             '    states='.escapeshellarg($this->dir.'/states.txt'),
             '    head -n 1 "$states"',
@@ -44,15 +51,45 @@ class ReleaseTagGateScriptTest extends TestCase
 
     public function test_commit_without_merged_pull_request_is_skipped(): void
     {
-        [$code, $output] = $this->runGate('0', ['completed success']);
+        [$code, $output] = $this->runGate([], ['completed success']);
 
         self::assertSame(10, $code, $output);
-        self::assertStringContainsString('no merged pull request', $output);
+        self::assertStringContainsString('not the merge result of a pull request', $output);
+    }
+
+    public function test_unmerged_or_other_base_pull_requests_are_skipped(): void
+    {
+        [$code, $output] = $this->runGate([
+            ['merged_at' => null, 'base' => ['ref' => 'main'], 'merge_commit_sha' => self::SHA],
+            ['merged_at' => '2026-11-07T18:00:00Z', 'base' => ['ref' => 'develop'], 'merge_commit_sha' => self::SHA],
+        ], ['completed success']);
+
+        self::assertSame(10, $code, $output);
+    }
+
+    public function test_intermediate_rebase_commit_is_skipped_without_waiting(): void
+    {
+        // A multi-commit rebase merge: this commit belongs to the PR, but the
+        // PR's merge result (the tested main tip) is a later commit.
+        [$code, $output] = $this->runGate([$this->mergedPr(str_repeat('f', 40))], ['queued null']);
+
+        self::assertSame(10, $code, $output);
+        self::assertStringContainsString('not the merge result of a pull request', $output);
+        self::assertStringNotContainsString('check-runs', (string) file_get_contents($this->dir.'/calls.log'));
+    }
+
+    public function test_invalid_sha_is_rejected(): void
+    {
+        $script = dirname(__DIR__, 2).'/bash/release-tag-gate.sh';
+        exec('GITHUB_REPOSITORY=erme2/Pane '.escapeshellarg($script).' '.escapeshellarg('abc"; true').' 2>&1', $lines, $code);
+
+        self::assertSame(2, $code);
+        self::assertStringContainsString('Expected a full commit SHA', implode("\n", $lines));
     }
 
     public function test_passed_tests_allow_tagging(): void
     {
-        [$code, $output] = $this->runGate('1', ['completed success']);
+        [$code, $output] = $this->runGate([$this->mergedPr()], ['completed success']);
 
         self::assertSame(0, $code, $output);
         self::assertStringContainsString("passed 'Test main / test'", $output);
@@ -61,7 +98,7 @@ class ReleaseTagGateScriptTest extends TestCase
 
     public function test_failed_tests_skip_the_commit(): void
     {
-        [$code, $output] = $this->runGate('1', ['completed failure']);
+        [$code, $output] = $this->runGate([$this->mergedPr()], ['completed failure']);
 
         self::assertSame(10, $code, $output);
         self::assertStringContainsString('did not pass', $output);
@@ -69,7 +106,7 @@ class ReleaseTagGateScriptTest extends TestCase
 
     public function test_running_tests_are_waited_for(): void
     {
-        [$code, $output] = $this->runGate('1', ['', 'in_progress null', 'completed success']);
+        [$code, $output] = $this->runGate([$this->mergedPr()], ['', 'in_progress null', 'completed success']);
 
         self::assertSame(0, $code, $output);
         self::assertStringContainsString('state: none', $output);
@@ -78,19 +115,28 @@ class ReleaseTagGateScriptTest extends TestCase
 
     public function test_tests_still_running_after_timeout_fail(): void
     {
-        [$code, $output] = $this->runGate('1', ['queued null'], '0');
+        [$code, $output] = $this->runGate([$this->mergedPr()], ['queued null'], '0');
 
         self::assertSame(1, $code, $output);
         self::assertStringContainsString('Timed out', $output);
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function mergedPr(string $mergeCommitSha = self::SHA): array
+    {
+        return ['merged_at' => '2026-11-07T18:00:00Z', 'base' => ['ref' => 'main'], 'merge_commit_sha' => $mergeCommitSha];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $pulls
      * @param  list<string>  $states
      * @return array{int, string}
      */
-    private function runGate(string $merged, array $states, string $timeout = '30'): array
+    private function runGate(array $pulls, array $states, string $timeout = '30'): array
     {
-        file_put_contents($this->dir.'/merged.txt', $merged."\n");
+        file_put_contents($this->dir.'/pulls.json', json_encode($pulls, JSON_THROW_ON_ERROR));
         file_put_contents($this->dir.'/states.txt', implode("\n", $states)."\n");
 
         $env = [

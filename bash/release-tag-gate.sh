@@ -2,9 +2,12 @@
 # Gate for bash/release-tag.sh -g: decides whether an earlier untagged commit
 # on main gets its own release tag (see docs/release.md).
 #
-# Exit 0: the commit is a merged pull request into main and its own
-#         "Test main" check passed, so it is tagged.
-# Exit 10: not a merged pull request, or its tests did not pass; skip it.
+# Exit 0: the commit is the merge result (merge_commit_sha) of a pull request
+#         merged into main, and its own "Test main" check passed, so it is
+#         tagged.
+# Exit 10: not a pull request's merge result (a direct push, or an
+#          intermediate commit of a rebase merge, which never gets its own
+#          test run), or its tests did not pass; skip it.
 # Exit 1: the tests are still running after the timeout, or the GitHub API
 #         failed. The tag run stops so it can be re-run.
 #
@@ -23,11 +26,17 @@ if [[ $# -ne 1 || -z "${GITHUB_REPOSITORY:-}" ]]; then
 fi
 
 sha=$1
+if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Expected a full commit SHA, got '$sha'." >&2
+    exit 2
+fi
 
+# Only the PR's merge result is pushed to main as a tip and tested. The other
+# commits of a multi-commit rebase merge belong to the PR but aren't.
 merged=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/pulls" \
-    --jq '[.[] | select(.merged_at != null and .base.ref == "main")] | length')
+    --jq "[.[] | select(.merged_at != null and .base.ref == \"main\" and .merge_commit_sha == \"$sha\")] | length")
 if [[ "$merged" -eq 0 ]]; then
-    echo "$sha has no merged pull request into main."
+    echo "$sha is not the merge result of a pull request into main."
     exit "$SKIP"
 fi
 

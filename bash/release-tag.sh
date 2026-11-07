@@ -11,6 +11,10 @@
 # latest tag and that commit, so a merge whose tag job was skipped or ran late
 # still gets its own, lower version. The optional gate command decides which
 # of those earlier commits qualify (see usage below).
+#
+# Before the first tag exists, the backfill starts at the rollout boundary:
+# the first first-parent commit whose tree contains the marker path (the tag
+# workflow by default). Older history is never tagged.
 
 set -euo pipefail
 
@@ -18,23 +22,27 @@ COMMIT=HEAD
 REMOTE=origin
 PUSH=yes
 GATE=
+MARKER=.github/workflows/tag-main.yml
 FIRST_TAG=v0.1.0-alpha.1
 MAX_ATTEMPTS=5
 GATE_SKIP=10
 
 usage() {
-    echo "Usage: $0 [-c commit] [-r remote] [-p yes|no] [-g gate-command]" >&2
+    echo "Usage: $0 [-c commit] [-r remote] [-p yes|no] [-g gate-command] [-m marker-path]" >&2
     echo "  The gate is run as '<gate-command> <sha>' for each earlier untagged" >&2
     echo "  commit: exit 0 tags it, exit $GATE_SKIP skips it, anything else stops." >&2
+    echo "  The marker path sets the rollout boundary when no tag exists yet;" >&2
+    echo "  an empty value disables backfill before the first tag." >&2
     exit 2
 }
 
-while getopts ":c:r:p:g:" opt; do
+while getopts ":c:r:p:g:m:" opt; do
     case $opt in
         c ) COMMIT=$OPTARG;;
         r ) REMOTE=$OPTARG;;
         p ) PUSH=$OPTARG;;
         g ) GATE=$OPTARG;;
+        m ) MARKER=$OPTARG;;
         * ) usage;;
     esac
 done
@@ -104,27 +112,44 @@ gate_decision() {
     gate_cache+="$commit $DECISION"$'\n'
 }
 
-# Sets PENDING to the untagged commits to tag, oldest first, ending with the
-# requested commit.
-pending_commits() {
-    local latest=$1 latest_sha commit
-    PENDING=()
+# Prints the first-parent commits that may be backfilled, oldest first: those
+# after the latest tag, or from the rollout boundary when there is no tag.
+backfill_candidates() {
+    local latest=$1 latest_sha commit started=no
     if [[ -n "$latest" ]]; then
         latest_sha=$(git rev-parse "${latest}^{commit}")
         if git merge-base --is-ancestor "$latest_sha" "$sha"; then
-            for commit in $(git rev-list --first-parent --reverse "${latest_sha}..${sha}"); do
-                if [[ "$commit" == "$sha" ]] || is_tagged "$commit"; then
-                    continue
-                fi
-                gate_decision "$commit"
-                if [[ "$DECISION" == "tag" ]]; then
-                    PENDING+=("$commit")
-                else
-                    echo "Skipping $commit: the gate rejected it." >&2
-                fi
-            done
+            git rev-list --first-parent --reverse "${latest_sha}..${sha}"
         fi
+    elif [[ -n "$MARKER" ]]; then
+        for commit in $(git rev-list --first-parent --reverse "$sha"); do
+            if [[ "$started" == "no" ]] && git cat-file -e "${commit}:${MARKER}" 2>/dev/null; then
+                started=yes
+            fi
+            if [[ "$started" == "yes" ]]; then
+                echo "$commit"
+            fi
+        done
     fi
+}
+
+# Sets PENDING to the untagged commits to tag, oldest first, ending with the
+# requested commit.
+pending_commits() {
+    local latest=$1 commit candidates
+    PENDING=()
+    candidates=$(backfill_candidates "$latest")
+    for commit in $candidates; do
+        if [[ "$commit" == "$sha" ]] || is_tagged "$commit"; then
+            continue
+        fi
+        gate_decision "$commit"
+        if [[ "$DECISION" == "tag" ]]; then
+            PENDING+=("$commit")
+        else
+            echo "Skipping $commit: the gate rejected it." >&2
+        fi
+    done
     PENDING+=("$sha")
 }
 

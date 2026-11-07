@@ -155,6 +155,61 @@ class ReleaseTagScriptTest extends TestCase
         self::assertSame('v0.1.0-alpha.1 '.$this->head(), trim($output));
     }
 
+    public function test_first_tag_backfills_from_the_rollout_boundary(): void
+    {
+        $this->commit('before rollout');
+        $rollout = $this->commit('add tag workflow', '.github/workflows/tag-main.yml');
+        $concurrent = $this->commit('merge finished testing late');
+        $target = $this->commit('merge tagged first');
+
+        [$code, $output] = $this->runScript('-c', $target);
+
+        self::assertSame(0, $code, $output);
+        self::assertSame(['v0.1.0-alpha.1', 'v0.1.0-alpha.2', 'v0.1.0-alpha.3'], $this->remoteTags());
+        self::assertSame($rollout, $this->remoteTagCommit('v0.1.0-alpha.1'));
+        self::assertSame($concurrent, $this->remoteTagCommit('v0.1.0-alpha.2'));
+        self::assertSame($target, $this->remoteTagCommit('v0.1.0-alpha.3'));
+
+        // The late merge's own run then finds its tag.
+        [$code, $output] = $this->runScript('-c', $concurrent);
+        self::assertSame(0, $code, $output);
+        self::assertStringContainsString('already tagged v0.1.0-alpha.2', $output);
+    }
+
+    public function test_empty_marker_disables_backfill_before_the_first_tag(): void
+    {
+        $this->commit('add tag workflow', '.github/workflows/tag-main.yml');
+        $this->commit('target');
+
+        [, $output] = $this->runScript('-p', 'no', '-m', '');
+
+        self::assertSame('v0.1.0-alpha.1 '.$this->head(), trim($output));
+    }
+
+    public function test_intermediate_commits_of_a_rebase_merge_are_skipped(): void
+    {
+        $this->tagAndPush('v0.1.0-alpha.1');
+        $rebased1 = $this->commit('rebased PR commit 1');
+        $rebased2 = $this->commit('rebased PR commit 2');
+        $rebaseTip = $this->commit('rebased PR commit 3');
+        $target = $this->commit('next merge');
+        // Like bash/release-tag-gate.sh: only PR merge results (the tested
+        // main tips) qualify.
+        $gate = $this->gate([
+            'case "$1" in '.escapeshellarg($rebaseTip).') exit 0;; esac',
+            'exit 10',
+        ]);
+
+        [$code, $output] = $this->runScript('-c', $target, '-g', $gate);
+
+        self::assertSame(0, $code, $output);
+        self::assertStringContainsString('Skipping '.$rebased1, $output);
+        self::assertStringContainsString('Skipping '.$rebased2, $output);
+        self::assertSame(['v0.1.0-alpha.1', 'v0.1.0-alpha.2', 'v0.1.0-alpha.3'], $this->remoteTags());
+        self::assertSame($rebaseTip, $this->remoteTagCommit('v0.1.0-alpha.2'));
+        self::assertSame($target, $this->remoteTagCommit('v0.1.0-alpha.3'));
+    }
+
     public function test_gate_skips_rejected_commits_and_is_not_asked_about_the_target(): void
     {
         $this->tagAndPush('v0.1.0-alpha.1');
@@ -264,10 +319,14 @@ class ReleaseTagScriptTest extends TestCase
         return trim($this->git($this->dir, '--git-dir='.$this->remote, 'rev-parse', $tag.'^{commit}'));
     }
 
-    private function commit(string $message): string
+    private function commit(string $message, string $file = 'file.txt'): string
     {
-        file_put_contents($this->work.'/file.txt', $message.PHP_EOL, FILE_APPEND);
-        $this->git($this->work, 'add', 'file.txt');
+        $path = $this->work.'/'.$file;
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0700, true);
+        }
+        file_put_contents($path, $message.PHP_EOL, FILE_APPEND);
+        $this->git($this->work, 'add', $file);
         $this->git($this->work, 'commit', '--quiet', '-m', $message);
 
         return trim($this->git($this->work, 'rev-parse', 'HEAD'));

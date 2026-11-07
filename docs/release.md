@@ -39,7 +39,9 @@ Every pull request merged into Pane `main` gets a release tag. The
 not belong to a merged pull request, runs the PR test suite against the merge
 commit, and only then calls `bash/release-tag.sh` to tag it:
 
-- With no tags yet, the first tag is `v0.1.0-alpha.1`.
+- With no tags yet, the first tag is `v0.1.0-alpha.1`. It goes on the oldest
+  eligible merge from the rollout boundary on: the first `main` commit that
+  contains `.github/workflows/tag-main.yml`. Older history is never tagged.
 - Pre-release tags bump the numeric suffix: `v0.1.0-alpha.1` becomes
   `v0.1.0-alpha.2`.
 - Stable tags bump the patch: `v0.1.0` becomes `v0.1.1`.
@@ -48,9 +50,11 @@ commit, and only then calls `bash/release-tag.sh` to tag it:
   GitHub can replace a queued tag job with a newer one, or a newer merge can
   finish its tests first. So before tagging its commit, a run tags any earlier
   untagged merges on `main`'s first-parent history, oldest first. The
-  `bash/release-tag-gate.sh` gate checks each earlier commit: it must belong
-  to a merged pull request, and its own `Test main / test` check must have
-  passed. The gate waits up to 20 minutes for tests that are still running.
+  `bash/release-tag-gate.sh` gate checks each earlier commit: it must be a
+  pull request's merge result (`merge_commit_sha`), and its own
+  `Test main / test` check must have passed. The other commits of a
+  multi-commit rebase merge belong to the pull request but are never tested on
+  their own, so they are skipped. The gate waits up to 20 minutes for tests that are still running.
   Commits whose tests failed, and direct pushes, are skipped and never tagged.
   If the wait times out, the run fails without tagging; re-run it once the
   tests finish.
