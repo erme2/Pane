@@ -84,7 +84,7 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        $logoutUrl = $this->workOs->logoutUrl($workOsSessionId);
+        $logoutUrl = $this->workOs->logoutUrl($workOsSessionId, $application);
         $requestId = $this->requestId($request);
 
         Auth::guard()->logout();
@@ -143,7 +143,7 @@ class WorkOsAuthController extends Controller
         }
 
         $intent = [
-            'authorization_url' => $this->workOs->authorizationUrl($state),
+            'authorization_url' => $this->workOs->authorizationUrl($state, $application),
             'state' => $state,
         ];
         $requestId = $this->requestId($request);
@@ -435,9 +435,10 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        $application = $this->applications->activeApplicationForSession(
+        $application = $this->applications->activeApplicationForSessionRequest(
             $sessionApplicationId,
-            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY)
+            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY),
+            $request->headers->get('Origin')
         );
 
         if (! $application instanceof ApplicationRegistration) {

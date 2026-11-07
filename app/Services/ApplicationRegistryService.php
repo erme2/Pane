@@ -12,10 +12,13 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Ramsey\Uuid\Uuid;
 
 class ApplicationRegistryService
 {
     private const CONFIGURED_LATTE_SOURCE = 'configured_latte';
+
+    private const CONFIGURED_FRONTEND_SOURCE = 'configured_frontend';
 
     public function __construct(private readonly AuditEventService $audit) {}
 
@@ -33,13 +36,19 @@ class ApplicationRegistryService
             ->first();
 
         if ($application instanceof ApplicationRegistration) {
-            return $application;
+            return $this->isConfiguredFrontend($application)
+                ? $this->syncConfiguredFrontend($application)
+                : $application;
         }
 
         $configured = $this->configuredLatteApplication();
 
-        return $configured->isActive() && hash_equals($configured->trusted_origin, $trustedOrigin)
-            ? $configured
+        if ($configured->isActive() && hash_equals($configured->trusted_origin, $trustedOrigin)) {
+            return $configured;
+        }
+
+        return array_key_exists($trustedOrigin, LatteApplicationConfig::additionalFrontends())
+            ? $this->configuredFrontendApplication($trustedOrigin)
             : null;
     }
 
@@ -65,6 +74,10 @@ class ApplicationRegistryService
             return $application->isActive() ? $application : null;
         }
 
+        if ($application instanceof ApplicationRegistration && $this->isConfiguredFrontend($application)) {
+            return $this->syncConfiguredFrontend($application);
+        }
+
         return $application instanceof ApplicationRegistration && $application->isActive()
             ? $application
             : null;
@@ -83,6 +96,37 @@ class ApplicationRegistryService
         }
 
         return $application;
+    }
+
+    /**
+     * Resolves the application for a request carrying a v1 session. Latte frontends of the same
+     * organization share one session, so an Origin from a sibling frontend selects that frontend;
+     * any other mismatched Origin is rejected. Without an Origin the session application applies.
+     */
+    public function activeApplicationForSessionRequest(mixed $applicationId, mixed $sessionVersion, mixed $origin): ?ApplicationRegistration
+    {
+        $sessionApplication = $this->activeApplicationForSession($applicationId, $sessionVersion);
+
+        if ($sessionApplication === null || $origin === null) {
+            return $sessionApplication;
+        }
+
+        $originApplication = is_string($origin) ? $this->activeApplicationForOrigin($origin) : null;
+
+        if ($originApplication === null) {
+            return null;
+        }
+
+        if (hash_equals((string) $sessionApplication->getKey(), (string) $originApplication->getKey())) {
+            return $sessionApplication;
+        }
+
+        return $sessionApplication->isLatte()
+            && $originApplication->isLatte()
+            && $sessionApplication->organization_id !== null
+            && hash_equals((string) $sessionApplication->organization_id, (string) $originApplication->organization_id)
+                ? $originApplication
+                : null;
     }
 
     public function configuredLatteApplication(): ApplicationRegistration
@@ -313,6 +357,85 @@ class ApplicationRegistryService
         } while (Organization::query()->where('slug', $candidate)->exists());
 
         return $candidate;
+    }
+
+    private function configuredFrontendApplication(string $trustedOrigin): ?ApplicationRegistration
+    {
+        // Derived from the origin so the ID, and sessions bound to it, survive redeploys.
+        $applicationId = Uuid::uuid5($this->configuredLatteApplicationId(), $trustedOrigin)->toString();
+        $organization = $this->configuredLatteOrganization();
+
+        return DB::transaction(function () use ($applicationId, $organization, $trustedOrigin): ?ApplicationRegistration {
+            $application = ApplicationRegistration::query()
+                ->whereKey($applicationId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($application instanceof ApplicationRegistration) {
+                return $this->syncConfiguredFrontend($application);
+            }
+
+            return ApplicationRegistration::query()->create([
+                'application_id' => $applicationId,
+                'name' => $trustedOrigin,
+                'kind' => ApplicationRegistration::KIND_LATTE,
+                'organization_id' => $organization->getKey(),
+                'trusted_origin' => $trustedOrigin,
+                'redirect_uris' => LatteApplicationConfig::additionalFrontends()[$trustedOrigin],
+                'status' => ApplicationRegistration::STATUS_ACTIVE,
+                'details' => ['source' => self::CONFIGURED_FRONTEND_SOURCE],
+            ]);
+        });
+    }
+
+    /**
+     * Keeps an env-configured frontend in line with LATTE_ADDITIONAL_FRONTENDS: removing it from the
+     * env disables it (and its sessions), adding it back re-enables it. A frontend disabled through
+     * the API stays disabled.
+     */
+    private function syncConfiguredFrontend(ApplicationRegistration $application): ?ApplicationRegistration
+    {
+        $redirectUris = LatteApplicationConfig::additionalFrontends()[$application->trusted_origin] ?? null;
+        $details = $application->details ?? [];
+        $disabledByConfiguration = ($details['disabled_by'] ?? null) === 'configuration';
+
+        if ($redirectUris === null) {
+            if ($application->isActive()) {
+                $application->forceFill([
+                    'status' => ApplicationRegistration::STATUS_DISABLED,
+                    'details' => array_replace($details, ['disabled_by' => 'configuration']),
+                ]);
+                $application->rotateSessionVersion();
+                $application->save();
+            }
+
+            return null;
+        }
+
+        if (! $application->isActive() && ! $disabledByConfiguration) {
+            return null;
+        }
+
+        if ($disabledByConfiguration) {
+            unset($details['disabled_by']);
+        }
+
+        $application->forceFill([
+            'status' => ApplicationRegistration::STATUS_ACTIVE,
+            'redirect_uris' => $redirectUris,
+            'details' => $details,
+        ]);
+
+        if ($application->isDirty()) {
+            $application->save();
+        }
+
+        return $application;
+    }
+
+    private function isConfiguredFrontend(ApplicationRegistration $application): bool
+    {
+        return ($application->details['source'] ?? null) === self::CONFIGURED_FRONTEND_SOURCE;
     }
 
     private function assertPaneAdministrator(User $actor): void

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ApplicationRegistration;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -12,13 +13,12 @@ class WorkOsService
 {
     private const API_BASE_URL = 'https://api.workos.com';
 
-    public function authorizationUrl(string $state): string
+    public function authorizationUrl(string $state, ?ApplicationRegistration $application = null): string
     {
-
         $query = [
             'response_type' => 'code',
             'client_id' => $this->clientId(),
-            'redirect_uri' => $this->redirectUri(),
+            'redirect_uri' => $this->redirectUri($application),
             'state' => $state,
         ];
 
@@ -56,9 +56,9 @@ class WorkOsService
             ->json();
     }
 
-    public function logoutUrl(string $sessionId): string
+    public function logoutUrl(string $sessionId, ?ApplicationRegistration $application = null): string
     {
-        $returnTo = $this->logoutReturnTo();
+        $returnTo = $this->logoutReturnTo($application);
 
         $query = array_filter([
             'session_id' => $sessionId,
@@ -68,8 +68,12 @@ class WorkOsService
         return self::API_BASE_URL.'/user_management/sessions/logout?'.http_build_query($query);
     }
 
-    public function logoutReturnTo(): string
+    public function logoutReturnTo(?ApplicationRegistration $application = null): string
     {
+        if ($this->isAdditionalApplication($application)) {
+            return $application->trusted_origin.'/';
+        }
+
         $configured = config('services.workos.return_to');
 
         if (is_string($configured) && filled($configured)) {
@@ -116,10 +120,32 @@ class WorkOsService
         return config('services.workos.client_id');
     }
 
-    private function redirectUri(): string
+    /**
+     * WORKOS_REDIRECT_URI belongs to the FRONTEND_URL application; every other application gets the
+     * same callback path on its own origin, which must also be listed in the WorkOS Redirects.
+     */
+    private function redirectUri(?ApplicationRegistration $application): string
     {
         $this->ensureConfigured();
 
-        return config('services.workos.redirect_uri');
+        $configured = (string) config('services.workos.redirect_uri');
+
+        if (! $this->isAdditionalApplication($application)) {
+            return $configured;
+        }
+
+        $path = (string) (parse_url($configured, PHP_URL_PATH) ?: '/');
+        $query = parse_url($configured, PHP_URL_QUERY);
+
+        return $application->trusted_origin.$path.(is_string($query) ? '?'.$query : '');
+    }
+
+    /**
+     * @phpstan-assert-if-true ApplicationRegistration $application
+     */
+    private function isAdditionalApplication(?ApplicationRegistration $application): bool
+    {
+        return $application instanceof ApplicationRegistration
+            && ! hash_equals((string) config('services.latte.application_id'), (string) $application->getKey());
     }
 }

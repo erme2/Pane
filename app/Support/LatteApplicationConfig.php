@@ -37,6 +37,50 @@ class LatteApplicationConfig
         return array_values(array_unique($redirectUris));
     }
 
+    /**
+     * Extra frontends trusted by this installation besides FRONTEND_URL, keyed by origin.
+     *
+     * Format: entries separated by ";", each "origin" or "origin|redirect_uri,redirect_uri".
+     * Without redirect URIs the frontend gets "<origin>/auth/callback".
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function additionalFrontends(): array
+    {
+        $configured = config('services.latte.additional_frontends');
+
+        if (! is_string($configured)) {
+            return [];
+        }
+
+        $frontends = [];
+
+        foreach (preg_split('/\s*;\s*/', trim($configured), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $entry) {
+            [$origin, $uris] = array_pad(explode('|', $entry, 2), 2, '');
+            $origin = self::normalizeOrigin($origin);
+
+            if ($origin === null || $origin === self::trustedOrigin()) {
+                continue;
+            }
+
+            $redirectUris = [];
+
+            foreach (preg_split('/\s*,\s*/', trim($uris), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $uri) {
+                $normalized = self::normalizeRedirectUri($uri);
+
+                if ($normalized !== null) {
+                    $redirectUris[] = $normalized;
+                }
+            }
+
+            $frontends[$origin] = $redirectUris === []
+                ? [$origin.'/auth/callback']
+                : array_values(array_unique($redirectUris));
+        }
+
+        return $frontends;
+    }
+
     public static function isAllowedOrigin(string $origin): bool
     {
         return self::normalizeOrigin($origin) === self::trustedOrigin();

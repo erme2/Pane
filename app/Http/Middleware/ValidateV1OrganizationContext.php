@@ -42,9 +42,10 @@ class ValidateV1OrganizationContext
             return $this->v1Error($request, 'application_not_allowed', 'The application origin is not allowed.', Response::HTTP_FORBIDDEN);
         }
 
-        $application = $this->applications->activeApplicationForSession(
+        $application = $this->applications->activeApplicationForSessionRequest(
             $applicationId,
-            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY)
+            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY),
+            $request->headers->get('Origin')
         );
 
         if (! $application instanceof ApplicationRegistration) {
