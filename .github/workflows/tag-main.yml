@@ -43,11 +43,16 @@ jobs:
     needs: [merged-pr, test]
     if: ${{ needs.merged-pr.outputs.merged == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Long enough for the gate to wait on an older merge's tests.
+    timeout-minutes: 30
     permissions:
+      checks: read
       contents: write
-    # One tag job at a time; a queued run for an older commit may be replaced
-    # by a newer one, whose tag then covers both commits.
+      pull-requests: read
+    # One tag job at a time. GitHub may replace a queued run for an older
+    # commit with a newer one; the newer run then tags the older merge first
+    # (after its own tests pass, checked by the gate), so every merge keeps
+    # its own tag.
     concurrency:
       group: pane-release-tag
       cancel-in-progress: false
@@ -58,9 +63,11 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Create release tag
+      - name: Create release tags
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          ./bash/release-tag.sh -c "$GITHUB_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+          ./bash/release-tag.sh -c "$GITHUB_SHA" -g ./bash/release-tag-gate.sh | tee -a "$GITHUB_STEP_SUMMARY"

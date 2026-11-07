@@ -67,7 +67,7 @@ class ReleaseTagScriptTest extends TestCase
 
         [, $output] = $this->runScript('-p', 'no');
 
-        self::assertSame('v0.1.0-beta.2', trim($output));
+        self::assertSame('v0.1.0-beta.2 '.$this->head(), trim($output));
     }
 
     public function test_stable_tag_bumps_patch_and_sorts_after_prereleases(): void
@@ -79,7 +79,7 @@ class ReleaseTagScriptTest extends TestCase
 
         [, $output] = $this->runScript('-p', 'no');
 
-        self::assertSame('v0.1.1', trim($output));
+        self::assertSame('v0.1.1 '.$this->head(), trim($output));
     }
 
     public function test_already_tagged_commit_is_not_tagged_again(): void
@@ -93,7 +93,7 @@ class ReleaseTagScriptTest extends TestCase
         self::assertSame(['v0.1.0-alpha.1'], $this->remoteTags());
     }
 
-    public function test_older_commit_covered_by_newer_tag_is_skipped(): void
+    public function test_commit_older_than_latest_tag_is_not_tagged(): void
     {
         $older = $this->commit('older');
         $this->commit('newer');
@@ -102,7 +102,93 @@ class ReleaseTagScriptTest extends TestCase
         [$code, $output] = $this->runScript('-c', $older);
 
         self::assertSame(0, $code, $output);
-        self::assertStringContainsString('already included in v0.1.0-alpha.1', $output);
+        self::assertStringContainsString('older than v0.1.0-alpha.1 and untagged', $output);
+        self::assertSame(['v0.1.0-alpha.1'], $this->remoteTags());
+    }
+
+    public function test_earlier_untagged_merges_get_their_own_tags_in_order(): void
+    {
+        $this->tagAndPush('v0.1.0-alpha.1');
+        $first = $this->commit('first merge');
+        $second = $this->commit('second merge');
+        $third = $this->commit('third merge');
+
+        [$code, $output] = $this->runScript('-c', $third);
+
+        self::assertSame(0, $code, $output);
+        self::assertSame(
+            ['v0.1.0-alpha.1', 'v0.1.0-alpha.2', 'v0.1.0-alpha.3', 'v0.1.0-alpha.4'],
+            $this->remoteTags(),
+        );
+        self::assertSame($first, $this->remoteTagCommit('v0.1.0-alpha.2'));
+        self::assertSame($second, $this->remoteTagCommit('v0.1.0-alpha.3'));
+        self::assertSame($third, $this->remoteTagCommit('v0.1.0-alpha.4'));
+
+        // The older commits' own (late) runs then find their tags.
+        [$code, $output] = $this->runScript('-c', $first);
+        self::assertSame(0, $code, $output);
+        self::assertStringContainsString('already tagged v0.1.0-alpha.2', $output);
+    }
+
+    public function test_backfill_follows_first_parent_merges_only(): void
+    {
+        $this->tagAndPush('v0.1.0-alpha.1');
+        $this->git($this->work, 'checkout', '--quiet', '-b', 'feature');
+        $this->commit('feature work 1');
+        $this->commit('feature work 2');
+        $this->git($this->work, 'checkout', '--quiet', 'main');
+        $this->git($this->work, 'merge', '--quiet', '--no-ff', '-m', 'merge feature', 'feature');
+        $merge = $this->head();
+
+        [, $output] = $this->runScript('-p', 'no');
+
+        self::assertSame('v0.1.0-alpha.2 '.$merge, trim($output));
+    }
+
+    public function test_first_tag_does_not_backfill_history(): void
+    {
+        $this->commit('second');
+        $this->commit('third');
+
+        [, $output] = $this->runScript('-p', 'no');
+
+        self::assertSame('v0.1.0-alpha.1 '.$this->head(), trim($output));
+    }
+
+    public function test_gate_skips_rejected_commits_and_is_not_asked_about_the_target(): void
+    {
+        $this->tagAndPush('v0.1.0-alpha.1');
+        $broken = $this->commit('broken merge');
+        $good = $this->commit('good merge');
+        $target = $this->commit('target merge');
+        $log = $this->dir.'/gate.log';
+        $gate = $this->gate([
+            'echo "$1" >> '.escapeshellarg($log),
+            'if [ "$1" = '.escapeshellarg($broken).' ]; then exit 10; fi',
+            'exit 0',
+        ]);
+
+        [$code, $output] = $this->runScript('-c', $target, '-g', $gate);
+
+        self::assertSame(0, $code, $output);
+        self::assertStringContainsString('Skipping '.$broken.': the gate rejected it.', $output);
+        self::assertSame(['v0.1.0-alpha.1', 'v0.1.0-alpha.2', 'v0.1.0-alpha.3'], $this->remoteTags());
+        self::assertSame($good, $this->remoteTagCommit('v0.1.0-alpha.2'));
+        self::assertSame($target, $this->remoteTagCommit('v0.1.0-alpha.3'));
+        self::assertSame([$broken, $good], file($log, FILE_IGNORE_NEW_LINES));
+    }
+
+    public function test_gate_failure_stops_without_tagging(): void
+    {
+        $this->tagAndPush('v0.1.0-alpha.1');
+        $this->commit('pending merge');
+        $this->commit('target merge');
+        $gate = $this->gate(['exit 1']);
+
+        [$code, $output] = $this->runScript('-g', $gate);
+
+        self::assertSame(1, $code, $output);
+        self::assertStringContainsString('Gate failed', $output);
         self::assertSame(['v0.1.0-alpha.1'], $this->remoteTags());
     }
 
@@ -154,6 +240,28 @@ class ReleaseTagScriptTest extends TestCase
 
         self::assertSame(1, $code);
         self::assertStringContainsString("Unsupported latest tag 'v0.1.0-alpha'", $output);
+    }
+
+    /**
+     * @param  list<string>  $lines
+     */
+    private function gate(array $lines): string
+    {
+        $path = $this->dir.'/gate-'.bin2hex(random_bytes(3)).'.sh';
+        file_put_contents($path, implode("\n", ['#!/usr/bin/env bash', ...$lines, '']));
+        chmod($path, 0755);
+
+        return $path;
+    }
+
+    private function head(): string
+    {
+        return trim($this->git($this->work, 'rev-parse', 'HEAD'));
+    }
+
+    private function remoteTagCommit(string $tag): string
+    {
+        return trim($this->git($this->dir, '--git-dir='.$this->remote, 'rev-parse', $tag.'^{commit}'));
     }
 
     private function commit(string $message): string

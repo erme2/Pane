@@ -32,7 +32,15 @@ class CiWorkflowTest extends TestCase
         $this->assertStringContainsString('needs: [merged-pr, test]', $workflow);
         $this->assertStringContainsString("group: pane-release-tag\n      cancel-in-progress: false", $workflow);
         $this->assertStringContainsString('fetch-depth: 0', $workflow);
-        $this->assertStringContainsString('./bash/release-tag.sh -c "$GITHUB_SHA"', $workflow);
-        $this->assertStringContainsString("permissions:\n      contents: write", $workflow);
+        $this->assertStringContainsString('./bash/release-tag.sh -c "$GITHUB_SHA" -g ./bash/release-tag-gate.sh', $workflow);
+        $this->assertStringContainsString("permissions:\n      checks: read\n      contents: write\n      pull-requests: read", $workflow);
+        $this->assertStringContainsString('GH_TOKEN: ${{ github.token }}', $workflow);
+
+        // The gate waits on each earlier merge's "Test main / test" check run,
+        // named after the caller job and the reusable workflow's job.
+        $gate = file_get_contents(dirname(__DIR__, 2).'/bash/release-tag-gate.sh');
+        $this->assertIsString($gate);
+        $this->assertStringContainsString("  test:\n    name: Test main\n", $workflow);
+        $this->assertStringContainsString('CHECK_NAME=${RELEASE_TAG_CHECK_NAME:-Test main / test}', $gate);
     }
 }

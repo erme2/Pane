@@ -15,7 +15,8 @@ php artisan key:generate --force
 | --- | --- |
 | `bash/clear.sh` | Clears Laravel caches and compiled framework artifacts for one environment. |
 | `bash/hostinger-preflight.sh` | Checks Hostinger production runtime prerequisites without printing secret values. |
-| `bash/release-tag.sh` | Creates and pushes the next `v<version>` release tag for a commit. |
+| `bash/release-tag-gate.sh` | Decides whether an earlier `main` commit gets its own release tag (gate for `release-tag.sh`). |
+| `bash/release-tag.sh` | Creates and pushes the next `v<version>` release tag for a commit, and for earlier untagged merges. |
 | `bash/refresh.sh` | Rebuilds the configured database, runs migrations, and optionally loads test schema and seed data. |
 | `bash/test.sh` | Runs the Laravel test suite, optionally refreshing the database before the run. |
 
@@ -67,19 +68,46 @@ Creates the next release tag described in `docs/release.md` and pushes it. The
 request; run it by hand only to repair a missed tag.
 
 ```bash
-./bash/release-tag.sh [-c commit] [-r remote] [-p yes|no]
+./bash/release-tag.sh [-c commit] [-r remote] [-p yes|no] [-g gate-command]
 ```
 
 Options:
 
 - `-c`: commit to tag; defaults to `HEAD`.
 - `-r`: remote to fetch tags from and push to; defaults to `origin`.
-- `-p`: `no` prints the next tag from local tags without fetching, tagging, or
-  pushing; defaults to `yes`.
+- `-p`: `no` prints the tags it would create, as `<tag> <commit>` lines, from
+  local tags without fetching, tagging, or pushing; defaults to `yes`.
+- `-g`: gate command for earlier commits, run as `<gate-command> <sha>`. Exit
+  `0` tags the commit, exit `10` skips it, any other exit stops the script
+  without tagging. Without a gate, every earlier untagged commit is tagged.
+
+Before tagging the commit, the script tags, oldest first, every untagged
+first-parent commit between the latest tag and that commit that the gate
+accepts, so each merge gets its own version. With no tags yet, or when the
+latest tag is not an ancestor of the commit, it only tags the commit itself.
 
 The script exits without tagging when the commit already has a `v*` tag or is
-already contained in the latest tag. It fails when the latest tag is not
-`vX.Y.Z` or `vX.Y.Z-<label>.<n>`; push the next tag manually in that case.
+older than the latest tag (versions only go up). It fails when the latest tag
+is not `vX.Y.Z` or `vX.Y.Z-<label>.<n>`; push the next tag manually in that
+case.
+
+## `bash/release-tag-gate.sh`
+
+Gate used by the `Tag main release` workflow as `release-tag.sh -g`. For an
+earlier commit on `main`, it exits `0` when the commit belongs to a merged pull
+request into `main` and its own `Test main / test` check passed, and `10` when
+there is no merged pull request or the check did not pass. It polls while the
+check is queued or running and exits `1` after the timeout.
+
+```bash
+GITHUB_REPOSITORY=erme2/Pane GH_TOKEN=... ./bash/release-tag-gate.sh <sha>
+```
+
+Environment:
+
+- `RELEASE_TAG_CHECK_NAME`: check run to require; defaults to `Test main / test`.
+- `RELEASE_TAG_GATE_TIMEOUT`: seconds to wait for a running check; defaults to `1200`.
+- `RELEASE_TAG_GATE_INTERVAL`: seconds between polls; defaults to `20`.
 
 ## `bash/refresh.sh`
 
