@@ -50,15 +50,11 @@ class ValidateV1Origin
             return false;
         }
 
-        $application = $this->applications->activeApplicationForSession(
+        return $this->applications->activeApplicationForSessionRequest(
             $sessionApplicationId,
-            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY)
-        );
-        $originApplication = $this->applications->activeApplicationForOrigin($origin);
-
-        return $application !== null
-            && $originApplication !== null
-            && hash_equals((string) $application->getKey(), (string) $originApplication->getKey());
+            $request->session()->get(self::V1_APPLICATION_SESSION_VERSION_KEY),
+            $origin
+        ) !== null;
     }
 
     private function isBootstrapRequest(Request $request): bool

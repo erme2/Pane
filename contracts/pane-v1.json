@@ -8200,6 +8200,7 @@
                 "code": "application_not_allowed"
             }
         },
+        "same_organization_frontends": "share_session_and_continue_with_origin_application",
         "optional_read": {
             "missing": "continue_with_server_session_application",
             "supplied_invalid_or_mismatched": {

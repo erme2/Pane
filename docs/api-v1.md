@@ -35,7 +35,9 @@ opaque `null`, malformed, unregistered, or session-mismatched value returns
 server-session application, while an invalid or mismatched supplied value
 returns the same 403. Before authentication a valid registered origin resolves
 the application. After Pane binds an application UUID into the server-side
-session, `Origin` is comparison-only and can never select another application.
+session, `Origin` can only select another active Latte application of the same
+organization: those frontends share one session, and that request runs as the
+origin's application. Any other mismatched `Origin` is rejected.
 The structured order, outcomes, and examples are normative in
 `x-pane-origin-validation`.
 

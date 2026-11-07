@@ -28,6 +28,23 @@ WORKOS_CONNECTION_ID=
 
 The WorkOS application must include `WORKOS_REDIRECT_URI` in its allowed redirect URLs. For the Docker/local HTTPS setup, that URI should point to Latte, not Pane, because Latte receives the browser callback first.
 
+## Extra Frontends
+
+One Pane installation can serve several frontends for the same organization, for example a product app on `https://dev.sweegly.co.uk` (the `FRONTEND_URL` application) and its Latte admin console on `https://admin.dev.sweegly.co.uk`:
+
+```dotenv
+FRONTEND_URL=https://dev.sweegly.co.uk
+LATTE_REDIRECT_URIS=https://dev.sweegly.co.uk/auth/callback,https://dev.sweegly.co.uk/dashboard
+WORKOS_REDIRECT_URI=https://dev.sweegly.co.uk/auth/callback
+PANE_EXTRA_FRONTEND_ORIGINS=https://admin.dev.sweegly.co.uk|https://admin.dev.sweegly.co.uk/auth/callback,https://admin.dev.sweegly.co.uk/dashboard
+```
+
+Each extra frontend is registered as its own application in the configured organization, with its own `redirect_to` allowlist. Pane accepts CORS and v1 requests from it, sends its WorkOS callback to the `WORKOS_REDIRECT_URI` path on its own origin (here `https://admin.dev.sweegly.co.uk/auth/callback`), and returns its logout to its own root. Add that callback to the WorkOS Redirects tab and the root as a Sign-out redirect.
+
+Frontends of the same organization share one Pane session: signing in on one signs the user in on the others, and each request runs as the frontend it came from. Pane's membership roles still decide what a user may do, so an admin-only frontend should check the session's membership role and send other users to the product app. Removing an entry from `PANE_EXTRA_FRONTEND_ORIGINS` disables that frontend and invalidates its sessions; adding it back re-enables it. A frontend disabled through the applications API stays disabled.
+
+Organization invitation links point to the frontend that created the invitation.
+
 ## Bootstrap the First Latte Invite
 
 Pane owns the configured Latte application and organization. Before the first
