@@ -47,7 +47,7 @@ class ApplicationRegistryService
             return $configured;
         }
 
-        return array_key_exists($trustedOrigin, LatteApplicationConfig::additionalFrontends())
+        return array_key_exists($trustedOrigin, LatteApplicationConfig::extraFrontendOrigins())
             ? $this->configuredFrontendApplication($trustedOrigin)
             : null;
     }
@@ -381,7 +381,7 @@ class ApplicationRegistryService
                 'kind' => ApplicationRegistration::KIND_LATTE,
                 'organization_id' => $organization->getKey(),
                 'trusted_origin' => $trustedOrigin,
-                'redirect_uris' => LatteApplicationConfig::additionalFrontends()[$trustedOrigin],
+                'redirect_uris' => LatteApplicationConfig::extraFrontendOrigins()[$trustedOrigin],
                 'status' => ApplicationRegistration::STATUS_ACTIVE,
                 'details' => ['source' => self::CONFIGURED_FRONTEND_SOURCE],
             ]);
@@ -389,13 +389,13 @@ class ApplicationRegistryService
     }
 
     /**
-     * Keeps an env-configured frontend in line with LATTE_ADDITIONAL_FRONTENDS: removing it from the
+     * Keeps an env-configured frontend in line with PANE_EXTRA_FRONTEND_ORIGINS: removing it from the
      * env disables it (and its sessions), adding it back re-enables it. A frontend disabled through
      * the API stays disabled.
      */
     private function syncConfiguredFrontend(ApplicationRegistration $application): ?ApplicationRegistration
     {
-        $redirectUris = LatteApplicationConfig::additionalFrontends()[$application->trusted_origin] ?? null;
+        $redirectUris = LatteApplicationConfig::extraFrontendOrigins()[$application->trusted_origin] ?? null;
         $details = $application->details ?? [];
         $disabledByConfiguration = ($details['disabled_by'] ?? null) === 'configuration';
 

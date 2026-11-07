@@ -45,9 +45,9 @@ class LatteApplicationConfig
      *
      * @return array<string, array<int, string>>
      */
-    public static function additionalFrontends(): array
+    public static function extraFrontendOrigins(): array
     {
-        $configured = config('services.latte.additional_frontends');
+        $configured = config('services.latte.extra_frontend_origins');
 
         if (! is_string($configured)) {
             return [];

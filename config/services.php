@@ -46,7 +46,7 @@ return [
         'organization_id' => env('LATTE_ORGANIZATION_ID', '00000000-0000-4000-8000-000000000002'),
         'frontend_url' => env('FRONTEND_URL', 'https://latte.localhost'),
         'redirect_uris' => env('LATTE_REDIRECT_URIS'),
-        'additional_frontends' => env('LATTE_ADDITIONAL_FRONTENDS'),
+        'extra_frontend_origins' => env('PANE_EXTRA_FRONTEND_ORIGINS'),
     ],
 
     'managed_credentials' => [

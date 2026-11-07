@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
-class AdditionalFrontendsTest extends TestCase
+class ExtraFrontendsTest extends TestCase
 {
     private const ADMIN_ORIGIN = 'https://admin.example.test';
 
@@ -32,11 +32,11 @@ class AdditionalFrontendsTest extends TestCase
         config()->set('services.workos.provider', 'authkit');
         config()->set('services.latte.frontend_url', 'https://app.example.test');
         config()->set('services.latte.redirect_uris', 'https://app.example.test/auth/callback');
-        config()->set('services.latte.additional_frontends', self::ADMIN_ORIGIN.'|'.self::ADMIN_ORIGIN.'/auth/callback,'.self::ADMIN_ORIGIN.'/dashboard');
+        config()->set('services.latte.extra_frontend_origins', self::ADMIN_ORIGIN.'|'.self::ADMIN_ORIGIN.'/auth/callback,'.self::ADMIN_ORIGIN.'/dashboard');
         config()->set('cors.allowed_origins', ['https://app.example.test']);
     }
 
-    public function test_additional_frontend_logs_in_with_its_own_callback_in_the_configured_organization(): void
+    public function test_extra_frontend_logs_in_with_its_own_callback_in_the_configured_organization(): void
     {
         $response = $this
             ->withHeader('Origin', self::ADMIN_ORIGIN)
@@ -69,7 +69,7 @@ class AdditionalFrontendsTest extends TestCase
         );
     }
 
-    public function test_additional_frontend_rejects_redirects_outside_its_own_list(): void
+    public function test_extra_frontend_rejects_redirects_outside_its_own_list(): void
     {
         $this
             ->withHeader('Origin', self::ADMIN_ORIGIN)
@@ -168,7 +168,7 @@ class AdditionalFrontendsTest extends TestCase
         $this->assertNotNull($application);
         $sessionVersion = $application->session_version;
 
-        config()->set('services.latte.additional_frontends', null);
+        config()->set('services.latte.extra_frontend_origins', null);
 
         $this->assertNull($registry->activeApplicationForOrigin(self::ADMIN_ORIGIN));
         $this->assertNull($registry->activeApplicationForId($application->application_id));
@@ -179,7 +179,7 @@ class AdditionalFrontendsTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('error.code', 'application_not_allowed');
 
-        config()->set('services.latte.additional_frontends', self::ADMIN_ORIGIN);
+        config()->set('services.latte.extra_frontend_origins', self::ADMIN_ORIGIN);
 
         $restored = $registry->activeApplicationForOrigin(self::ADMIN_ORIGIN);
         $this->assertNotNull($restored);
