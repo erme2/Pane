@@ -32,6 +32,44 @@ The compatible pair must be recorded in release notes.
 If a top-level coordinated artifact is needed later, name it with the release
 prefix and the shared version, for example `release-0.1.0-alpha.1`.
 
+## Automatic Tags
+
+Every pull request merged into Pane `main` gets a release tag. The
+`Tag main release` workflow runs on each push to `main`, skips commits that do
+not belong to a merged pull request, runs the PR test suite against the merge
+commit, and only then calls `bash/release-tag.sh` to tag it:
+
+- With no tags yet, the first tag is `v0.1.0-alpha.1`. It goes on the oldest
+  eligible merge from the rollout boundary on: the first `main` commit that
+  contains `.github/workflows/tag-main.yml`. Older history is never tagged.
+- Pre-release tags bump the numeric suffix: `v0.1.0-alpha.1` becomes
+  `v0.1.0-alpha.2`.
+- Stable tags bump the patch: `v0.1.0` becomes `v0.1.1`.
+- Tags are annotated, point at the merge commit, and are never moved or reused.
+- Every merge gets its own tag, in merge order. Tag jobs are serialized, but
+  GitHub can replace a queued tag job with a newer one, or a newer merge can
+  finish its tests first. So before tagging its commit, a run tags any earlier
+  untagged merges on `main`'s first-parent history, oldest first. The
+  `bash/release-tag-gate.sh` gate checks each earlier commit: it must be a
+  pull request's merge result (`merge_commit_sha`), and its own
+  `Test main / test` check must have passed. The other commits of a
+  multi-commit rebase merge belong to the pull request but are never tested on
+  their own, so they are skipped. The gate waits up to 20 minutes for tests that are still running.
+  Commits whose tests failed, and direct pushes, are skipped and never tagged.
+  If the wait times out, the run fails without tagging; re-run it once the
+  tests finish.
+- If another run pushes the computed tag first, the script fetches tags again
+  and picks the next free version.
+
+Starting a new channel (beta, rc, stable) or a new base version stays a manual
+step. Tag the latest `main` merge commit by hand, for example
+`git tag -a v0.1.0-beta.1 -m "Pane v0.1.0-beta.1" <sha>` and
+`git push origin refs/tags/v0.1.0-beta.1`. Later merges continue from it
+(`v0.1.0-beta.2`, ...).
+
+erme2/deploy's **Deploy Pane** workflow deploys Pane's latest tag when no `ref`
+is given, so each merge produces a deployable version.
+
 ## Release Metadata
 
 Pane exposes non-secret build metadata at `GET /api/v1/release`. Deployment

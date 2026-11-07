@@ -25,5 +25,8 @@ class ReleasePolicyDocumentationTest extends TestCase
         self::assertStringContainsString('Compatible release pair:', $doc);
         self::assertStringContainsString('Cross-app smoke checks:', $doc);
         self::assertStringContainsString('The release note must not contain secret values', $doc);
+        self::assertStringContainsString('## Automatic Tags', $doc);
+        self::assertStringContainsString('bash/release-tag.sh', $doc);
+        self::assertStringContainsString('Starting a new channel (beta, rc, stable)', $doc);
     }
 }

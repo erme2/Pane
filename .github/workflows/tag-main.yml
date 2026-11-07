@@ -1,0 +1,75 @@
+name: Tag main release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  merged-pr:
+    name: Check merged pull request
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      merged: ${{ steps.check.outputs.merged }}
+    steps:
+      - name: Find the pull request for this commit
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The pushed commit must be the PR's merge result, as in
+          # bash/release-tag-gate.sh.
+          count=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq "[.[] | select(.merged_at != null and .base.ref == \"main\" and .merge_commit_sha == \"$GITHUB_SHA\")] | length")
+          if [ "$count" -gt 0 ]; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            echo "No merged pull request for $GITHUB_SHA; skipping release tag."
+          fi
+
+  test:
+    name: Test main
+    needs: merged-pr
+    if: ${{ needs.merged-pr.outputs.merged == 'true' }}
+    uses: ./.github/workflows/pr-tests.yml
+
+  tag:
+    name: Tag release
+    needs: [merged-pr, test]
+    if: ${{ needs.merged-pr.outputs.merged == 'true' }}
+    runs-on: ubuntu-latest
+    # Long enough for the gate to wait on an older merge's tests.
+    timeout-minutes: 30
+    permissions:
+      checks: read
+      contents: write
+      pull-requests: read
+    # One tag job at a time. GitHub may replace a queued run for an older
+    # commit with a newer one; the newer run then tags the older merge first
+    # (after its own tests pass, checked by the gate), so every merge keeps
+    # its own tag.
+    concurrency:
+      group: pane-release-tag
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Create release tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ./bash/release-tag.sh -c "$GITHUB_SHA" -g ./bash/release-tag-gate.sh | tee -a "$GITHUB_STEP_SUMMARY"
