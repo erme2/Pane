@@ -30,7 +30,7 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => ['X-Request-Id'],
+    'exposed_headers' => ['X-Request-Id', 'ETag'],
 
     'max_age' => 0,
 
