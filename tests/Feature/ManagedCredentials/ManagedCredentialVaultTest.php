@@ -80,6 +80,23 @@ class ManagedCredentialVaultTest extends TestCase
         $this->assertSame($current->envelope, $current->fresh()->envelope);
     }
 
+    public function test_rotate_command_pages_through_more_secrets_than_one_chunk(): void
+    {
+        $vault = app(ManagedCredentialVault::class);
+        for ($i = 0; $i < 105; $i++) {
+            $vault->store($this->organization, self::CREDENTIALS);
+        }
+        $this->configureKeys('key-v2');
+
+        $this->command('managed-credentials:rotate --dry-run')
+            ->expectsOutput('105 secret(s) need re-encryption with key [key-v2].')
+            ->assertSuccessful();
+
+        $this->command('managed-credentials:rotate --limit=150')
+            ->expectsOutput('Re-encrypted 105 secret(s) with key [key-v2]; 0 failed; 0 still to do.')
+            ->assertSuccessful();
+    }
+
     public function test_rotate_command_respects_the_limit(): void
     {
         $vault = app(ManagedCredentialVault::class);

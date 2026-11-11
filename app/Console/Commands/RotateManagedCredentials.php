@@ -6,10 +6,15 @@ use App\Models\ManagedCredentialSecret;
 use App\Services\ManagedCredentialEncryptionService;
 use App\Services\ManagedCredentialVault;
 use Illuminate\Console\Command;
+use Illuminate\Support\LazyCollection;
 use Throwable;
 
 class RotateManagedCredentials extends Command
 {
+    private const int CHUNK_SIZE = 100;
+
+    private const array COLUMNS = ['managed_credential_secret_id', 'organization_id', 'connection_id', 'purpose', 'envelope'];
+
     protected $signature = 'managed-credentials:rotate
         {--limit=500 : Maximum number of secrets to re-encrypt in this run}
         {--dry-run : Count the secrets that need re-encryption without changing them}';
@@ -29,12 +34,7 @@ class RotateManagedCredentials extends Command
         $limit = max(1, (int) $this->option('limit'));
         $dryRun = (bool) $this->option('dry-run');
         $active = (string) $encryption->activeKeyIdOrNull();
-        $pending = ManagedCredentialSecret::query()
-            ->where('status', '!=', ManagedCredentialSecret::STATUS_REVOKED)
-            ->orderBy('managed_credential_secret_id')
-            ->get(['managed_credential_secret_id', 'organization_id', 'connection_id', 'purpose', 'envelope'])
-            ->filter(fn (ManagedCredentialSecret $secret): bool => ($secret->envelope['key_id'] ?? null) !== $active)
-            ->values();
+        $pending = $this->pendingSecrets($active);
 
         if ($dryRun) {
             $this->info("{$pending->count()} secret(s) need re-encryption with key [$active].");
@@ -42,9 +42,16 @@ class RotateManagedCredentials extends Command
             return self::SUCCESS;
         }
 
+        $total = $pending->count();
+        $attempted = 0;
         $rotated = 0;
         $failed = 0;
-        foreach ($pending->take($limit) as $secret) {
+        foreach ($pending as $secret) {
+            if ($attempted >= $limit) {
+                break;
+            }
+
+            $attempted++;
             try {
                 if ($vault->rotate($secret)) {
                     $rotated++;
@@ -56,9 +63,25 @@ class RotateManagedCredentials extends Command
             }
         }
 
-        $remaining = max(0, $pending->count() - $rotated - $failed);
+        $remaining = max(0, $total - $rotated - $failed);
         $this->info("Re-encrypted $rotated secret(s) with key [$active]; $failed failed; $remaining still to do.");
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Non-revoked secrets whose envelope uses a key other than the active one.
+     * Read in keyset-paginated chunks so memory stays bounded as the table grows;
+     * enumerating it again re-runs the query.
+     *
+     * @return LazyCollection<int, ManagedCredentialSecret>
+     */
+    private function pendingSecrets(string $active): LazyCollection
+    {
+        return ManagedCredentialSecret::query()
+            ->where('status', '!=', ManagedCredentialSecret::STATUS_REVOKED)
+            ->select(self::COLUMNS)
+            ->lazyById(self::CHUNK_SIZE, 'managed_credential_secret_id')
+            ->filter(fn (ManagedCredentialSecret $secret): bool => ($secret->envelope['key_id'] ?? null) !== $active);
     }
 }
