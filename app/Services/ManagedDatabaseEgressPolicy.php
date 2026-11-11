@@ -125,6 +125,31 @@ class ManagedDatabaseEgressPolicy
     }
 
     /**
+     * True when every address of an allowed decision sits in a range that is
+     * blocked by default, i.e. it was opened by an installation allow rule
+     * (same server or private network). Used to permit unencrypted connections
+     * only there.
+     */
+    public function isPrivateDestination(EgressDecision $decision): bool
+    {
+        if (! $decision->allowed || $decision->addresses === []) {
+            return false;
+        }
+
+        foreach ($decision->addresses as $address) {
+            $private = false;
+            foreach ($this->effectiveAddresses($address) as $candidate) {
+                $private = $private || $this->inAny($candidate, self::BLOCKED_RANGES);
+            }
+            if (! $private) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Installation-wide limits, in seconds. Organizations can't override them.
      *
      * @return array{connect: int, query: int}

@@ -42,10 +42,26 @@ Every managed-database connection (connection tests and runtime queries) is open
 - Denied by default: loopback, private, shared (CGNAT), link-local, documentation, benchmarking, multicast and reserved ranges, for IPv4 and IPv6, including IPv4-mapped and NAT64 forms. Every DNS answer must pass, so one private answer blocks the host.
 - Never allowed: cloud metadata addresses and hostnames (e.g. `169.254.169.254`, `fd00:ec2::254`, `metadata.google.internal`), multicast and unspecified addresses.
 - `PANE_MANAGED_DB_EGRESS_ALLOW` is a comma-separated list of approved hosts and ranges, for installation-wide private networks, e.g. `localhost,10.20.0.0/16,fd00:1234::/32`. A hostname rule opens only that exact name; an IP rule opens that address or range. An invalid rule blocks every connection until it's fixed. Organizations can't change these rules.
-- `PANE_MANAGED_DB_CONNECT_TIMEOUT` (default 5 s, at most 30) and `PANE_MANAGED_DB_QUERY_TIMEOUT` (default 15 s, at most 120) apply to every organization.
+- `PANE_MANAGED_DB_CONNECT_TIMEOUT` (default 5 s, at most 30) and `PANE_MANAGED_DB_QUERY_TIMEOUT` (default 15 s, at most 120) apply to every organization. The query timeout stops any statement on MariaDB (`max_statement_time`). On MySQL, `max_execution_time` only stops SELECT, so Pane also caps lock waits (`innodb_lock_wait_timeout`, `lock_wait_timeout`) and stops waiting for any reply 2 s after the query timeout. That is not a strict timeout for writes: a MySQL write that is already running may still commit on the server after Pane reports a timeout, and the outcome is then unknown. Mutating queries must not be retried blindly until an operation-status check can reconcile the result.
 - Each decision is audited as `managed_database.egress.allowed` or `.denied`, with host, port, resolved addresses and the reason. No credentials are recorded.
 
 On Hostinger, a database on the same server is usually `localhost`: add `localhost` to `PANE_MANAGED_DB_EGRESS_ALLOW`.
+
+### Connections (`/api/v1/organizations/{organization_id}/connections`)
+
+Organization administrators add, test, update, disable (`DELETE`) and reactivate (`PATCH status=active`) their databases. Each active connection uses one slot of the organization's `database_limit`.
+
+- Every create, reactivation, or change to engine, host, port, database, user, TLS mode or password is tested first, and nothing is saved if the test fails.
+- The database account must have exactly `SELECT, INSERT, UPDATE, DELETE` on its own database. DDL (`CREATE`, `ALTER`, `DROP`…), `ALL PRIVILEGES`, server-wide, `FILE`, `PROCESS`, `SUPER`, `GRANT OPTION`, roles, or grants on other databases are rejected. A hosting panel grant like `` `u123_shop`.* `` (where `_` is a wildcard) is accepted only when it matches no other database the account can see.
+- `tls_mode`: `required` encrypts the connection (the certificate isn't checked, since Pane connects to the IP address); `disabled` only for hosts opened by `PANE_MANAGED_DB_EGRESS_ALLOW`, such as `localhost`; `verify_ca` and `verify_identity` are rejected for now.
+- Passwords and certificates are write-only: the API only returns `credentials_configured`. They're stored encrypted (see the managed-credential keys above) and never written to the audit log.
+
+Example account for a same-server database:
+
+```sql
+CREATE USER 'pane_app'@'localhost' IDENTIFIED BY '…';
+GRANT SELECT, INSERT, UPDATE, DELETE ON `shop`.* TO 'pane_app'@'localhost';
+```
 
 ## URLs And Trusted Hosts
 
