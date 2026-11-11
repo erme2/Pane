@@ -7,6 +7,7 @@ use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\User;
+use App\Services\ManagedCredentialVault;
 use App\Stories\StoryPlot;
 use App\Support\ReleaseMetadata;
 use Illuminate\Http\JsonResponse;
@@ -59,7 +60,7 @@ class Controller extends BaseController
         return response()->json($contract);
     }
 
-    public function status(Request $request, ReleaseMetadata $releaseMetadata): JsonResponse
+    public function status(Request $request, ReleaseMetadata $releaseMetadata, ManagedCredentialVault $managedCredentials): JsonResponse
     {
         $authResponse = $this->statusAuthResponse($request);
         if ($authResponse instanceof JsonResponse) {
@@ -71,6 +72,7 @@ class Controller extends BaseController
             'data' => [
                 'message' => 'Pane RestAPI is available',
                 'release' => $releaseMetadata->current(),
+                'managed_credentials' => $managedCredentials->health(),
             ],
         ]));
     }

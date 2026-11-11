@@ -19,7 +19,7 @@ class ManagedCredentialEncryptionService
      * @param  array<string, mixed>  $context
      * @return array<string, mixed>
      */
-    public function encrypt(array $credentials, array $context = []): array
+    public function encrypt(#[\SensitiveParameter] array $credentials, array $context = []): array
     {
         $this->assertSodiumAvailable();
         $plaintext = $this->encodeJson($credentials);
@@ -135,6 +135,29 @@ class ManagedCredentialEncryptionService
     public function assertHealthy(): void
     {
         $this->keyFor($this->activeKeyId());
+    }
+
+    /**
+     * Configured key IDs, or none when the key configuration is missing or invalid.
+     *
+     * @return list<string>
+     */
+    public function configuredKeyIds(): array
+    {
+        try {
+            return array_keys($this->configuredKeys());
+        } catch (RuntimeException) {
+            return [];
+        }
+    }
+
+    public function activeKeyIdOrNull(): ?string
+    {
+        try {
+            return $this->activeKeyId();
+        } catch (RuntimeException) {
+            return null;
+        }
     }
 
     private function activeKeyId(): string
