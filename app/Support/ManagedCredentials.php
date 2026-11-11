@@ -17,13 +17,25 @@ final class ManagedCredentials implements JsonSerializable, Stringable
     private const string REDACTED = '[redacted]';
 
     /**
+     * The plaintext lives outside the object's properties, so var_export(),
+     * (array) casts and reflection cannot expose it. The entry is released
+     * when the object is destroyed.
+     *
+     * @var \WeakMap<self, array<string, mixed>>|null
+     */
+    private static ?\WeakMap $secrets = null;
+
+    /**
      * @param  array<string, mixed>  $values
      */
-    public function __construct(#[\SensitiveParameter] private array $values) {}
+    public function __construct(#[\SensitiveParameter] array $values)
+    {
+        self::secrets()[$this] = $values;
+    }
 
     public function get(string $key, mixed $default = null): mixed
     {
-        return $this->values[$key] ?? $default;
+        return $this->values()[$key] ?? $default;
     }
 
     /**
@@ -31,7 +43,7 @@ final class ManagedCredentials implements JsonSerializable, Stringable
      */
     public function reveal(): array
     {
-        return $this->values;
+        return $this->values();
     }
 
     /**
@@ -39,7 +51,28 @@ final class ManagedCredentials implements JsonSerializable, Stringable
      */
     public function keys(): array
     {
-        return array_map('strval', array_keys($this->values));
+        return array_map('strval', array_keys($this->values()));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function values(): array
+    {
+        return self::secrets()[$this] ?? [];
+    }
+
+    /**
+     * @return \WeakMap<self, array<string, mixed>>
+     */
+    private static function secrets(): \WeakMap
+    {
+        return self::$secrets ??= new \WeakMap;
+    }
+
+    public function __clone()
+    {
+        throw new LogicException('Managed credentials must not be cloned.');
     }
 
     /**

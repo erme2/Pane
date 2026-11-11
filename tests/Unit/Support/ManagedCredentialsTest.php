@@ -32,6 +32,22 @@ class ManagedCredentialsTest extends TestCase
         self::assertSame('{"credentials":"[redacted]"}', json_encode(['credentials' => $credentials]));
     }
 
+    public function test_var_export_and_array_casts_do_not_expose_plaintext(): void
+    {
+        $credentials = $this->credentials();
+
+        self::assertStringNotContainsString('plain-secret', var_export($credentials, true));
+        self::assertStringNotContainsString('plain-secret', var_export((array) $credentials, true));
+        self::assertSame([], get_object_vars($credentials));
+    }
+
+    public function test_cloning_is_refused(): void
+    {
+        $this->expectException(LogicException::class);
+
+        clone $this->credentials();
+    }
+
     public function test_serialization_is_refused(): void
     {
         $this->expectException(LogicException::class);
