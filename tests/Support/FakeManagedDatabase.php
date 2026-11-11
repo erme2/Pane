@@ -36,7 +36,7 @@ final class FakeManagedDatabase
     /** @var list<string> addresses that refuse connections */
     public array $refuse = [];
 
-    /** @var list<array{dsn: string, username: ?string, password: ?string, options: array<int, mixed>}> */
+    /** @var list<array{dsn: string, username: ?string, password: ?string, options: array<int, mixed>, read_timeout: string|false}> */
     public array $attempts = [];
 
     /** @var list<string> */
@@ -45,7 +45,7 @@ final class FakeManagedDatabase
     public function __construct(private readonly TestCase $test) {}
 
     /**
-     * @return array{dsn: string, username: ?string, password: ?string, options: array<int, mixed>}|null
+     * @return array{dsn: string, username: ?string, password: ?string, options: array<int, mixed>, read_timeout: string|false}|null
      */
     public function lastAttempt(): ?array
     {
@@ -87,7 +87,7 @@ final class FakeManagedDatabase
      */
     public function connect(string $dsn, ?string $username, ?string $password, array $options): PDO
     {
-        $this->attempts[] = ['dsn' => $dsn, 'username' => $username, 'password' => $password, 'options' => $options];
+        $this->attempts[] = ['dsn' => $dsn, 'username' => $username, 'password' => $password, 'options' => $options, 'read_timeout' => ini_get('mysqlnd.net_read_timeout')];
         foreach ($this->refuse as $address) {
             if (str_contains($dsn, $address)) {
                 throw new PDOException("Access denied for user '$username'", 2002);

@@ -52,6 +52,18 @@ class ManagedDatabaseConnectorTest extends TestCase
         $this->assertContains('SET SESSION max_execution_time = 15000', $this->db->statements);
     }
 
+    public function test_writes_and_lock_waits_are_bounded_too(): void
+    {
+        $before = ini_get('mysqlnd.net_read_timeout');
+
+        $this->connector()->connect('mysql', $this->credentials());
+
+        // max_execution_time only covers SELECT on MySQL.
+        $this->assertContains('SET SESSION innodb_lock_wait_timeout = 15, lock_wait_timeout = 15', $this->db->statements);
+        $this->assertSame('17', $this->db->attempts[0]['read_timeout']);
+        $this->assertSame($before, ini_get('mysqlnd.net_read_timeout'));
+    }
+
     public function test_tries_the_next_checked_address_and_uses_ipv6_brackets(): void
     {
         $this->db->refuse = ['93.184.216.34'];

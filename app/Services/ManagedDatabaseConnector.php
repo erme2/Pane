@@ -22,6 +22,13 @@ use Throwable;
  * pinned, checked IP address (never the hostname), with the installation's
  * connect and query timeouts.
  *
+ * Query timeout: MariaDB's `max_statement_time` stops any statement; MySQL's
+ * `max_execution_time` only stops SELECT, so lock waits are bounded too
+ * (`innodb_lock_wait_timeout`, `lock_wait_timeout`) and the client stops
+ * waiting for any reply after the query timeout (`mysqlnd.net_read_timeout`),
+ * so a slow write can't hold a Pane worker. A MySQL write that is already
+ * running may still finish on the server after Pane gives up.
+ *
  * TLS modes: `required` encrypts the connection (the certificate isn't
  * checked, because Pane connects to the IP address); `disabled` is allowed
  * only for hosts an installation allow rule opened (same server or private
@@ -32,6 +39,9 @@ class ManagedDatabaseConnector
     public const array DRIVERS = ['mysql', 'mariadb'];
 
     public const array SUPPORTED_TLS_MODES = ['disabled', 'required'];
+
+    /** Seconds the client waits for a reply beyond the query timeout, so the server's own timeout reports first. */
+    private const int READ_TIMEOUT_MARGIN = 2;
 
     public function __construct(
         private readonly ManagedDatabaseEgressPolicy $policy,
@@ -79,6 +89,8 @@ class ManagedDatabaseConnector
         $database = (string) $credentials->get('database', '');
         $tempFiles = [];
         $lastError = null;
+        // Read when the connection opens, so it only needs to be set around make().
+        $previousReadTimeout = ini_get('mysqlnd.net_read_timeout');
 
         try {
             $options = [
@@ -100,12 +112,17 @@ class ManagedDatabaseConnector
                 );
 
                 try {
+                    ini_set('mysqlnd.net_read_timeout', (string) ($timeouts['query'] + self::READ_TIMEOUT_MARGIN));
                     $pdo = $this->pdo->make($dsn, $this->nullableString($credentials->get('username')), $this->nullableString($credentials->get('password')), $options);
                 } catch (PDOException $exception) {
                     // Driver messages can echo the user name; keep only the code.
                     $lastError = (string) $exception->getCode();
 
                     continue;
+                } finally {
+                    if ($previousReadTimeout !== false) {
+                        ini_set('mysqlnd.net_read_timeout', $previousReadTimeout);
+                    }
                 }
 
                 if ($tlsMode === 'required' && ! $this->usesTls($pdo)) {
@@ -115,6 +132,7 @@ class ManagedDatabaseConnector
                 $pdo->exec($driver === 'mariadb'
                     ? sprintf('SET SESSION max_statement_time = %d', $timeouts['query'])
                     : sprintf('SET SESSION max_execution_time = %d', $timeouts['query'] * 1000));
+                $pdo->exec(sprintf('SET SESSION innodb_lock_wait_timeout = %1$d, lock_wait_timeout = %1$d', $timeouts['query']));
 
                 return $pdo;
             }
