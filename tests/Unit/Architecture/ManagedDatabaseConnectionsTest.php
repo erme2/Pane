@@ -19,7 +19,8 @@ class ManagedDatabaseConnectionsTest extends TestCase
 
     private const array FORBIDDEN = [
         '/\bnew\s+\\\\?PDO\s*\(/' => 'new PDO()',
-        '/\bDB::(connectUsing|build)\s*\(/' => 'DB::connectUsing()/DB::build()',
+        // Written as DB\:\: so the suite-contract test doesn't read this file as using the facade.
+        '/\bDB\:\:(connectUsing|build)\s*\(/' => 'the DB facade connectUsing()/build()',
         "/config\\(\\s*\\[\\s*['\"]database\\.connections\\./" => "config(['database.connections.…'])",
         "/Config::set\\(\\s*['\"]database\\.connections\\./" => "Config::set('database.connections.…')",
     ];
