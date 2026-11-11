@@ -4,33 +4,29 @@ Pane and Latte release independently, but the first public preview is a
 coordinated pair. Release notes must always state which Pane version is
 compatible with which Latte version.
 
-## Version Channels
+## Versions
 
-Use SemVer with pre-release labels until the first stable release:
+Pane uses plain SemVer versions: `0.<minor>.<patch>`, for example `0.1.5`.
+Every merge to `main` bumps the patch. Moving to a new minor version (`0.2.0`)
+or to `1.0.0` is a manual decision (see below).
 
-| Channel | Example | Meaning |
-| --- | --- | --- |
-| Alpha | `0.1.0-alpha.1` | Internal or unsafe public preview. APIs, deployment shape, and operational runbooks may still change. |
-| Beta | `0.1.0-beta.1` | End-to-end flow works and compatibility is expected, but external validation is still required. |
-| Release candidate | `0.1.0-rc.1` | Expected to become stable unless release-blocking defects are found. |
-| Stable | `0.1.0` | Supported first stable release for the documented Pane and Latte pair. |
-
-Increment the numeric suffix within the same channel for rapid follow-up
-releases, for example `0.1.0-alpha.2`. Move to the next channel only when the
-release gate for that channel passes.
+Until 2026-11-11 Pane used alpha pre-release tags (`v0.1.0-alpha.1` to
+`v0.1.0-alpha.4`). Those tags stay as they are. An alpha tag counts as its
+patch number: `v0.1.0-alpha.4` is the same release as `v0.1.4`, and the next
+merge after it is `v0.1.5`.
 
 ## Tag Naming
 
 Each repository owns its own tags:
 
-- Pane tags use `v<version>`, for example `v0.1.0-alpha.1`.
+- Pane tags use `v<version>`, for example `v0.1.5`.
 - Latte tags use `v<version>`, for example `v0.1.0-alpha.1`.
 
 Do not use one repository's tag as proof that the other repository was released.
 The compatible pair must be recorded in release notes.
 
 If a top-level coordinated artifact is needed later, name it with the release
-prefix and the shared version, for example `release-0.1.0-alpha.1`.
+prefix and the shared version, for example `release-0.1.5`.
 
 ## Automatic Tags
 
@@ -41,12 +37,12 @@ for about 80 seconds because GitHub links a pushed commit to its pull request a
 few seconds after the merge), runs the PR test suite against the merge
 commit, and only then calls `bash/release-tag.sh` to tag it:
 
-- With no tags yet, the first tag is `v0.1.0-alpha.1`. It goes on the oldest
+- With no tags yet, the first tag is `v0.1.0`. It goes on the oldest
   eligible merge from the rollout boundary on: the first `main` commit that
   contains `.github/workflows/tag-main.yml`. Older history is never tagged.
-- Pre-release tags bump the numeric suffix: `v0.1.0-alpha.1` becomes
-  `v0.1.0-alpha.2`.
-- Stable tags bump the patch: `v0.1.0` becomes `v0.1.1`.
+- Each merge bumps the patch: `v0.1.4` becomes `v0.1.5`.
+- An old pre-release tag `vX.Y.Z-<label>.N` counts as `vX.Y.(Z+N)`, so
+  `v0.1.0-alpha.4` is followed by `v0.1.5`.
 - Tags are annotated, point at the merge commit, and are never moved or reused.
 - Every merge gets its own tag, in merge order. Tag jobs are serialized, but
   GitHub can replace a queued tag job with a newer one, or a newer merge can
@@ -63,11 +59,11 @@ commit, and only then calls `bash/release-tag.sh` to tag it:
 - If another run pushes the computed tag first, the script fetches tags again
   and picks the next free version.
 
-Starting a new channel (beta, rc, stable) or a new base version stays a manual
-step. Tag the latest `main` merge commit by hand, for example
-`git tag -a v0.1.0-beta.1 -m "Pane v0.1.0-beta.1" <sha>` and
-`git push origin refs/tags/v0.1.0-beta.1`. Later merges continue from it
-(`v0.1.0-beta.2`, ...).
+Starting a new minor or major version stays a manual step. Tag the latest
+`main` merge commit by hand, for example
+`git tag -a v0.2.0 -m "Pane v0.2.0" <sha>` and
+`git push origin refs/tags/v0.2.0`. Later merges continue from it
+(`v0.2.1`, ...).
 
 erme2/deploy's **Deploy Pane** workflow deploys Pane's latest tag when no `ref`
 is given, so each merge produces a deployable version.
@@ -79,7 +75,7 @@ tooling should derive version/ref/commit from GitHub release context, using
 `GITHUB_REF_NAME`, `GITHUB_SHA`, and `GITHUB_RUN_NUMBER`. Automatic `main`
 deployments use `0.1.0-alpha.<GITHUB_RUN_NUMBER>` as the release version.
 Manual dispatches may still pass an explicit release version, typically a
-tagged version such as `0.1.0-alpha.1`. Deployment then runs
+tagged version such as `0.1.5`. Deployment then runs
 `php artisan release:cache --release-version="$release_version" --ref="$GITHUB_REF_NAME" --commit="$GITHUB_SHA" --built-at="<timestamp>"`
 before shipping the release artifact. The command writes
 `bootstrap/cache/pane-release.php`, which is ignored by git and can be included
