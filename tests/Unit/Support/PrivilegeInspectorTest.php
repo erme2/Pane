@@ -71,6 +71,25 @@ class PrivilegeInspectorTest extends TestCase
         $this->assertTrue($report['valid']);
     }
 
+    public function test_table_grants_do_not_satisfy_the_database_wide_requirement(): void
+    {
+        $report = $this->evaluate(['GRANT SELECT, INSERT, UPDATE, DELETE ON `shop`.`only_one_table` TO `app`@`%`']);
+
+        $this->assertFalse($report['valid']);
+        $this->assertSame(['SELECT', 'INSERT', 'UPDATE', 'DELETE'], $report['missing']);
+    }
+
+    public function test_table_grants_with_other_privileges_are_excessive(): void
+    {
+        $report = $this->evaluate([
+            'GRANT SELECT, INSERT, UPDATE, DELETE ON `shop`.* TO `app`@`%`',
+            'GRANT ALTER ON `shop`.`lists` TO `app`@`%`',
+        ]);
+
+        $this->assertFalse($report['valid']);
+        $this->assertSame(['ALTER on `shop`'], $report['excessive']);
+    }
+
     public function test_reports_never_contain_password_hashes(): void
     {
         $report = $this->evaluate(['GRANT SUPER ON *.* TO `app`@`%` IDENTIFIED BY PASSWORD \'*SECRETHASH\'']);

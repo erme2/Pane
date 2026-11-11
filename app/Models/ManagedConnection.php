@@ -110,7 +110,7 @@ class ManagedConnection extends Model
     public function versionTag(): string
     {
         return hash('sha256', implode('|', [
-            $this->getKey(), $this->engine, $this->name, $this->host, $this->port, $this->database_name,
+            $this->getKey(), $this->engine, $this->name, $this->description, $this->host, $this->port, $this->database_name,
             $this->username, $this->tls_mode, $this->status, $this->managed_credential_secret_id,
             $this->updated_at?->toJSON(),
         ]));

@@ -43,6 +43,12 @@ class ManagedDatabaseConnector
 
     public const array SUPPORTED_TLS_MODES = ['disabled', 'required'];
 
+    /**
+     * Database names go into the DSN, so only plain names are allowed: a `;` or `=` would let
+     * the name set a later DSN option such as `host`, which would bypass the pinned address.
+     */
+    public const string DATABASE_NAME_PATTERN = '/\A[\p{L}\p{N}_$-]{1,64}\z/u';
+
     /** Seconds the client waits for a reply beyond the query timeout, so the server's own timeout reports first. */
     private const int READ_TIMEOUT_MARGIN = 2;
 
@@ -72,6 +78,11 @@ class ManagedDatabaseConnector
             throw new InvalidArgumentException("Unsupported managed database driver [$driver].");
         }
 
+        $database = (string) $credentials->get('database', '');
+        if ($database !== '' && preg_match(self::DATABASE_NAME_PATTERN, $database) !== 1) {
+            throw new ConnectionRejectedException('The database name may only contain letters, digits, _, $ and -.');
+        }
+
         if (! in_array($tlsMode, self::SUPPORTED_TLS_MODES, true)) {
             throw new ConnectionRejectedException("TLS mode [$tlsMode] is not supported yet: use required (or disabled for a database on the same server or a private network).");
         }
@@ -89,7 +100,6 @@ class ManagedDatabaseConnector
         }
 
         $timeouts = $this->policy->timeouts();
-        $database = (string) $credentials->get('database', '');
         $tempFiles = [];
         $lastError = null;
         // Read when the connection opens, so it only needs to be set around make().

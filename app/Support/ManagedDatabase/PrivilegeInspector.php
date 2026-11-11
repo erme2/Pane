@@ -79,6 +79,7 @@ final class PrivilegeInspector
             $privileges = $this->privileges($match[1]);
             $scope = $this->scope(trim($match[2]), $database, $visibleDatabases);
             $withGrantOption = (bool) preg_match('/\bWITH\s+GRANT\s+OPTION\b/i', $line);
+            $databaseWide = str_ends_with(trim($match[2]), '.*');
 
             if ($withGrantOption) {
                 $excessive[] = "GRANT OPTION on {$scope['label']}";
@@ -97,6 +98,17 @@ final class PrivilegeInspector
             if ($scope['kind'] !== 'own_database') {
                 foreach ($privileges as $privilege) {
                     if ($privilege !== 'USAGE') {
+                        $excessive[] = "$privilege on {$scope['label']}";
+                    }
+                }
+
+                continue;
+            }
+
+            // Table and column grants can't satisfy the database-wide requirement, but harmless ones may stay.
+            if (! $databaseWide) {
+                foreach ($privileges as $privilege) {
+                    if (! in_array($privilege, [...self::REQUIRED, ...self::ALLOWED_EXTRA], true)) {
                         $excessive[] = "$privilege on {$scope['label']}";
                     }
                 }

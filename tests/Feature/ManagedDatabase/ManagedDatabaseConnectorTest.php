@@ -156,6 +156,18 @@ class ManagedDatabaseConnectorTest extends TestCase
         }
     }
 
+    public function test_database_names_cannot_inject_dsn_options(): void
+    {
+        $injected = 'shop;host=127.0.0.1;port=3307';
+
+        try {
+            $this->connector()->connect('mysql', $this->credentials(extra: ['database' => $injected]));
+            $this->fail('Expected the database name to be rejected.');
+        } catch (ConnectionRejectedException) {
+            $this->assertSame([], $this->db->attempts);
+        }
+    }
+
     public function test_unsupported_drivers_are_refused(): void
     {
         $this->expectException(InvalidArgumentException::class);

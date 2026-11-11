@@ -16,6 +16,7 @@ use App\Services\OrganizationTenancyService;
 use App\Support\ManagedDatabase\HostResolver;
 use App\Support\ManagedDatabase\PdoFactory;
 use App\Support\PaneTable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -215,6 +216,37 @@ class ManagedConnectionApiTest extends TestCase
         $connection = ManagedConnection::query()->findOrFail($id);
         $this->assertSame('Changed elsewhere', $connection->name);
         $this->assertSame(3306, $connection->port);
+    }
+
+    public function test_database_names_with_dsn_syntax_are_rejected_before_connecting(): void
+    {
+        $this->create(['database' => 'shop;host=127.0.0.1;port=3307'])->assertUnprocessable();
+        $this->assertSame([], $this->db->attempts);
+
+        $id = $this->create()->json('data.id');
+        $etag = $this->api('GET', "/$id")->headers->get('ETag');
+        $attempts = count($this->db->attempts);
+
+        $this->api('PATCH', "/$id", ['database' => 'shop;host=127.0.0.1'], $etag)->assertUnprocessable();
+        $this->assertCount($attempts, $this->db->attempts);
+    }
+
+    public function test_description_changes_are_part_of_the_version(): void
+    {
+        Carbon::setTestNow('2026-11-11 12:00:00');
+
+        try {
+            $created = $this->create();
+            $id = $created->json('data.id');
+            $original = $created->headers->get('ETag');
+
+            $first = $this->api('PATCH', "/$id", ['description' => 'First change'], $original)->assertOk();
+            $this->api('PATCH', "/$id", ['description' => 'Stale change'], $original)->assertStatus(412);
+            $this->assertSame('First change', ManagedConnection::query()->findOrFail($id)->description);
+            $this->assertNotSame($original, $first->headers->get('ETag'));
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_new_credentials_replace_the_secret(): void

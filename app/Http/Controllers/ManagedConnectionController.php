@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ManagedConnectionService;
+use App\Services\ManagedDatabaseConnector;
 use App\Support\ManagedDatabase\ConnectionRejectedException;
 use App\Support\ManagedDatabase\ConnectionVersionChangedException;
 use DomainException;
@@ -237,7 +238,7 @@ class ManagedConnectionController extends Controller
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'host' => [$required, 'string', 'min:1', 'max:253'],
             'port' => [$required, 'integer', 'between:1,65535'],
-            'database' => [$required, 'string', 'min:1', 'max:64'],
+            'database' => [$required, 'string', 'min:1', 'max:64', 'regex:'.ManagedDatabaseConnector::DATABASE_NAME_PATTERN],
             'username' => [$required, 'string', 'min:1', 'max:128'],
             'tls_mode' => [$required, 'string', 'in:'.implode(',', ManagedConnection::TLS_MODES)],
             'status' => ['sometimes', 'string', 'in:'.implode(',', ManagedConnection::STATUSES)],
