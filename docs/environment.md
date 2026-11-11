@@ -35,6 +35,18 @@ Rotating the managed-credential key:
 
 Stored envelopes are bound to their secret record (ID, organization, connection, purpose), so copying an envelope onto another row makes it fail to decrypt. Decrypted credentials are held in `App\Support\ManagedCredentials`, which redacts itself in dumps, strings and JSON and refuses to be serialized, so it can't end up in queued jobs, cache or logs by accident.
 
+## Managed-Database Network Policy
+
+Every managed-database connection (connection tests and runtime queries) goes through `App\Services\ManagedDatabaseEgressPolicy`, called right before connecting. Pane then connects to one of the addresses it checked, never re-resolving the hostname, so DNS can't be swapped in between.
+
+- Denied by default: loopback, private, shared (CGNAT), link-local, documentation, benchmarking, multicast and reserved ranges, for IPv4 and IPv6, including IPv4-mapped and NAT64 forms. Every DNS answer must pass, so one private answer blocks the host.
+- Never allowed: cloud metadata addresses and hostnames (e.g. `169.254.169.254`, `fd00:ec2::254`, `metadata.google.internal`), multicast and unspecified addresses.
+- `PANE_MANAGED_DB_EGRESS_ALLOW` is a comma-separated list of approved hosts and ranges, for installation-wide private networks, e.g. `localhost,10.20.0.0/16,fd00:1234::/32`. A hostname rule opens only that exact name; an IP rule opens that address or range. An invalid rule blocks every connection until it's fixed. Organizations can't change these rules.
+- `PANE_MANAGED_DB_CONNECT_TIMEOUT` (default 5 s, at most 30) and `PANE_MANAGED_DB_QUERY_TIMEOUT` (default 15 s, at most 120) apply to every organization.
+- Each decision is audited as `managed_database.egress.allowed` or `.denied`, with host, port, resolved addresses and the reason. No credentials are recorded.
+
+On Hostinger, a database on the same server is usually `localhost`: add `localhost` to `PANE_MANAGED_DB_EGRESS_ALLOW`.
+
 ## URLs And Trusted Hosts
 
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.
