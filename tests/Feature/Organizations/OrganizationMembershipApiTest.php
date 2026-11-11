@@ -110,6 +110,29 @@ class OrganizationMembershipApiTest extends TestCase
             ->assertJsonPath('data.attributes.status', OrganizationMembership::STATUS_ACTIVE);
     }
 
+    public function test_cross_origin_frontend_can_read_membership_etag(): void
+    {
+        [$application, $organization] = $this->configuredApplicationAndOrganization();
+        $administrator = $this->organizationAdministrator($organization);
+        $membership = $organization->memberships()->firstOrFail();
+
+        $this->withCsrfToken()->actingAs($administrator);
+
+        $response = $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->getJson("/api/v1/organizations/$organization->organization_id/memberships/$membership->membership_id");
+
+        $response
+            ->assertOk()
+            ->assertHeader('ETag')
+            ->assertHeader('Access-Control-Allow-Origin', 'https://latte.test');
+
+        // Latte sends this ETag back as If-Match; browsers hide headers that CORS doesn't expose.
+        $exposed = array_map('trim', explode(',', (string) $response->headers->get('Access-Control-Expose-Headers')));
+        $this->assertContains('ETag', $exposed);
+    }
+
     public function test_membership_api_denies_non_admins_and_cross_organization_access(): void
     {
         [$application, $organization] = $this->configuredApplicationAndOrganization();
