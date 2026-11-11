@@ -54,4 +54,10 @@ return [
         'keys' => env('PANE_MANAGED_CREDENTIAL_KEYS'),
     ],
 
+    'managed_databases' => [
+        'egress_allow' => env('PANE_MANAGED_DB_EGRESS_ALLOW'),
+        'connect_timeout' => env('PANE_MANAGED_DB_CONNECT_TIMEOUT'),
+        'query_timeout' => env('PANE_MANAGED_DB_QUERY_TIMEOUT'),
+    ],
+
 ];
