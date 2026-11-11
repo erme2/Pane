@@ -249,6 +249,23 @@ class ManagedConnectionApiTest extends TestCase
         }
     }
 
+    public function test_field_values_with_delimiters_do_not_collide_in_the_version(): void
+    {
+        Carbon::setTestNow('2026-11-11 12:00:00');
+
+        try {
+            $created = $this->create(['name' => 'Shop', 'description' => 'one|two']);
+            $id = $created->json('data.id');
+            $original = $created->headers->get('ETag');
+
+            $this->api('PATCH', "/$id", ['name' => 'Shop|one', 'description' => 'two'], $original)->assertOk();
+            $this->api('PATCH', "/$id", ['description' => 'Stale'], $original)->assertStatus(412);
+            $this->assertSame('two', ManagedConnection::query()->findOrFail($id)->description);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_new_credentials_replace_the_secret(): void
     {
         $created = $this->create();

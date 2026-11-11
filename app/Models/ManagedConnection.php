@@ -109,10 +109,11 @@ class ManagedConnection extends Model
 
     public function versionTag(): string
     {
-        return hash('sha256', implode('|', [
+        // JSON keeps each field's boundaries and type, so no two resource states serialize alike.
+        return hash('sha256', json_encode([
             $this->getKey(), $this->engine, $this->name, $this->description, $this->host, $this->port, $this->database_name,
             $this->username, $this->tls_mode, $this->status, $this->managed_credential_secret_id,
             $this->updated_at?->toJSON(),
-        ]));
+        ], JSON_THROW_ON_ERROR));
     }
 }
