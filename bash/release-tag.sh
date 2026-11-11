@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Creates and pushes the next Pane release tag (see docs/release.md).
 #
-# Pre-release tags bump the numeric suffix (v0.1.0-alpha.1 -> v0.1.0-alpha.2).
-# Stable tags bump the patch (v0.1.0 -> v0.1.1). Channel or base-version
-# changes are manual: push the new tag by hand and the next run continues
-# from it.
+# Each merge bumps the patch (v0.1.4 -> v0.1.5). A new minor or major version
+# is manual: push the new tag by hand and the next run continues from it.
+# Old pre-release tags count as their patch number (v0.1.0-alpha.4 reads as
+# v0.1.4), so the first run after them continues with v0.1.5.
 #
 # Every merge gets its own tag. Before tagging the requested commit, the
 # script tags, oldest first, any untagged first-parent commits between the
@@ -23,7 +23,7 @@ REMOTE=origin
 PUSH=yes
 GATE=
 MARKER=.github/workflows/tag-main.yml
-FIRST_TAG=v0.1.0-alpha.1
+FIRST_TAG=v0.1.0
 MAX_ATTEMPTS=5
 GATE_SKIP=10
 
@@ -68,8 +68,9 @@ next_tag() {
     local latest=$1
     if [[ -z "$latest" ]]; then
         echo "$FIRST_TAG"
-    elif [[ "$latest" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-([0-9A-Za-z-]+)\.([0-9]+)$ ]]; then
-        echo "v${BASH_REMATCH[1]}-${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+    elif [[ "$latest" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)-[0-9A-Za-z-]+\.([0-9]+)$ ]]; then
+        # Old pre-release tag: vX.Y.Z-label.N reads as vX.Y.(Z+N).
+        echo "v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + BASH_REMATCH[4] + 1))"
     elif [[ "$latest" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
         echo "v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
     else

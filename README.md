@@ -43,9 +43,9 @@ the canonical Pane origin and put only extra Pane hostnames in
 `TRUSTED_HOSTS`. See [Environment Configuration](docs/environment.md) for the
 complete `.env.example` contract.
 
-Pane and Latte releases use coordinated pre-release channels and repo-local
-tags. See [Release Policy](docs/release.md) before tagging an alpha, beta,
-release candidate, or stable release.
+Pane tags every merge to `main` with the next patch version (`v0.1.5`,
+`v0.1.6`, ...). See [Release Policy](docs/release.md) before tagging a new
+minor or major version by hand.
 
 The first Pane alpha targets Hostinger. See
 [Hostinger Runtime Preparation](docs/hostinger.md) for required PHP extensions,
