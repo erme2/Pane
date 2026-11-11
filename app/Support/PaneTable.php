@@ -16,6 +16,8 @@ class PaneTable
 
     public const string MANAGED_CREDENTIAL_SECRETS = 'managed_credential_secrets';
 
+    public const string MANAGED_CONNECTIONS = 'managed_connections';
+
     public const string AUDIT_EVENTS = 'audit_events';
 
     public const string PANE_ADMIN_INVITATIONS = 'admin_invitations';

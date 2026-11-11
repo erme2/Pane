@@ -47,6 +47,22 @@ Every managed-database connection (connection tests and runtime queries) is open
 
 On Hostinger, a database on the same server is usually `localhost`: add `localhost` to `PANE_MANAGED_DB_EGRESS_ALLOW`.
 
+### Connections (`/api/v1/organizations/{organization_id}/connections`)
+
+Organization administrators add, test, update, disable (`DELETE`) and reactivate (`PATCH status=active`) their databases. Each active connection uses one slot of the organization's `database_limit`.
+
+- Every create, reactivation, or change to engine, host, port, database, user, TLS mode or password is tested first, and nothing is saved if the test fails.
+- The database account must have exactly `SELECT, INSERT, UPDATE, DELETE` on its own database. DDL (`CREATE`, `ALTER`, `DROP`…), `ALL PRIVILEGES`, server-wide, `FILE`, `PROCESS`, `SUPER`, `GRANT OPTION`, roles, or grants on other databases are rejected. A hosting panel grant like `` `u123_shop`.* `` (where `_` is a wildcard) is accepted only when it matches no other database the account can see.
+- `tls_mode`: `required` encrypts the connection (the certificate isn't checked, since Pane connects to the IP address); `disabled` only for hosts opened by `PANE_MANAGED_DB_EGRESS_ALLOW`, such as `localhost`; `verify_ca` and `verify_identity` are rejected for now.
+- Passwords and certificates are write-only: the API only returns `credentials_configured`. They're stored encrypted (see the managed-credential keys above) and never written to the audit log.
+
+Example account for a same-server database:
+
+```sql
+CREATE USER 'pane_app'@'localhost' IDENTIFIED BY '…';
+GRANT SELECT, INSERT, UPDATE, DELETE ON `shop`.* TO 'pane_app'@'localhost';
+```
+
 ## URLs And Trusted Hosts
 
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.

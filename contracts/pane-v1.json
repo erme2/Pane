@@ -4149,10 +4149,12 @@
                     "tls_mode": {
                         "type": "string",
                         "enum": [
+                            "disabled",
                             "required",
                             "verify_ca",
                             "verify_identity"
-                        ]
+                        ],
+                        "description": "`required` encrypts the connection. `disabled` is accepted only for hosts opened by an installation allow rule (same server or private network). `verify_ca` and `verify_identity` are reserved and currently rejected with connection_policy_rejected."
                     },
                     "status": {
                         "type": "string",
@@ -4249,10 +4251,12 @@
                     "tls_mode": {
                         "type": "string",
                         "enum": [
+                            "disabled",
                             "required",
                             "verify_ca",
                             "verify_identity"
-                        ]
+                        ],
+                        "description": "`required` encrypts the connection. `disabled` is accepted only for hosts opened by an installation allow rule (same server or private network). `verify_ca` and `verify_identity` are reserved and currently rejected with connection_policy_rejected."
                     },
                     "status": {
                         "type": "string",
