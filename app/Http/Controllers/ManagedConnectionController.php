@@ -9,6 +9,7 @@ use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ManagedConnectionService;
 use App\Support\ManagedDatabase\ConnectionRejectedException;
+use App\Support\ManagedDatabase\ConnectionVersionChangedException;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -133,9 +134,11 @@ class ManagedConnectionController extends Controller
         }
 
         try {
-            $updated = $this->connections->update($connection, $context['actor'], $input['profile'], $input['secrets'], $this->requestId($request));
+            $updated = $this->connections->update($connection, $context['actor'], $input['profile'], $input['secrets'], $this->expectedVersion($request), $this->requestId($request));
         } catch (ConnectionRejectedException $exception) {
             return $this->v1Error($request, 'connection_policy_rejected', $exception->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ConnectionVersionChangedException) {
+            return $this->versionConflict($request);
         } catch (DomainException $exception) {
             return $this->conflict($request, $exception);
         }
@@ -160,7 +163,11 @@ class ManagedConnectionController extends Controller
             return $precondition;
         }
 
-        $this->connections->disable($connection, $context['actor'], $this->requestId($request));
+        try {
+            $this->connections->disable($connection, $context['actor'], $this->expectedVersion($request), $this->requestId($request));
+        } catch (ConnectionVersionChangedException) {
+            return $this->versionConflict($request);
+        }
 
         return response()->noContent()->header('X-Request-Id', $this->requestId($request));
     }
@@ -358,10 +365,21 @@ class ManagedConnectionController extends Controller
         }
 
         if (! hash_equals('"'.$connection->versionTag().'"', $ifMatch)) {
-            return $this->v1Error($request, 'version_conflict', 'The resource version does not match the If-Match header.', Response::HTTP_PRECONDITION_FAILED);
+            return $this->versionConflict($request);
         }
 
         return null;
+    }
+
+    /** The version tag from a validated If-Match header (see ifMatch). */
+    private function expectedVersion(Request $request): string
+    {
+        return trim((string) $request->header('If-Match'), '"');
+    }
+
+    private function versionConflict(Request $request): JsonResponse
+    {
+        return $this->v1Error($request, 'version_conflict', 'The resource version does not match the If-Match header.', Response::HTTP_PRECONDITION_FAILED);
     }
 
     private function v1Error(Request $request, string $code, string $message, int $status): JsonResponse

@@ -199,6 +199,24 @@ class ManagedConnectionApiTest extends TestCase
         $this->assertSame('app', ManagedConnection::query()->findOrFail($id)->username);
     }
 
+    public function test_a_save_that_lands_during_the_connection_check_is_not_overwritten(): void
+    {
+        $created = $this->create();
+        $id = $created->json('data.id');
+        $etag = $created->headers->get('ETag');
+
+        // Another request renames the connection while this one is still probing the new port.
+        $this->db->beforeConnect = fn () => ManagedConnection::query()->whereKey($id)->update(['name' => 'Changed elsewhere', 'updated_at' => now()->addSecond()]);
+
+        $this->api('PATCH', "/$id", ['port' => 3308], $etag)
+            ->assertStatus(412)
+            ->assertJsonPath('error.code', 'version_conflict');
+
+        $connection = ManagedConnection::query()->findOrFail($id);
+        $this->assertSame('Changed elsewhere', $connection->name);
+        $this->assertSame(3306, $connection->port);
+    }
+
     public function test_new_credentials_replace_the_secret(): void
     {
         $created = $this->create();

@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Support\ManagedCredentials;
 use App\Support\ManagedDatabase\ConnectionRejectedException;
+use App\Support\ManagedDatabase\ConnectionVersionChangedException;
 use App\Support\ManagedDatabase\EgressDeniedException;
 use App\Support\ManagedDatabase\PrivilegeInspector;
 use DomainException;
@@ -78,11 +79,13 @@ class ManagedConnectionService
     /**
      * @param  array<string, mixed>  $changes  profile fields and/or status
      * @param  array<string, string>|null  $secrets  new secrets, or null to keep the current ones
+     * @param  string  $expectedVersion  the versionTag the caller read; checked again under a row lock before saving
      *
      * @throws ConnectionRejectedException when a needed re-test fails (nothing is saved)
+     * @throws ConnectionVersionChangedException when the connection changed during the re-test (nothing is saved)
      * @throws DomainException when the name is taken or reactivating exceeds the quota
      */
-    public function update(ManagedConnection $connection, User $actor, array $changes, #[\SensitiveParameter] ?array $secrets, ?string $requestId = null): ManagedConnection
+    public function update(ManagedConnection $connection, User $actor, array $changes, #[\SensitiveParameter] ?array $secrets, string $expectedVersion, ?string $requestId = null): ManagedConnection
     {
         $organization = $connection->organization()->firstOrFail();
         $target = [...$this->profileOf($connection), ...array_intersect_key($changes, array_flip([...self::CONNECTIVITY_FIELDS, 'name', 'description']))];
@@ -102,18 +105,24 @@ class ManagedConnectionService
             $this->probe($organization, $actor, $connection->getKey(), $target, $testSecrets, $requestId);
         }
 
-        $updated = DB::transaction(function () use ($connection, $organization, $target, $status, $secrets, $reactivating, $connectivityChanged): ManagedConnection {
+        $updated = DB::transaction(function () use ($connection, $organization, $target, $status, $secrets, $reactivating, $connectivityChanged, $expectedVersion): ManagedConnection {
+            // The probe ran outside this transaction, so another request may have saved in the meantime.
+            $current = ManagedConnection::query()->whereKey($connection->getKey())->lockForUpdate()->firstOrFail();
+            if (! hash_equals($expectedVersion, $current->versionTag())) {
+                throw new ConnectionVersionChangedException('The connection changed while it was being checked. Read it again and retry.');
+            }
+
             if ($reactivating) {
                 $this->tenancy->reserveDatabaseConnectionSlot($organization);
-            } elseif ($status === ManagedConnection::STATUS_DISABLED && $connection->isActive()) {
+            } elseif ($status === ManagedConnection::STATUS_DISABLED && $current->isActive()) {
                 $this->tenancy->releaseDatabaseConnectionSlot($organization);
             }
 
             $attributes = [...$target, 'status' => $status];
 
             if ($secrets !== null) {
-                $previous = $connection->secret()->first();
-                $secret = $this->vault->store($organization, $secrets, $connection->getKey());
+                $previous = $current->secret()->first();
+                $secret = $this->vault->store($organization, $secrets, $current->getKey());
                 $attributes['managed_credential_secret_id'] = $secret->managed_credential_secret_id;
                 $previous?->forceFill(['status' => ManagedCredentialSecret::STATUS_REVOKED])->save();
             }
@@ -122,9 +131,9 @@ class ManagedConnectionService
                 $attributes += ['last_tested_at' => now(), 'last_test_reachable' => true, 'last_test_privileges_valid' => true];
             }
 
-            $connection->forceFill($attributes)->save();
+            $current->forceFill($attributes)->save();
 
-            return $connection->refresh();
+            return $current->refresh();
         });
 
         $action = match (true) {
@@ -137,13 +146,13 @@ class ManagedConnectionService
         return $updated;
     }
 
-    public function disable(ManagedConnection $connection, User $actor, ?string $requestId = null): ManagedConnection
+    public function disable(ManagedConnection $connection, User $actor, string $expectedVersion, ?string $requestId = null): ManagedConnection
     {
         if (! $connection->isActive()) {
             return $connection;
         }
 
-        return $this->update($connection, $actor, ['status' => ManagedConnection::STATUS_DISABLED], null, $requestId);
+        return $this->update($connection, $actor, ['status' => ManagedConnection::STATUS_DISABLED], null, $expectedVersion, $requestId);
     }
 
     /**

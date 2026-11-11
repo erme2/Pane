@@ -42,6 +42,9 @@ final class FakeManagedDatabase
     /** @var list<string> */
     public array $statements = [];
 
+    /** Runs before each connection attempt, e.g. to simulate a concurrent save during a connection test. */
+    public ?\Closure $beforeConnect = null;
+
     public function __construct(private readonly TestCase $test) {}
 
     /**
@@ -88,6 +91,10 @@ final class FakeManagedDatabase
     public function connect(string $dsn, ?string $username, ?string $password, array $options): PDO
     {
         $this->attempts[] = ['dsn' => $dsn, 'username' => $username, 'password' => $password, 'options' => $options, 'read_timeout' => ini_get('mysqlnd.net_read_timeout')];
+        if ($this->beforeConnect !== null) {
+            ($this->beforeConnect)();
+        }
+
         foreach ($this->refuse as $address) {
             if (str_contains($dsn, $address)) {
                 throw new PDOException("Access denied for user '$username'", 2002);

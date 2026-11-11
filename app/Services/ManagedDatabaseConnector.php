@@ -22,12 +22,15 @@ use Throwable;
  * pinned, checked IP address (never the hostname), with the installation's
  * connect and query timeouts.
  *
- * Query timeout: MariaDB's `max_statement_time` stops any statement; MySQL's
+ * Query timeout: MariaDB's `max_statement_time` stops any statement. MySQL's
  * `max_execution_time` only stops SELECT, so lock waits are bounded too
- * (`innodb_lock_wait_timeout`, `lock_wait_timeout`) and the client stops
- * waiting for any reply after the query timeout (`mysqlnd.net_read_timeout`),
- * so a slow write can't hold a Pane worker. A MySQL write that is already
- * running may still finish on the server after Pane gives up.
+ * (`innodb_lock_wait_timeout`, `lock_wait_timeout`), and the client stops
+ * waiting for a reply after the query timeout (`mysqlnd.net_read_timeout`),
+ * which releases the Pane worker. That client timeout is not a guarantee for
+ * writes: a MySQL write that is already running may still commit on the server
+ * after Pane reports a timeout, so the outcome is unknown. Mutating queries must
+ * not be retried blindly, and no caller may rely on a strict write timeout until
+ * an operation-status check can reconcile the outcome.
  *
  * TLS modes: `required` encrypts the connection (the certificate isn't
  * checked, because Pane connects to the IP address); `disabled` is allowed
