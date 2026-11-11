@@ -18,6 +18,23 @@ PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID=2026-08-primary
 PANE_MANAGED_CREDENTIAL_KEYS={"2026-07-primary":"base64:old-32-byte-key-material","2026-08-primary":"base64:new-32-byte-key-material"}
 ```
 
+Generate a key (32 random bytes, `base64:` prefix):
+
+```bash
+php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
+```
+
+Rotating the managed-credential key:
+
+1. Add the new key to `PANE_MANAGED_CREDENTIAL_KEYS`, keeping the old one, and set `PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID` to the new key ID. Deploy. New secrets use the new key; old ones still decrypt.
+2. Run `php artisan managed-credentials:rotate --dry-run` to see how many secrets still use an older key, then `php artisan managed-credentials:rotate` (repeat, or raise `--limit`, until nothing is left).
+3. Run `php artisan managed-credentials:check`: it fails if the active key is missing or if any secret uses a key that is no longer configured.
+4. Only then remove the old key from `PANE_MANAGED_CREDENTIAL_KEYS`.
+
+`GET /status` (behind the status password) includes `managed_credentials`: whether the active key is usable and how many secrets are stored, still on an older key, or on a key that is no longer configured. It never includes key material or credentials.
+
+Stored envelopes are bound to their secret record (ID, organization, connection, purpose), so copying an envelope onto another row makes it fail to decrypt. Decrypted credentials are held in `App\Support\ManagedCredentials`, which redacts itself in dumps, strings and JSON and refuses to be serialized, so it can't end up in queued jobs, cache or logs by accident.
+
 ## URLs And Trusted Hosts
 
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.
