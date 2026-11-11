@@ -37,7 +37,7 @@ Stored envelopes are bound to their secret record (ID, organization, connection,
 
 ## Managed-Database Network Policy
 
-Every managed-database connection (connection tests and runtime queries) goes through `App\Services\ManagedDatabaseEgressPolicy`, called right before connecting. Pane then connects to one of the addresses it checked, never re-resolving the hostname, so DNS can't be swapped in between.
+Every managed-database connection (connection tests and runtime queries) is opened by `App\Services\ManagedDatabaseConnector`, the only code allowed to connect to an organization's database. It asks `App\Services\ManagedDatabaseEgressPolicy` first, then connects to one of the addresses that were checked, never re-resolving the hostname, so DNS can't be swapped in between. It also applies the connect timeout and a per-session query timeout.
 
 - Denied by default: loopback, private, shared (CGNAT), link-local, documentation, benchmarking, multicast and reserved ranges, for IPv4 and IPv6, including IPv4-mapped and NAT64 forms. Every DNS answer must pass, so one private answer blocks the host.
 - Never allowed: cloud metadata addresses and hostnames (e.g. `169.254.169.254`, `fd00:ec2::254`, `metadata.google.internal`), multicast and unspecified addresses.
