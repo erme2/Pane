@@ -85,6 +85,7 @@ The worker sends due messages (`pending`, `available_at` passed), oldest first, 
 - A failed send is retried after 1, 5 and 30 minutes, then marked `failed` (4 attempts). `last_error` keeps a short reason with links and email addresses removed.
 - Messages left in `sending` for more than 10 minutes (a crashed run) go back to `pending`.
 - It logs counts and message IDs only, never recipients, links or payloads.
+- On Hostinger it runs from Laravel's scheduler, driven by one hPanel cron job: see [Message Worker (Cron)](hostinger.md#message-worker-cron). `GET /status` shows the queue and whether the worker is running (`data.messages`).
 - The body is a plain built-in template until per-type templates land; every payload value is escaped and only `http(s)` links are linked.
 
 `PANE_ENVIRONMENT` (`dev`, `stage` or `prod`) adds `[DEV]` / `[STAGE]` to every email subject on dev and stage, once; production gets none. Deployed installs run with `APP_ENV=production` even on dev and stage, so set `PANE_ENVIRONMENT` there. When it's unset, `APP_ENV` is used (`dev`/`development`, `stage`/`staging`).

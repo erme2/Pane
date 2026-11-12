@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Mail\QueuedMessageMail;
 use App\Models\Message;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -25,6 +27,12 @@ class MessageWorker
     public const int STALE_AFTER_MINUTES = 10;
 
     private const int BATCH_SIZE = 10;
+
+    /** Cache key holding when the worker last finished a run (ISO 8601). */
+    public const string LAST_RUN_CACHE_KEY = 'pane:messages:last_run_at';
+
+    /** A worker that hasn't run for this long is reported as stale. */
+    public const int STALE_WORKER_AFTER_SECONDS = 300;
 
     /**
      * @param  callable(): bool  $shouldStop  checked between messages (time budget)
@@ -55,6 +63,49 @@ class MessageWorker
         } while (! $once && $batch !== [] && $handled < $limit);
 
         return $result;
+    }
+
+    /** Records that a run finished, for the status endpoint. */
+    public function recordRun(): void
+    {
+        Cache::forever(self::LAST_RUN_CACHE_KEY, now()->toJSON());
+    }
+
+    /**
+     * Queue and worker health for `/status`: counts only, no recipients.
+     * `worker` is `ok`, `stale` (no run for 5 minutes) or `never`.
+     *
+     * @return array{worker: 'ok'|'stale'|'never', last_run_at: string|null, pending: int, due: int, sending: int, failed: int, oldest_due_at: string|null, oldest_due_age_seconds: int|null}
+     */
+    public function health(): array
+    {
+        $lastRun = Cache::get(self::LAST_RUN_CACHE_KEY);
+        $lastRunAt = is_string($lastRun) ? Carbon::parse($lastRun) : null;
+        $oldestDue = Message::query()
+            ->where('status', Message::STATUS_PENDING)
+            ->where('available_at', '<=', now())
+            ->min('available_at');
+        $oldestDueAt = $oldestDue !== null ? Carbon::parse((string) $oldestDue) : null;
+        $counts = Message::query()
+            ->whereIn('status', [Message::STATUS_PENDING, Message::STATUS_SENDING, Message::STATUS_FAILED])
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return [
+            'worker' => match (true) {
+                $lastRunAt === null => 'never',
+                $lastRunAt->lt(now()->subSeconds(self::STALE_WORKER_AFTER_SECONDS)) => 'stale',
+                default => 'ok',
+            },
+            'last_run_at' => $lastRunAt?->toJSON(),
+            'pending' => (int) ($counts[Message::STATUS_PENDING] ?? 0),
+            'due' => Message::query()->where('status', Message::STATUS_PENDING)->where('available_at', '<=', now())->count(),
+            'sending' => (int) ($counts[Message::STATUS_SENDING] ?? 0),
+            'failed' => (int) ($counts[Message::STATUS_FAILED] ?? 0),
+            'oldest_due_at' => $oldestDueAt?->toJSON(),
+            'oldest_due_age_seconds' => $oldestDueAt !== null ? max(0, (int) $oldestDueAt->diffInSeconds(now())) : null,
+        ];
     }
 
     /**

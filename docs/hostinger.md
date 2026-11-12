@@ -110,6 +110,30 @@ checks `/`, `/docs/openapi.json`, `/api/v1/release`, `/api/v1/session`, and
 `/api/v1/installation/applications`. View caching is skipped when the deployed
 tree has no `resources/views` directory.
 
+## Message Worker (Cron)
+
+Pane queues outgoing email in the `messages` table and `php artisan messages:send` sends it (see [Outgoing Messages](environment.md#outgoing-messages)). Hostinger web hosting can't keep a worker process running, so a cron job runs Laravel's scheduler every minute, and the scheduler runs `messages:send --limit=50 --max-time=50` without letting runs pile up.
+
+Add one cron job per installation in hPanel → Advanced → Cron Jobs, set to every minute (`* * * * *`):
+
+```text
+cd <DEPLOY_PATH> && <PHP> artisan schedule:run >> /dev/null 2>&1
+```
+
+- `<DEPLOY_PATH>` is the installation's directory, e.g. `/home/u253124519/public_html/pane` for erme2 production, or the `DEPLOY_PATH` of the `sweegly-pane-dev` Environment.
+- `<PHP>` must be PHP 8.5, the same version as the site. Check over SSH with `which php` and `php -v`; hPanel's default `/usr/bin/php` can be older. Hostinger's versioned binaries look like `/opt/alt/php85/usr/bin/php`.
+- Test it once over SSH before saving: `cd <DEPLOY_PATH> && <PHP> artisan schedule:run`, then `<PHP> artisan messages:send --once` prints what it sent.
+
+Check it's working on `GET /status` (Basic auth), under `data.messages`:
+
+- `worker`: `ok` when a run finished in the last 5 minutes, `stale` when it stopped, `never` before the first run. The heartbeat lives in Laravel's cache, so clearing the cache shows `never` until the next run.
+- `due` and `oldest_due_age_seconds`: messages waiting to be sent and how long the oldest has waited. A growing age means the worker isn't running or can't send.
+- `failed`: messages that ran out of retries; their `last_error` in the `messages` table says why.
+
+The deploy workflow doesn't check the cron: it lives in hPanel, outside the deploy. Check `/status` after setting up a new installation.
+
+Other options, if every-minute cron stops being enough: send right after the request as well (cron stays as the safety net), or run `messages:send` under Supervisor on a VPS.
+
 ## Preflight Script
 
 Run the preflight from the repository root after the production `.env` file is

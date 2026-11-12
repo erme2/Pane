@@ -21,6 +21,7 @@ class SendMessages extends Command
         $deadline = microtime(true) + max(1, (int) $this->option('max-time'));
 
         $result = $worker->run($limit, fn (): bool => microtime(true) >= $deadline, (bool) $this->option('once'));
+        $worker->recordRun();
 
         // IDs and counts only: never recipients, links or payloads.
         $summary = [
