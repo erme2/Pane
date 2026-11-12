@@ -28,6 +28,12 @@ class PreviewMessage extends Command
             return self::FAILURE;
         }
 
+        if ($purpose !== null && preg_match('/\A[a-z0-9_-]+\z/', $purpose) !== 1) {
+            $this->error('Purpose may only contain lowercase letters, digits, "_" and "-".');
+
+            return self::FAILURE;
+        }
+
         $message = new Message([
             'type' => $type,
             'purpose' => $purpose,

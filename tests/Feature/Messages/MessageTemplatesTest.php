@@ -126,4 +126,20 @@ class MessageTemplatesTest extends TestCase
 
         $this->artisan('messages:preview', ['type' => 'sms'])->assertFailed();
     }
+
+    public function test_preview_command_refuses_purposes_that_could_leave_the_output_directory(): void
+    {
+        $root = sys_get_temp_dir().'/pane-preview-'.bin2hex(random_bytes(4));
+        $directory = "$root/out";
+
+        foreach (['../escaped', 'a/b', '..', 'Invitation.x'] as $purpose) {
+            $this->artisan('messages:preview', ['type' => 'system_email', 'purpose' => $purpose, '--output' => $directory])
+                ->assertFailed();
+        }
+
+        $this->assertFileDoesNotExist("$root/system_email-..html");
+        $this->assertFileDoesNotExist("$root/escaped.html");
+        $this->assertDirectoryDoesNotExist($directory);
+        File::deleteDirectory($root);
+    }
 }
