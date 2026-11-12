@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Support\ManagedDatabase\CatalogReader;
 use App\Support\ManagedDatabase\HostResolver;
 use App\Support\ManagedDatabase\PdoFactory;
 use PDO;
@@ -32,6 +33,22 @@ final class FakeManagedDatabase
     public array $databases = ['information_schema', 'shop'];
 
     public bool $tls = true;
+
+    /**
+     * information_schema rows by CatalogReader query: schema, tables, columns, indexes, foreign_keys.
+     *
+     * @var array<string, list<array<string, mixed>>>
+     */
+    public array $catalog = [
+        'schema' => [['schema_name' => 'shop', 'charset' => 'utf8mb4', 'collation_name' => 'utf8mb4_0900_ai_ci']],
+        'tables' => [],
+        'columns' => [],
+        'indexes' => [],
+        'foreign_keys' => [],
+    ];
+
+    /** @var list<array{sql: string, params: array<int, mixed>}> prepared catalog queries and their bound values */
+    public array $catalogQueries = [];
 
     /** @var list<string> addresses that refuse connections */
     public array $refuse = [];
@@ -118,19 +135,100 @@ final class FakeManagedDatabase
             });
         });
 
+        $pdo->method('prepare')->willReturnCallback(function (string $sql): PDOStatement {
+            $part = match ($sql) {
+                CatalogReader::SCHEMA_SQL => 'schema',
+                CatalogReader::TABLES_SQL => 'tables',
+                CatalogReader::COLUMNS_SQL => 'columns',
+                CatalogReader::INDEXES_SQL => 'indexes',
+                CatalogReader::FOREIGN_KEYS_SQL => 'foreign_keys',
+                default => throw new PDOException('Unexpected prepared statement'),
+            };
+
+            return $this->statement($this->catalog[$part], function (?array $params = null) use ($sql): bool {
+                $this->catalogQueries[] = ['sql' => $sql, 'params' => $params ?? []];
+
+                return true;
+            });
+        });
+
         return $pdo;
     }
 
     /**
-     * @param  list<list<string>>  $rows
+     * Adds a table to the catalog. Columns are [name => column_type], e.g. ['id' => 'int', 'pane_membership_id' => 'char(36)'];
+     * columns named in $nullable allow NULL. The first column is the primary key unless $primaryKey says otherwise.
+     *
+     * @param  array<string, string>  $columns
+     * @param  list<string>  $nullable
+     * @param  list<string>|null  $primaryKey
+     * @param  list<string>  $indexed  leading columns of other indexes
      */
-    private function statement(array $rows): PDOStatement
+    public function addTable(string $table, array $columns, array $nullable = [], ?array $primaryKey = null, array $indexed = [], string $type = 'BASE TABLE'): void
+    {
+        $this->catalog['tables'][] = ['table_name' => $table, 'table_type' => $type, 'engine' => $type === 'BASE TABLE' ? 'InnoDB' : null];
+        $ordinal = 0;
+        foreach ($columns as $name => $columnType) {
+            $dataType = strtolower((string) preg_split('/[\s(]/', $columnType)[0]);
+            preg_match('/\((\d+)\)/', $columnType, $length);
+            $this->catalog['columns'][] = [
+                'table_name' => $table, 'column_name' => $name, 'ordinal' => ++$ordinal, 'data_type' => $dataType,
+                'column_type' => $columnType, 'is_nullable' => in_array($name, $nullable, true) ? 'YES' : 'NO',
+                'max_length' => in_array($dataType, ['char', 'varchar'], true) ? (int) ($length[1] ?? 255) : null,
+                'numeric_precision' => null, 'numeric_scale' => null, 'extra' => '',
+            ];
+        }
+
+        foreach ($primaryKey ?? [array_key_first($columns)] as $seq => $column) {
+            $this->catalog['indexes'][] = ['table_name' => $table, 'index_name' => 'PRIMARY', 'non_unique' => 0, 'seq' => $seq + 1, 'column_name' => $column];
+        }
+        foreach ($indexed as $column) {
+            $this->catalog['indexes'][] = ['table_name' => $table, 'index_name' => $table.'_'.$column.'_index', 'non_unique' => 1, 'seq' => 1, 'column_name' => $column];
+        }
+    }
+
+    /** A table that meets the phase-one CRUD contract, plus any extra columns. @param array<string, string> $extra */
+    public function addContractTable(string $table, array $extra = []): void
+    {
+        $this->addTable($table, [
+            'id' => 'bigint unsigned', 'pane_membership_id' => 'char(36)', ...$extra,
+            'created_at' => 'timestamp', 'updated_at' => 'timestamp', 'deleted_at' => 'timestamp',
+        ], nullable: ['created_at', 'updated_at', 'deleted_at'], indexed: ['pane_membership_id']);
+    }
+
+    /** @param list<string> $columns @param list<string> $referencedColumns */
+    public function addForeignKey(string $table, string $constraint, array $columns, string $referencedTable, array $referencedColumns, string $referencedSchema = 'shop'): void
+    {
+        foreach ($columns as $i => $column) {
+            $this->catalog['foreign_keys'][] = [
+                'constraint_name' => $constraint, 'table_name' => $table, 'column_name' => $column, 'ordinal' => $i + 1,
+                'referenced_schema' => $referencedSchema, 'referenced_table' => $referencedTable, 'referenced_column' => $referencedColumns[$i],
+            ];
+        }
+    }
+
+    /** Removes a table and everything that belongs to it. */
+    public function dropTable(string $table): void
+    {
+        foreach (['tables', 'columns', 'indexes', 'foreign_keys'] as $part) {
+            $this->catalog[$part] = array_values(array_filter($this->catalog[$part], fn (array $row): bool => $row['table_name'] !== $table));
+        }
+    }
+
+    /**
+     * @param  list<array<int|string, mixed>>  $rows
+     * @param  (\Closure(array<int, mixed>|null): bool)|null  $onExecute
+     */
+    private function statement(array $rows, ?\Closure $onExecute = null): PDOStatement
     {
         $statement = (new \ReflectionMethod($this->test, 'createStub'))->invoke($this->test, PDOStatement::class);
         $statement->method('fetchAll')->willReturnCallback(
             fn (int $mode = PDO::FETCH_DEFAULT): array => $mode === PDO::FETCH_COLUMN ? array_column($rows, 0) : $rows
         );
         $statement->method('fetch')->willReturnCallback(fn (): array|false => $rows[0] ?? false);
+        if ($onExecute !== null) {
+            $statement->method('execute')->willReturnCallback($onExecute);
+        }
 
         return $statement;
     }
