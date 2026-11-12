@@ -86,7 +86,18 @@ The worker sends due messages (`pending`, `available_at` passed), oldest first, 
 - Messages left in `sending` for more than 10 minutes (a crashed run) go back to `pending`.
 - It logs counts and message IDs only, never recipients, links or payloads.
 - On Hostinger it runs from Laravel's scheduler, driven by one hPanel cron job: see [Message Worker (Cron)](hostinger.md#message-worker-cron). `GET /status` shows the queue and whether the worker is running (`data.messages`).
-- The body is a plain built-in template until per-type templates land; every payload value is escaped and only `http(s)` links are linked.
+- The body comes from the message's templates (below).
+
+### Email Templates (`resources/views/messages`)
+
+Each email has an HTML and a plain-text template. Pane picks the first that exists: `messages/{type}/{purpose}`, then `messages/{type}/default`, then `messages/default`; the text version has the same name plus `-text`. Today there are `system_email/invitation`, `marketing_email/default` (with an unsubscribe placeholder until opt-out exists) and the shared `default`. All HTML templates extend `messages/layout` (sender name from `MAIL_FROM_NAME`, a footer, and a small "DEV/STAGE environment" banner on those environments).
+
+- HTML templates escape every payload value (`{{ }}`, never `{!! !!}`, which a test enforces). Text templates print values as they are, so links with `&` keep working; they aren't rendered as HTML.
+- Only `http(s)` links are offered as links (`invitation_url`, or `url`).
+- Templates never touch the subject: the worker adds `[DEV]` / `[STAGE]` once.
+- `php artisan messages:preview system_email invitation` writes `storage/app/message-previews/system_email-invitation.html` and `.txt` with sample data, without sending anything (`--output=` to choose the directory).
+
+To add a template, create `resources/views/messages/{type}/{purpose}.blade.php` and `{purpose}-text.blade.php`; no code change is needed.
 
 `PANE_ENVIRONMENT` (`dev`, `stage` or `prod`) adds `[DEV]` / `[STAGE]` to every email subject on dev and stage, once; production gets none. Deployed installs run with `APP_ENV=production` even on dev and stage, so set `PANE_ENVIRONMENT` there. When it's unset, `APP_ENV` is used (`dev`/`development`, `stage`/`staging`).
 

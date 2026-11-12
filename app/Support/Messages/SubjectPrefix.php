@@ -32,7 +32,7 @@ final class SubjectPrefix
         };
     }
 
-    private static function environment(): string
+    public static function environment(): string
     {
         $configured = config('services.messages.environment');
 

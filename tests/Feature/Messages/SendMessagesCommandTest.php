@@ -47,7 +47,7 @@ class SendMessagesCommandTest extends TestCase
             return $mail->hasTo('invitee@example.com')
                 && $mail->subject === "You're invited to Sweegly"
                 && str_contains($mail->render(), 'href="https://app.test/auth/login?invitation_token=SECRET"')
-                && str_contains($mail->render(), 'Sweegly as user');
+                && str_contains($mail->render(), 'Sweegly</strong> as user');
         });
         $message->refresh();
         $this->assertSame(Message::STATUS_SENT, $message->status);
