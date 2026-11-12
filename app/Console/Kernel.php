@@ -12,7 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        //
+        // One cron entry (`php artisan schedule:run` every minute) drives this; see docs/hostinger.md.
+        // Overlapping runs are safe anyway (each message is claimed once); the lock just avoids piling up.
+        $schedule->command('messages:send --limit=50 --max-time=50')
+            ->everyMinute()
+            ->withoutOverlapping(5);
     }
 
     /**
