@@ -63,6 +63,19 @@ CREATE USER 'pane_app'@'localhost' IDENTIFIED BY '…';
 GRANT SELECT, INSERT, UPDATE, DELETE ON `shop`.* TO 'pane_app'@'localhost';
 ```
 
+## Outgoing Messages
+
+Pane never sends email from a request. It adds a row to the `messages` table (`pane_messages` with the default prefix) and the worker sends it later.
+
+- Types: `system_email` (account and invitation email, always sent) and `marketing_email` (not created anywhere yet; will respect opt-out). The list lives in `App\Models\Message::TYPES` and the column is a plain string, so adding a type needs no migration. `purpose` says what a message is for inside its type (e.g. `invitation`), for templates.
+- `status` moves `pending` → `sending` → `sent`, or `failed` after the last retry. `available_at` delays a message or schedules its retry; the worker reads by (`status`, `available_at`).
+- `payload` holds the data the template needs. It can contain credentials (an invitation link signs the recipient in), so it is encrypted with `APP_KEY`, hidden from serialization and never logged. Rotating `APP_KEY` makes pending payloads unreadable.
+- The subject is stored without an environment prefix; the worker adds `[DEV]` / `[STAGE]` when it sends.
+- `organization_id`, `source_type` and `source_id` record what caused the message (e.g. `OrganizationInvitation` and its ID).
+- Creating or resending an organization invitation through the v1 API queues one `system_email` with the invitation link, in the same transaction as the invitation. Revoking queues nothing. The API response, including `meta.invitation_url`, is unchanged.
+
+Code adds messages with `App\Services\MessageQueue::push()`, inside the transaction of the change that causes them.
+
 ## URLs And Trusted Hosts
 
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.

@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\AuditEvent;
+use App\Models\Message;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Support\SettingsRegistry;
+use Closure;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,21 +26,25 @@ class OrganizationInvitationService
         private readonly AuditEventService $audit,
         private readonly SettingsService $settings,
         private readonly OrganizationTenancyService $tenancy,
+        private readonly MessageQueue $messages,
     ) {}
 
     /**
+     * @param  (Closure(string): string)|null  $invitationUrl  builds the link from the token; when given,
+     *                                                         an invitation email is queued in the same transaction
      * @return array{invitation: OrganizationInvitation, token: string}
      */
     public function inviteOrganizationMember(
         User $actor,
         Organization $organization,
         string $email,
-        string $role
+        string $role,
+        ?Closure $invitationUrl = null
     ): array {
         $email = $this->normalizeEmail($email);
         $this->assertRole($role);
 
-        return DB::transaction(function () use ($actor, $organization, $email, $role): array {
+        return DB::transaction(function () use ($actor, $organization, $email, $role, $invitationUrl): array {
             $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $this->assertEmailDoesNotBelongToActiveMembership($organization, $email);
             $this->revokePendingInvitationsForEmail($organization, $email);
@@ -59,6 +65,8 @@ class OrganizationInvitationService
                     'expires_at' => $invitation->expires_at->toJSON(),
                 ],
             ]);
+
+            $this->queueInvitationEmail($organization, $invitation, $token, $invitationUrl);
 
             return [
                 'invitation' => $invitation,
@@ -120,15 +128,17 @@ class OrganizationInvitationService
     }
 
     /**
+     * @param  (Closure(string): string)|null  $invitationUrl  see inviteOrganizationMember()
      * @return array{invitation: OrganizationInvitation, token: string}
      */
     public function resendOrganizationInvitation(
         User $actor,
         Organization $organization,
         OrganizationInvitation $invitation,
-        string $expectedVersion
+        string $expectedVersion,
+        ?Closure $invitationUrl = null
     ): array {
-        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion): array {
+        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion, $invitationUrl): array {
             $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $locked = $this->lockedInvitation($organization, $invitation);
             $this->assertExpectedVersion($locked, $expectedVersion);
@@ -160,6 +170,8 @@ class OrganizationInvitationService
                     'role' => $replacement->role,
                 ],
             ]);
+
+            $this->queueInvitationEmail($organization, $replacement, $token, $invitationUrl);
 
             return [
                 'invitation' => $replacement,
@@ -393,6 +405,31 @@ class OrganizationInvitationService
         ]);
 
         return [$invitation, $token];
+    }
+
+    /**
+     * @param  (Closure(string): string)|null  $invitationUrl
+     */
+    private function queueInvitationEmail(Organization $organization, OrganizationInvitation $invitation, #[\SensitiveParameter] string $token, ?Closure $invitationUrl): void
+    {
+        if ($invitationUrl === null) {
+            return;
+        }
+
+        $this->messages->push(
+            Message::TYPE_SYSTEM_EMAIL,
+            $invitation->email,
+            "You're invited to {$organization->name}",
+            [
+                'invitation_url' => $invitationUrl($token),
+                'organization_name' => $organization->name,
+                'role' => $invitation->role,
+                'expires_at' => $invitation->expires_at->toJSON(),
+            ],
+            Message::PURPOSE_INVITATION,
+            $organization,
+            $invitation,
+        );
     }
 
     private function lockedInvitation(Organization $organization, OrganizationInvitation $invitation): OrganizationInvitation

@@ -109,7 +109,8 @@ class OrganizationInvitationController extends Controller
                 $context['actor'],
                 $context['organization'],
                 (string) $request->input('email'),
-                (string) $request->input('role')
+                (string) $request->input('role'),
+                fn (string $token): string => $this->invitationUrl($context['application'], $token)
             );
         } catch (InvalidArgumentException $exception) {
             return $this->v1Error($request, 'validation_failed', $exception->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -182,7 +183,8 @@ class OrganizationInvitationController extends Controller
                 $context['actor'],
                 $context['organization'],
                 $invitation,
-                $invitation->versionTag()
+                $invitation->versionTag(),
+                fn (string $token): string => $this->invitationUrl($context['application'], $token)
             );
         } catch (DomainException $exception) {
             if ($exception->getMessage() === OrganizationInvitationService::VERSION_CONFLICT_MESSAGE) {
