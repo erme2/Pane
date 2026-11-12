@@ -223,9 +223,28 @@ class RealManagedDatabaseTest extends TestCase
         $this->assertFalse($tested->last_test_privileges_valid);
         $this->server->root()->exec("REVOKE CREATE ON `{$this->server->database}`.* FROM '$user'@'%'");
 
+        // Quota: the organization may have 2 active connections.
+        $quota = fn (): int => (int) $organization->fresh()?->active_database_connections;
+        $this->assertSame(1, $quota());
+        $api('POST', '', [...$profile, 'name' => 'Second', 'credentials' => ['password' => "rotated-$password"]])->assertCreated();
+        $this->assertSame(2, $quota());
+        $api('POST', '', [...$profile, 'name' => 'Third', 'credentials' => ['password' => "rotated-$password"]])
+            ->assertConflict()->assertJsonPath('error.code', 'quota_exceeded');
+        $this->assertSame(2, $quota());
+
+        // Disabling frees a slot; reactivating takes it back, and fails when the slot is gone.
         $api('DELETE', "/$id", ifMatch: $etag())->assertNoContent();
         $this->assertSame(ManagedConnection::STATUS_DISABLED, ManagedConnection::query()->findOrFail($id)->status);
+        $this->assertSame(1, $quota());
+        $third = $api('POST', '', [...$profile, 'name' => 'Third', 'credentials' => ['password' => "rotated-$password"]])->assertCreated();
+        $this->assertSame(2, $quota());
+        $api('PATCH', "/$id", ['status' => 'active'], $etag())->assertConflict()->assertJsonPath('error.code', 'quota_exceeded');
+        $this->assertSame(ManagedConnection::STATUS_DISABLED, ManagedConnection::query()->findOrFail($id)->status);
+
+        $thirdId = (string) $third->json('data.id');
+        $api('DELETE', "/$thirdId", ifMatch: (string) $api('GET', "/$thirdId")->headers->get('ETag'))->assertNoContent();
         $api('PATCH', "/$id", ['status' => 'active'], $etag())->assertOk()->assertJsonPath('data.attributes.status', 'active');
+        $this->assertSame(2, $quota());
 
         // Another organization can't see it.
         $other = app(OrganizationTenancyService::class)->createOrganization('Other', 'other-'.Str::uuid());
