@@ -14,7 +14,7 @@ class CiWorkflowTest extends TestCase
         $this->assertStringContainsString('pull_request:', $workflow);
         $this->assertStringContainsString('types: [opened, reopened, ready_for_review, synchronize]', $workflow);
         $this->assertStringNotContainsString("\npush:", $workflow);
-        $this->assertStringContainsString('actions/cache@v4', $workflow);
+        $this->assertStringContainsString('actions/cache@v6', $workflow);
         $this->assertStringContainsString('composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader', $workflow);
         $this->assertStringContainsString('./bash/test.sh -o no -f no', $workflow);
         $this->assertStringContainsString("\n  workflow_call:\n", $workflow);
