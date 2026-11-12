@@ -76,6 +76,19 @@ Pane never sends email from a request. It adds a row to the `messages` table (`p
 
 Code adds messages with `App\Services\MessageQueue::push()`, inside the transaction of the change that causes them.
 
+### Sending (`php artisan messages:send`)
+
+The worker sends due messages (`pending`, `available_at` passed), oldest first, through Laravel Mail and the `MAIL_*` settings. It's built for a cron job every minute:
+
+- `--limit=50`: most messages per run. `--max-time=50`: stop starting new messages after this many seconds, so runs don't overlap much. `--once`: one batch (up to 10) and stop.
+- Overlapping runs are safe: a message is claimed with a conditional update, so only one run sends it.
+- A failed send is retried after 1, 5 and 30 minutes, then marked `failed` (4 attempts). `last_error` keeps a short reason with links and email addresses removed.
+- Messages left in `sending` for more than 10 minutes (a crashed run) go back to `pending`.
+- It logs counts and message IDs only, never recipients, links or payloads.
+- The body is a plain built-in template until per-type templates land; every payload value is escaped and only `http(s)` links are linked.
+
+`PANE_ENVIRONMENT` (`dev`, `stage` or `prod`) adds `[DEV]` / `[STAGE]` to every email subject on dev and stage, once; production gets none. Deployed installs run with `APP_ENV=production` even on dev and stage, so set `PANE_ENVIRONMENT` there. When it's unset, `APP_ENV` is used (`dev`/`development`, `stage`/`staging`).
+
 ## URLs And Trusted Hosts
 
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.

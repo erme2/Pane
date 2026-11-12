@@ -60,4 +60,9 @@ return [
         'query_timeout' => env('PANE_MANAGED_DB_QUERY_TIMEOUT'),
     ],
 
+    'messages' => [
+        // dev, stage or prod: adds [DEV] / [STAGE] to email subjects. Falls back to APP_ENV.
+        'environment' => env('PANE_ENVIRONMENT'),
+    ],
+
 ];
