@@ -20,6 +20,8 @@ class PaneTable
 
     public const string AUDIT_EVENTS = 'audit_events';
 
+    public const string MESSAGES = 'messages';
+
     public const string PANE_ADMIN_INVITATIONS = 'admin_invitations';
 
     public const string PANE_INSTALLATION_LOCKS = 'installation_locks';

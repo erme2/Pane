@@ -3,6 +3,7 @@
 namespace Tests\Feature\Organizations;
 
 use App\Models\ApplicationRegistration;
+use App\Models\Message;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
@@ -26,6 +27,7 @@ class OrganizationInvitationApiTest extends TestCase
     {
         parent::setUp();
 
+        Message::query()->delete();
         OrganizationInvitation::query()->delete();
         ApplicationRegistration::query()->delete();
         OrganizationMembership::query()->delete();
@@ -278,6 +280,100 @@ class OrganizationInvitationApiTest extends TestCase
 
         $this->assertSame(OrganizationInvitation::STATUS_ACCEPTED, $invitation->fresh()->status);
         $this->assertSame(1, OrganizationInvitation::query()->count());
+    }
+
+    public function test_create_and_resend_each_queue_one_invitation_email_and_revoke_queues_none(): void
+    {
+        [$application, $organization] = $this->configuredApplicationAndOrganization();
+        $this->withCsrfToken()->actingAs($this->organizationAdministrator($organization));
+
+        $create = $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => 'Queued@Example.com',
+                'role' => OrganizationMembership::ROLE_USER,
+            ])
+            ->assertCreated();
+
+        $message = Message::query()->sole();
+        $this->assertSame(Message::TYPE_SYSTEM_EMAIL, $message->type);
+        $this->assertSame(Message::PURPOSE_INVITATION, $message->purpose);
+        $this->assertSame(Message::CHANNEL_EMAIL, $message->channel);
+        $this->assertSame(Message::STATUS_PENDING, $message->status);
+        $this->assertSame('queued@example.com', $message->recipient);
+        $this->assertSame("You're invited to {$organization->name}", $message->subject);
+        $this->assertSame($create->json('meta.invitation_url'), $message->payload['invitation_url']);
+        $this->assertSame($organization->name, $message->payload['organization_name']);
+        $this->assertSame($organization->organization_id, $message->organization_id);
+        $this->assertSame(['OrganizationInvitation', $create->json('data.id')], [$message->source_type, $message->source_id]);
+        $this->assertArrayNotHasKey('payload', $message->toArray());
+
+        // The link is a credential: it must not be readable in the table.
+        $raw = (string) DB::table(PaneTable::name(PaneTable::MESSAGES))->value('payload');
+        $this->assertStringNotContainsString('invitation_token', $raw);
+
+        $resend = $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->withHeader('If-Match', (string) $create->headers->get('ETag'))
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$create->json('data.id')}/resends")
+            ->assertCreated();
+
+        $this->assertSame(2, Message::query()->count());
+        $resent = Message::query()->where('source_id', $resend->json('data.id'))->sole();
+        $this->assertSame($resend->json('meta.invitation_url'), $resent->payload['invitation_url']);
+
+        $this
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->withHeader('If-Match', (string) $resend->headers->get('ETag'))
+            ->deleteJson("/api/v1/organizations/$organization->organization_id/invitations/{$resend->json('data.id')}")
+            ->assertNoContent();
+
+        $this->assertSame(2, Message::query()->count());
+    }
+
+    public function test_a_failed_invitation_queues_no_message(): void
+    {
+        [$application, $organization] = $this->configuredApplicationAndOrganization();
+        $administrator = $this->organizationAdministrator($organization);
+        $member = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $this->tenancy->addOrReactivateMembership($organization, $member, OrganizationMembership::ROLE_USER);
+
+        $this
+            ->withCsrfToken()
+            ->actingAs($administrator)
+            ->withV1ApplicationSession($application)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => $member->email,
+                'role' => OrganizationMembership::ROLE_USER,
+            ])
+            ->assertConflict();
+
+        $this->assertSame(0, Message::query()->count());
+    }
+
+    public function test_a_message_is_rolled_back_with_its_invitation(): void
+    {
+        [, $organization] = $this->configuredApplicationAndOrganization();
+        $administrator = $this->organizationAdministrator($organization);
+
+        try {
+            app(OrganizationInvitationService::class)->inviteOrganizationMember(
+                $administrator,
+                $organization,
+                'rollback@example.com',
+                OrganizationMembership::ROLE_USER,
+                fn (string $token): string => throw new \RuntimeException('link failed'),
+            );
+            $this->fail('Expected the invitation to fail.');
+        } catch (\RuntimeException) {
+        }
+
+        $this->assertSame(0, Message::query()->count());
+        $this->assertSame(0, OrganizationInvitation::query()->where('email', 'rollback@example.com')->count());
     }
 
     /**
