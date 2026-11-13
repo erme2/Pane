@@ -30,6 +30,17 @@ class PaneTable
 
     public const string SETTING_OVERRIDES = 'setting_overrides';
 
+    public const string MAPS_SOURCES = 'maps_sources';
+
+    public const string MAPS_TABLES = 'maps_tables';
+
+    public const string MAPS_FIELDS = 'maps_fields';
+
+    public const string MAPS_VERSIONS = 'maps_versions';
+
+    /** The maps' own tables: always system maps, whatever the prefix (decision 32). */
+    public const array MAPS = [self::MAPS_SOURCES, self::MAPS_TABLES, self::MAPS_FIELDS, self::MAPS_VERSIONS];
+
     public static function name(string $table): string
     {
         return self::prefix().$table;
