@@ -44,6 +44,8 @@ in [architecture.md](../architecture.md#target-product-installs-and-the-descript
 | 29 | What does editing a map do to the real table? | Nothing. Maps are separate from the real structure: the SQL can change first and the map later, when ready. Unmapped changes stay invisible. |
 | 30 | Who creates and changes the real tables? | Each app repo's versioned migrations, run by the deploy. Pane then discovers the real structure and reports what is unmapped, missing or changed; admins map what they want in Latte. |
 | 31 | What happens to PR #151 (catalog discovery)? | Reshape and reuse it: scan the install's own app prefix (never Pane's system tables) as well as external sources, and feed the maps-versus-database report. It stays a draft until the maps design is filed. |
+| 32 | Which maps are system maps, protected from Latte editing? | Everything Pane owns: the maps of every Pane system table (users, organizations, memberships, invitations, applications, settings storage, audit, messages, connections, credentials) and the maps of the maps themselves. Only app tables (the app prefix) are editable. |
+| 33 | How are edits to maps, menu, views and settings versioned? | Full history with rollback: every save creates a new version recording who, when and a diff. Latte shows a map's history and can restore an earlier version, which saves as a new version. |
 
 ## Facts checked while deciding
 
@@ -60,8 +62,6 @@ These need their own decisions before or during implementation:
 - the exact map model and bundle JSON Schema for tables, `ui` views, menu,
   functions, settings, policies, row conditions, named queries, the client
   query language and actions;
-- which maps count as system maps, and how map edits are versioned (history,
-  rollback);
 - the S3-compatible provider and how each install gets its bucket and keys;
 - the limits of the client query language (joins depth, aggregates, paging);
 - the action building blocks in the first version, and whether webhooks need
