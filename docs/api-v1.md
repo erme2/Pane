@@ -124,14 +124,15 @@ suspension, or organization suspension/closure.
 
 > Planned change (2026-11-13, see the
 > [decision record](decisions/2026-11-13-product-installs-and-description-layer.md)):
-> product data moves to a new `/data/{source}/...` family that addresses tables
-> and named queries by the stable names from the product's description files
-> (for example `/data/{source}/tables/{table}/rows` and
-> `/data/{source}/queries/{query}`), with policy-enforced CRUD and a limited
-> client query language. It will be added to the contract by its own ticket.
-> The UUID-addressed `/connections/{connection_id}/tables/{table_id}/rows`
-> routes below belong to external sources, which are deferred. Descriptions are
-> never changed over HTTP; deploys apply them with an artisan command.
+> app data moves to a new `/data/{source}/...` family that addresses tables and
+> named queries by the stable names from the install's maps (for example
+> `/data/{source}/tables/{table}/rows` and `/data/{source}/queries/{query}`),
+> with policy-enforced CRUD and a limited client query language. Maps, menu,
+> views, functions and settings get their own admin routes for Latte; system
+> maps are never editable through them, and no map route changes a table. Each
+> family is added to the contract by its own ticket. The UUID-addressed
+> `/connections/{connection_id}/tables/{table_id}/rows` routes below belong to
+> external sources, which are deferred.
 
 ### Release metadata
 

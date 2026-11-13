@@ -86,29 +86,34 @@ Decided on 2026-11-13 (see the
 [decision record](decisions/2026-11-13-product-installs-and-description-layer.md)).
 Where this section conflicts with older target text below, this section wins.
 
-Pane stays one generic codebase. It must serve many frontends and kinds of data
-without product-specific code: what a product needs is described in versioned
-files, and Pane's generic engine runs it.
+Pane and Latte are the REST API and control panel for every app the product
+owner builds (Sweegly first). Pane stays one generic codebase and Latte one
+generic codebase: what an app has (tables, views, menu, functions, settings) is
+described as data in Pane's database, and both read it from there.
 
 ### Installs
 
-- One Pane install per product **and** environment (for example Sweegly dev,
+- One Pane install per app **and** environment (for example Sweegly dev,
   Sweegly stage and Sweegly prod). Installs never communicate.
-- Each install has its own WorkOS environment, its own deployed consoles (a
-  Latte-derived organization console, and Burro when it exists) and its own
+- Each install has its own WorkOS environment, its own Latte deployment (one
+  Latte repo, deployed once per install; Burro when it exists) and its own
   database.
-- Inside a product install there is usually one organization: the product
-  owner, which owns the data sources. End users are members of it. Several
-  organizations remain supported but are not the main way to separate data.
+- Inside an install there is usually one organization: the app owner, which
+  owns the data. End users are its members. Several organizations remain
+  supported but are not the main way to separate data.
 
-### Description layer
+### Maps: the description layer
 
-One versioned description layer describes everything Pane serves:
+One versioned set of maps in Pane's database describes everything an install
+serves. It replaces the legacy `map_*` metadata, whose current content becomes
+the first maps; the `/{story}/{subject}` endpoints are then retired (#74).
 
-- **sources**: where tables live. A source is either *Pane-managed* (Pane
-  creates and migrates its tables) or *external* (an organization's
-  MySQL/MariaDB database whose structure Pane discovers);
-- **tables and columns**: types, validations, defaults and computed fields;
+- **sources**: where tables live. The install's own database (app tables under
+  their own prefix, next to Pane's system tables), or later an external
+  MySQL/MariaDB database;
+- **tables and fields**: types, validations, defaults and computed fields, plus
+  an optional `ui` part (labels, list columns, form layout, widgets, ordering,
+  filters, sections) that Latte uses to build list and edit views;
 - **access policies**: per table, from a fixed set (owner-private, shared
   read-only, shared read/write, administrators only), plus admin-defined row
   conditions;
@@ -118,54 +123,94 @@ One versioned description layer describes everything Pane serves:
 - **named queries**: tables, joins, filters, aggregates and typed parameters,
   called by name;
 - **actions**: generic "on create/update, do X" building blocks (send a message
-  template, set a field, call a webhook).
+  template, set a field, call a webhook);
+- **menu and functions**: Latte's menu entries and views, and the generic
+  functions (for example a calendar) an install has switched on;
+- **settings**: typed keys declared in the maps (flag, text, image, ...), with
+  defaults and who may edit them; values are edited per install in Latte, and
+  public settings are served to the app (for example logos and texts). One
+  language per install for now; the format leaves room for translations.
 
-It replaces the legacy `map_*` metadata: legacy data and the `/{story}/{subject}`
-endpoints move onto it and are then retired (#74). The catalog work for external
-sources (#70) feeds the same layer.
+Only mapped tables and fields exist for Pane and Latte. A table or column in
+the database that no map describes is invisible to both.
 
-### Description files and deploys
+### Maps are separate from the real database
+
+The maps describe what Pane and Latte expose; the real SQL structure is managed
+separately, and the two are allowed to differ for as long as needed:
+
+- the real structure can change first (a migration adds a column, a table or an
+  index), and the maps are updated later, when the app is ready to expose it.
+  Until then the change stays invisible to Pane and Latte;
+- editing a map never creates, alters or drops anything in the database;
+- discovery compares the maps with the real structure and reports the
+  differences: unmapped tables and fields, and mapped ones that are missing or
+  changed. A mapped field that no longer exists is unavailable (requests that
+  need it fail with a clear error) until its map or the database is fixed.
+
+### Editing and protection
+
+- Admins edit maps, menu, views, functions and settings in Latte; the database
+  is the source of truth. Edits are versioned and audited.
+- The editors for maps, menu and settings are core Latte functions: always
+  available, never switched off.
+- System maps and tables (users, memberships, settings storage, audit, and the
+  maps themselves) are protected: the interface can edit, and even break, an
+  app's product maps, but never the system ones.
+
+### Tables, migrations and discovery
 
 ```mermaid
 flowchart LR
-    Repo[Product data repo: YAML + JSON Schema] -->|tagged version| Deploy[Deploy workflow]
-    Deploy -->|pane:descriptions:apply| Pane[Pane install]
-    Pane --> Validate[Validate against schema]
-    Validate --> Plan[Dry-run plan]
-    Plan --> Migrate[Migrate Pane-managed tables]
-    Migrate --> Activate[Activate description version]
-    Activate --> DB[(Install database: pane_ system tables + product tables)]
+    Repo[App repo: migrations + exported bundles] -->|deploy| Migrate[Run app migrations]
+    Migrate --> DB[(Install database: pane_ system tables + app tables)]
+    DB -->|discovery| Sync[Pane: real structure vs maps]
+    Sync -->|unmapped / missing / changed| Latte[Latte map editor]
+    Latte -->|edit maps when ready| Maps[(Maps in Pane)]
+    Maps -->|export bundle YAML| Repo
+    Repo -->|import bundle, dry-run diff| Other[Stage / prod install]
 ```
 
-- A product's descriptions live in their own repo (for example
-  `erme2/sweegly-data`), as YAML files (one per table, query or action) checked
-  against a published JSON Schema. They are reviewed in PRs and tagged.
-- Each deploy applies a tagged version with
-  `php artisan pane:descriptions:apply`: validate, dry-run, migrate, then
-  activate in one step. There is no HTTP endpoint for changing descriptions.
-- Pane-managed product tables live in the install's single database, next to
-  Pane's system tables, under a separate prefix.
-- New tables, columns and indexes are applied automatically. Anything that
-  could lose data (dropping or renaming a table or column, narrowing a type)
-  needs an explicit, versioned migration step in the files; without it the
-  apply fails and nothing changes.
+- Each app repo (for example `erme2/sweegly-data`) keeps versioned migrations
+  for its tables. The deploy runs them.
+- Pane discovers the real structure (the catalog discovery from #70, extended to
+  scan the install's own app prefix, never Pane's system tables) and shows
+  admins the differences. Admins map what they want in Latte, when they want.
+- To move changes between installs, Latte exports maps, menu, views, functions
+  and settings as a versioned YAML bundle (checked against a published JSON
+  Schema) that can be committed to the app repo. Importing a bundle into another
+  install shows a dry-run diff first. Importing never changes tables.
 
 ### Data API
 
-- Frontends address tables and queries by the stable names from the files, for
+- Apps and Latte address tables and queries by stable names from the maps, for
   example `/data/{source}/tables/{table}/rows` and
-  `/data/{source}/queries/{query}`. The same frontend works on every install.
+  `/data/{source}/queries/{query}`, so the same frontend works on every install.
 - Complex reads use named queries, plus a limited structured client query
   language (filters, sorting, simple joins). Frontends never send SQL.
 - Every read and write goes through the table's access policy and row
   conditions, and actions run server-side.
 
+### Uploads
+
+Uploaded files (logos now, record images later) go to S3-compatible object
+storage from the start; Pane keeps only their metadata and checks type and size.
+
 ### Order of work
 
-Pane-managed sources come first: description files and the apply command, table
-creation and migrations, policies and groups, generic CRUD, named queries and
-actions, then moving the legacy map data. External sources (egress #68, query
-layer #72, CRUD #73, catalog #70 / PR #151) wait until a product needs them.
+1. Maps model in the database, seeded from the current `map_*` content, with
+   system-map protection and versioned, audited edits.
+2. Discovery of the install's own app tables and the maps-versus-database
+   report (reshaped PR #151).
+3. `/data` CRUD by name with access policies; Latte list and edit views from the
+   maps' `ui` part; the Latte editors for maps, menu and settings.
+4. Settings declared in maps, uploads to S3-compatible storage, switchable
+   functions.
+5. Groups, named queries and the client query language, actions.
+6. Bundle export/import; retire the legacy endpoints (#74).
+
+External sources (egress #68, query layer #72, CRUD #73) wait until an app needs
+them.
 
 ## Product boundaries
 
@@ -178,10 +223,10 @@ layer #72, CRUD #73, catalog #70 / PR #151) wait until a product needs them.
   binding;
 - organization database limits and connection lifecycle;
 - encrypted connection credentials and installation egress policy;
-- the versioned description layer (sources, tables, policies, groups, named
-  queries, actions) and the apply command that activates it;
-- tables of Pane-managed sources, created and migrated only from description
-  files;
+- the maps (sources, tables, views, policies, groups, named queries, actions,
+  menu, functions and settings), their editing, protection, export and import;
+- discovery of each install's app tables and of external sources, and the
+  report of differences between maps and the real structure;
 - MySQL/MariaDB catalog discovery for external sources and Pane-owned
   descriptions;
 - connection-level grants and owned-row CRUD authorization;
@@ -190,12 +235,12 @@ layer #72, CRUD #73, catalog #70 / PR #151) wait until a product needs them.
 
 ### Pane does not own
 
-- frontend presentation or product-specific code (product behaviour is
-  described in files using generic building blocks);
+- frontend presentation or app-specific code (app behaviour is described in
+  maps using generic building blocks);
 - cross-installation identity, discovery, or administration;
 - WorkOS authentication UI;
-- database servers or logical databases, or the tables, indexes and
-  migrations of external sources;
+- database servers or logical databases, or creating and altering app tables
+  (each app's migrations do that; editing a map never changes a table);
 - direct browser-to-database access;
 - arbitrary SQL supplied by a frontend;
 - phase-one third-party databases or data ownership inference;
@@ -467,7 +512,7 @@ returns within the limit.
 
 ## Target managed connections
 
-Deferred (2026-11-13): external sources are built after Pane-managed sources;
+Deferred (2026-11-13): external sources are built after the install's own app tables;
 this section and the next two describe them.
 
 Phase one supports product-controlled MySQL and MariaDB databases. One data
@@ -635,8 +680,8 @@ query execution. MySQL and MariaDB are the only phase-one drivers. A new driver
 must not add conditionals throughout controllers or expose raw driver objects to
 frontends.
 
-Current Story/Action/Mapper classes are replaced by the description layer's
-generic engine (see [Description layer](#description-layer)). Their current
+Current Story/Action/Mapper classes are replaced by the generic engine that runs
+the maps (see [Maps: the description layer](#maps-the-description-layer)). Their current
 behavior does not override the target boundaries in this document.
 
 A capability a product needs is added to Pane as a generic, described building
@@ -677,9 +722,9 @@ that the current behavior matches the target.
 | WorkOS callback auto-creates users | Invite-only access and Pane-admin bootstrap | Identity and invitation epic |
 | Numeric `user_type_id` | Pane admins plus organization-scoped membership roles | Roles and membership epic |
 | One environment-selected default database | Pane primary store plus encrypted managed connections | Connection-vault epic |
-| Migration-seeded `map_*` metadata | Versioned description files applied per install; discovery for external sources | Description-layer epic |
+| Migration-seeded `map_*` metadata | Versioned maps edited in Latte, kept separate from and compared with the discovered structure, moved by bundles | Maps epic |
 | Dynamic `/{story}/{subject}` API | `/data/{source}/...` APIs by stable names, with policies and fixed app/organization context | Data API epic |
-| Product logic in code | Declarative actions, computed fields and named queries | Description-layer epic |
+| Product logic in code | Declarative actions, computed fields and named queries | Maps epic |
 | No shared private data | Groups as a building block | Groups epic |
 | Administrator-only mutations | Connection grants and membership-owned CRUD | Authorization epic |
 | Ordinary reads return all rows | Server-enforced membership ownership predicate | Row-ownership epic |
@@ -695,9 +740,9 @@ that the current behavior matches the target.
 
 - Versioned phase-one API paths are fixed by `contracts/pane-v1.json`; later
   versions require a new contract and explicit compatibility policy.
-- Story/Action/Mapper and the `map_*` tables are retired after their data moves
-  onto the description layer (#74); the steps are ticketed separately.
-- The description-file JSON Schema, client query language limits, first action
+- Story/Action/Mapper and the `map_*` tables are retired after their content
+  moves into the new maps (#74); the steps are ticketed separately.
+- The bundle JSON Schema, client query language limits, first action
   building blocks and group rules are open; see the
   [decision record](decisions/2026-11-13-product-installs-and-description-layer.md#still-open).
 - Phase one excludes arbitrary third-party databases and ownership inference.
@@ -707,7 +752,7 @@ that the current behavior matches the target.
 - Phase one requires a single-column primary key and the controlled ownership,
   timestamp, and soft-delete columns.
 - Composite keys, table-level grants, hard-delete workflows, permanent erasure,
-  schema provisioning for external sources, catalog rename detection, KMS/Vault integration, and
+  schema provisioning by Pane, catalog rename detection, KMS/Vault integration, and
   configurable audit retention are deferred.
 - Invitation expiry bounds are controlled by Pane administrators but their
   exact minimum and maximum values are unresolved.
@@ -734,12 +779,12 @@ that the current behavior matches the target.
   backups without authenticated encryption.
 - New capabilities never bypass centralized policies, catalog validation,
   egress policy, or auditing.
-- Pane contains no product-specific code; product behaviour comes only from
-  description files.
-- Descriptions and Pane-managed table structure change only through the apply
-  command, never through an HTTP endpoint.
-- An apply never drops or rewrites product data without an explicit migration
-  step in the description files.
+- Pane and Latte contain no app-specific code; app behaviour comes only from
+  maps.
+- System maps and tables are never editable through the interface.
+- Editing maps or importing a bundle never creates, alters or drops a table.
+- Unmapped tables and fields are never exposed by Pane or Latte.
+- Discovery never exposes Pane's system tables as app tables.
 
 ## Before making changes
 
