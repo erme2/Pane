@@ -46,6 +46,7 @@ in [architecture.md](../architecture.md#target-product-installs-and-the-descript
 | 31 | What happens to PR #151 (catalog discovery)? | Reshape and reuse it: scan the install's own app prefix (never Pane's system tables) as well as external sources, and feed the maps-versus-database report. It stays a draft until the maps design is filed. |
 | 32 | Which maps are system maps, protected from Latte editing? | Everything Pane owns: the maps of every Pane system table (users, organizations, memberships, invitations, applications, settings storage, audit, messages, connections, credentials) and the maps of the maps themselves. Only app tables (the app prefix) are editable. |
 | 33 | How are edits to maps, menu, views and settings versioned? | Full history with rollback: every save creates a new version recording who, when and a diff. Latte shows a map's history and can restore an earlier version, which saves as a new version. |
+| 34 | Which prefix do an app's own tables use? | A per-install setting (e.g. `APP_TABLE_PREFIX=sweegly_`). Discovery scans only that prefix, and Pane refuses to start when it overlaps the system prefix (`DB_TABLE_PREFIX`, default `pane_`). |
 
 ## Facts checked while deciding
 
@@ -70,6 +71,6 @@ These need their own decisions before or during implementation:
   happens to a group's rows;
 - how the shared organization-level roles (administrator, user) combine with
   group membership in policies;
-- the app-table prefix, and how an install shows which maps version it runs
+- how an install shows which maps version it runs
   (for example in `/status`);
 - the list of generic Latte functions in the first version (calendar, ...).
