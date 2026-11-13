@@ -47,6 +47,7 @@ in [architecture.md](../architecture.md#target-product-installs-and-the-descript
 | 32 | Which maps are system maps, protected from Latte editing? | Everything Pane owns: the maps of every Pane system table (users, organizations, memberships, invitations, applications, settings storage, audit, messages, connections, credentials) and the maps of the maps themselves. Only app tables (the app prefix) are editable. |
 | 33 | How are edits to maps, menu, views and settings versioned? | Full history with rollback: every save creates a new version recording who, when and a diff. Latte shows a map's history and can restore an earlier version, which saves as a new version. |
 | 34 | Which prefix do an app's own tables use? | A per-install setting (e.g. `APP_TABLE_PREFIX=sweegly_`). Discovery scans only that prefix, and Pane refuses to start when it overlaps the system prefix (`DB_TABLE_PREFIX`, default `pane_`). |
+| 35 | Which S3-compatible storage do uploads use? | Cloudflare R2, one bucket and one set of access keys per install (e.g. sweegly-dev), kept in that install's deploy secrets. Pane talks to it through the S3 API, so another provider stays possible. |
 
 ## Facts checked while deciding
 
@@ -63,7 +64,6 @@ These need their own decisions before or during implementation:
 - the exact map model and bundle JSON Schema for tables, `ui` views, menu,
   functions, settings, policies, row conditions, named queries, the client
   query language and actions;
-- the S3-compatible provider and how each install gets its bucket and keys;
 - the limits of the client query language (joins depth, aggregates, paging);
 - the action building blocks in the first version, and whether webhooks need
   signing and retries;
