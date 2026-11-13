@@ -48,6 +48,7 @@ in [architecture.md](../architecture.md#target-product-installs-and-the-descript
 | 33 | How are edits to maps, menu, views and settings versioned? | Full history with rollback: every save creates a new version recording who, when and a diff. Latte shows a map's history and can restore an earlier version, which saves as a new version. |
 | 34 | Which prefix do an app's own tables use? | A per-install setting (e.g. `APP_TABLE_PREFIX=sweegly_`). Discovery scans only that prefix, and Pane refuses to start when it overlaps the system prefix (`DB_TABLE_PREFIX`, default `pane_`). |
 | 35 | Which S3-compatible storage do uploads use? | Cloudflare R2, one bucket and one set of access keys per install (e.g. sweegly-dev), kept in that install's deploy secrets. Pane talks to it through the S3 API, so another provider stays possible. |
+| 36 | Which generic Latte functions ship first? | Besides the always-on editors (maps, menu, settings) and the record list and edit views: members and invitations, and a dashboard (counts and recent records, configured in the maps). Each can be switched off per install. The calendar and the audit viewer come later. |
 
 ## Facts checked while deciding
 
@@ -73,4 +74,4 @@ These need their own decisions before or during implementation:
   group membership in policies;
 - how an install shows which maps version it runs
   (for example in `/status`);
-- the list of generic Latte functions in the first version (calendar, ...).
+- the order of the later generic Latte functions (calendar, audit viewer, ...).
