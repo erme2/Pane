@@ -1,6 +1,7 @@
 # Pane Architecture
 
-Status: verified current architecture and agreed phase-one target
+Status: verified current architecture and agreed phase-one target, revised by
+the [2026-11-13 product installs and description layer decision](decisions/2026-11-13-product-installs-and-description-layer.md)
 
 This document is the architectural entry point for Pane. It separates facts
 verified in the current repository from the intended product architecture.
@@ -79,6 +80,93 @@ authorization, invitations, quotas, connection secrets, catalog descriptions,
 row ownership enforcement, impersonation, and auditing. Frontends never receive
 database credentials and never connect directly to a managed database.
 
+## Target product installs and the description layer
+
+Decided on 2026-11-13 (see the
+[decision record](decisions/2026-11-13-product-installs-and-description-layer.md)).
+Where this section conflicts with older target text below, this section wins.
+
+Pane stays one generic codebase. It must serve many frontends and kinds of data
+without product-specific code: what a product needs is described in versioned
+files, and Pane's generic engine runs it.
+
+### Installs
+
+- One Pane install per product **and** environment (for example Sweegly dev,
+  Sweegly stage and Sweegly prod). Installs never communicate.
+- Each install has its own WorkOS environment, its own deployed consoles (a
+  Latte-derived organization console, and Burro when it exists) and its own
+  database.
+- Inside a product install there is usually one organization: the product
+  owner, which owns the data sources. End users are members of it. Several
+  organizations remain supported but are not the main way to separate data.
+
+### Description layer
+
+One versioned description layer describes everything Pane serves:
+
+- **sources**: where tables live. A source is either *Pane-managed* (Pane
+  creates and migrates its tables) or *external* (an organization's
+  MySQL/MariaDB database whose structure Pane discovers);
+- **tables and columns**: types, validations, defaults and computed fields;
+- **access policies**: per table, from a fixed set (owner-private, shared
+  read-only, shared read/write, administrators only), plus admin-defined row
+  conditions;
+- **groups**: a generic building block (household, team, ...). Users join
+  groups, rows can belong to a group, and policies can grant access to "members
+  of the row's group";
+- **named queries**: tables, joins, filters, aggregates and typed parameters,
+  called by name;
+- **actions**: generic "on create/update, do X" building blocks (send a message
+  template, set a field, call a webhook).
+
+It replaces the legacy `map_*` metadata: legacy data and the `/{story}/{subject}`
+endpoints move onto it and are then retired (#74). The catalog work for external
+sources (#70) feeds the same layer.
+
+### Description files and deploys
+
+```mermaid
+flowchart LR
+    Repo[Product data repo: YAML + JSON Schema] -->|tagged version| Deploy[Deploy workflow]
+    Deploy -->|pane:descriptions:apply| Pane[Pane install]
+    Pane --> Validate[Validate against schema]
+    Validate --> Plan[Dry-run plan]
+    Plan --> Migrate[Migrate Pane-managed tables]
+    Migrate --> Activate[Activate description version]
+    Activate --> DB[(Install database: pane_ system tables + product tables)]
+```
+
+- A product's descriptions live in their own repo (for example
+  `erme2/sweegly-data`), as YAML files (one per table, query or action) checked
+  against a published JSON Schema. They are reviewed in PRs and tagged.
+- Each deploy applies a tagged version with
+  `php artisan pane:descriptions:apply`: validate, dry-run, migrate, then
+  activate in one step. There is no HTTP endpoint for changing descriptions.
+- Pane-managed product tables live in the install's single database, next to
+  Pane's system tables, under a separate prefix.
+- New tables, columns and indexes are applied automatically. Anything that
+  could lose data (dropping or renaming a table or column, narrowing a type)
+  needs an explicit, versioned migration step in the files; without it the
+  apply fails and nothing changes.
+
+### Data API
+
+- Frontends address tables and queries by the stable names from the files, for
+  example `/data/{source}/tables/{table}/rows` and
+  `/data/{source}/queries/{query}`. The same frontend works on every install.
+- Complex reads use named queries, plus a limited structured client query
+  language (filters, sorting, simple joins). Frontends never send SQL.
+- Every read and write goes through the table's access policy and row
+  conditions, and actions run server-side.
+
+### Order of work
+
+Pane-managed sources come first: description files and the apply command, table
+creation and migrations, policies and groups, generic CRUD, named queries and
+actions, then moving the legacy map data. External sources (egress #68, query
+layer #72, CRUD #73, catalog #70 / PR #151) wait until a product needs them.
+
 ## Product boundaries
 
 ### Pane owns
@@ -90,17 +178,24 @@ database credentials and never connect directly to a managed database.
   binding;
 - organization database limits and connection lifecycle;
 - encrypted connection credentials and installation egress policy;
-- MySQL/MariaDB catalog discovery and Pane-owned descriptions;
+- the versioned description layer (sources, tables, policies, groups, named
+  queries, actions) and the apply command that activates it;
+- tables of Pane-managed sources, created and migrated only from description
+  files;
+- MySQL/MariaDB catalog discovery for external sources and Pane-owned
+  descriptions;
 - connection-level grants and owned-row CRUD authorization;
 - Laravel sessions, CSRF enforcement, impersonation, and audit history;
 - stable API responses and error semantics.
 
 ### Pane does not own
 
-- frontend presentation or product-specific workflows;
+- frontend presentation or product-specific code (product behaviour is
+  described in files using generic building blocks);
 - cross-installation identity, discovery, or administration;
 - WorkOS authentication UI;
-- database server, logical database, table, index, or migration provisioning;
+- database servers or logical databases, or the tables, indexes and
+  migrations of external sources;
 - direct browser-to-database access;
 - arbitrary SQL supplied by a frontend;
 - phase-one third-party databases or data ownership inference;
@@ -286,6 +381,9 @@ the Pane primary database and are separate from Laravel's `APP_KEY`.
 
 ## Target tenancy and roles
 
+In a product install there is usually one organization, the product owner (see
+[Installs](#installs)); the rules below still apply when there are several.
+
 One Pane installation may contain many unrelated organizations. A user may
 belong to several organizations, but each invitation and membership is scoped
 to exactly one organization. Ordinary users cannot discover organizations for
@@ -368,6 +466,9 @@ preserves existing connections and blocks creation or reactivation until usage
 returns within the limit.
 
 ## Target managed connections
+
+Deferred (2026-11-13): external sources are built after Pane-managed sources;
+this section and the next two describe them.
 
 Phase one supports product-controlled MySQL and MariaDB databases. One data
 source represents one logical database. Pane does not provision its server,
@@ -534,9 +635,13 @@ query execution. MySQL and MariaDB are the only phase-one drivers. A new driver
 must not add conditionals throughout controllers or expose raw driver objects to
 frontends.
 
-Whether current Story/Action/Mapper classes are adapted, wrapped, or replaced
-is intentionally left to later implementation tickets. Their current behavior
-does not override the target boundaries in this document.
+Current Story/Action/Mapper classes are replaced by the description layer's
+generic engine (see [Description layer](#description-layer)). Their current
+behavior does not override the target boundaries in this document.
+
+A capability a product needs is added to Pane as a generic, described building
+block (a policy kind, query feature or action type) usable by every product,
+never as product-specific code.
 
 ## Testing boundaries
 
@@ -572,8 +677,10 @@ that the current behavior matches the target.
 | WorkOS callback auto-creates users | Invite-only access and Pane-admin bootstrap | Identity and invitation epic |
 | Numeric `user_type_id` | Pane admins plus organization-scoped membership roles | Roles and membership epic |
 | One environment-selected default database | Pane primary store plus encrypted managed connections | Connection-vault epic |
-| Migration-seeded `map_*` metadata | `information_schema` discovery plus Pane descriptions | Catalog epic |
-| Dynamic `/{story}/{subject}` API | Explicit safe APIs with fixed app/organization context | API contract epic |
+| Migration-seeded `map_*` metadata | Versioned description files applied per install; discovery for external sources | Description-layer epic |
+| Dynamic `/{story}/{subject}` API | `/data/{source}/...` APIs by stable names, with policies and fixed app/organization context | Data API epic |
+| Product logic in code | Declarative actions, computed fields and named queries | Description-layer epic |
+| No shared private data | Groups as a building block | Groups epic |
 | Administrator-only mutations | Connection grants and membership-owned CRUD | Authorization epic |
 | Ordinary reads return all rows | Server-enforced membership ownership predicate | Row-ownership epic |
 | Physical model delete | Soft deletion and restoration | CRUD lifecycle epic |
@@ -588,8 +695,11 @@ that the current behavior matches the target.
 
 - Versioned phase-one API paths are fixed by `contracts/pane-v1.json`; later
   versions require a new contract and explicit compatibility policy.
-- The implementation migration strategy for Story/Action/Mapper and `map_*`
-  tables is unresolved and must be ticketed explicitly.
+- Story/Action/Mapper and the `map_*` tables are retired after their data moves
+  onto the description layer (#74); the steps are ticketed separately.
+- The description-file JSON Schema, client query language limits, first action
+  building blocks and group rules are open; see the
+  [decision record](decisions/2026-11-13-product-installs-and-description-layer.md#still-open).
 - Phase one excludes arbitrary third-party databases and ownership inference.
 - Phase one excludes PostgreSQL and SQL Server as managed data sources even
   though Laravel currently has static configuration examples for them.
@@ -597,7 +707,7 @@ that the current behavior matches the target.
 - Phase one requires a single-column primary key and the controlled ownership,
   timestamp, and soft-delete columns.
 - Composite keys, table-level grants, hard-delete workflows, permanent erasure,
-  schema provisioning, catalog rename detection, KMS/Vault integration, and
+  schema provisioning for external sources, catalog rename detection, KMS/Vault integration, and
   configurable audit retention are deferred.
 - Invitation expiry bounds are controlled by Pane administrators but their
   exact minimum and maximum values are unresolved.
@@ -624,6 +734,12 @@ that the current behavior matches the target.
   backups without authenticated encryption.
 - New capabilities never bypass centralized policies, catalog validation,
   egress policy, or auditing.
+- Pane contains no product-specific code; product behaviour comes only from
+  description files.
+- Descriptions and Pane-managed table structure change only through the apply
+  command, never through an HTTP endpoint.
+- An apply never drops or rewrites product data without an explicit migration
+  step in the description files.
 
 ## Before making changes
 
