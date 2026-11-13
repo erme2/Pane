@@ -154,9 +154,13 @@ separately, and the two are allowed to differ for as long as needed:
   is the source of truth. Edits are versioned and audited.
 - The editors for maps, menu and settings are core Latte functions: always
   available, never switched off.
-- System maps and tables (users, memberships, settings storage, audit, and the
-  maps themselves) are protected: the interface can edit, and even break, an
-  app's product maps, but never the system ones.
+- System maps and tables are protected: the interface can edit, and even
+  break, an app's product maps, but never the system ones. System means every
+  table Pane owns, which is everything under the system prefix
+  (`DB_TABLE_PREFIX`, default `pane_`): users, organizations, memberships,
+  invitations, applications, settings storage, audit, messages, connections,
+  credentials, any future Pane table, and the maps themselves. Only tables under
+  the app prefix are editable (decision answers 32 and 34).
 
 ### Tables, migrations and discovery
 
