@@ -104,6 +104,12 @@ before dispatching a release when values change.
 The workflow records deployed version/ref/commit and smoke-check status in the
 GitHub step summary. Rollback and backup decisions are tracked by Pane #99.
 
+## Release Gate
+
+A coordinated Pane + Latte release is ready only when every item of the
+[Cross-App Release Gate](release-gate.md) passes. The gate also lists the
+required production environment for Pane and Latte.
+
 ## First Alpha Release Notes Template
 
 Use this template for the first alpha release notes and adapt it for later
@@ -121,7 +127,7 @@ Stability: unsafe public preview; APIs and deployment workflow may change.
 
 - Pane deployment target:
 - Latte deployment target:
-- Included release-gate checklist:
+- Release gate (docs/release-gate.md): copy the checklist here; ready only when every item is checked
 
 ## Validation
 

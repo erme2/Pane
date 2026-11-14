@@ -45,7 +45,8 @@ complete `.env.example` contract.
 
 Pane tags every merge to `main` with the next patch version (`v0.1.5`,
 `v0.1.6`, ...). See [Release Policy](docs/release.md) before tagging a new
-minor or major version by hand.
+minor or major version by hand. A coordinated Pane + Latte release is ready
+only when the [Cross-App Release Gate](docs/release-gate.md) passes.
 
 The first Pane alpha targets Hostinger. See
 [Hostinger Runtime Preparation](docs/hostinger.md) for required PHP extensions,
