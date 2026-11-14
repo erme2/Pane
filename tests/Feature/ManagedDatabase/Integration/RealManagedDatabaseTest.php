@@ -3,6 +3,8 @@
 namespace Tests\Feature\ManagedDatabase\Integration;
 
 use App\Models\ApplicationRegistration;
+use App\Models\CatalogObject;
+use App\Models\CatalogRefresh;
 use App\Models\ManagedConnection;
 use App\Models\ManagedCredentialSecret;
 use App\Models\Organization;
@@ -251,6 +253,64 @@ class RealManagedDatabaseTest extends TestCase
         $api('GET', "/$id", org: $other)->assertForbidden();
     }
 
+    public function test_catalog_discovery_and_refresh_against_the_real_server(): void
+    {
+        [$application, $organization, $admin] = $this->apiFixture();
+        [$user, $password] = $this->server->account([self::EXACT]);
+        $db = $this->server->database;
+        $root = $this->server->root();
+        $root->exec("CREATE TABLE `$db`.customers (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, pane_membership_id CHAR(36) NOT NULL, email VARCHAR(320) NOT NULL,"
+            .' created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, deleted_at TIMESTAMP NULL, INDEX customers_membership (pane_membership_id)) ENGINE=InnoDB');
+        $root->exec("CREATE TABLE `$db`.orders (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, pane_membership_id CHAR(36) NOT NULL, customer_id BIGINT UNSIGNED NOT NULL,"
+            .' total DECIMAL(10,2) NOT NULL, note TEXT NULL, shape GEOMETRY NULL, created_at DATETIME NULL, updated_at DATETIME NULL, deleted_at DATETIME NULL,'
+            .' INDEX orders_membership (pane_membership_id), CONSTRAINT orders_customer_fk FOREIGN KEY (customer_id) REFERENCES customers (id)) ENGINE=InnoDB');
+        $root->exec("CREATE VIEW `$db`.order_totals AS SELECT customer_id, SUM(total) AS total FROM `$db`.orders GROUP BY customer_id");
+
+        $api = fn (string $method, string $path = '', array $body = [], ?string $ifMatch = null): TestResponse => $this->connectionsApi($application, $admin, $organization, $method, $path, $body, $ifMatch);
+        $id = (string) $api('POST', '', [
+            'engine' => $this->server->engine, 'name' => 'Shop', 'host' => $this->server->host, 'port' => $this->server->port,
+            'database' => $db, 'username' => $user, 'tls_mode' => 'required', 'credentials' => ['password' => $password],
+        ])->assertCreated()->json('data.id');
+        $api('POST', "/$id/catalog-refreshes")->assertAccepted()->assertJsonPath('data.attributes.status', 'completed');
+
+        $object = fn (string $kind, string $name): CatalogObject => CatalogObject::query()->where('connection_id', $id)->where('kind', $kind)->where('name', $name)->firstOrFail();
+        $this->assertSame('available', $object('schema', $db)->status);
+        $this->assertSame('available', $object('table', 'customers')->status, implode(', ', $object('table', 'customers')->issues));
+        $this->assertSame('available', $object('table', 'orders')->status, implode(', ', $object('table', 'orders')->issues));
+        $this->assertSame(['id'], $object('table', 'orders')->structure['primary_key']);
+        $this->assertSame('decimal', $object('column', 'orders.total')->structure['type']);
+        $this->assertTrue($object('column', 'orders.id')->structure['auto_increment']);
+        $this->assertSame('incompatible', $object('column', 'orders.shape')->status);
+        $this->assertSame(['table' => 'orders', 'columns' => ['customer_id'], 'referenced_table' => 'customers', 'referenced_columns' => ['id']], $object('relationship', 'orders.orders_customer_fk')->structure);
+        $this->assertContains('not_a_base_table', $object('table', 'order_totals')->issues);
+        $this->assertContains('membership_column_missing', $object('table', 'items')->issues);
+
+        $orders = $object('table', 'orders');
+        $api('PATCH', "/$id/catalog/{$orders->getKey()}", ['description' => 'Customer orders'], '"'.$orders->versionTag().'"')->assertOk();
+
+        // Rename a column and drop a table on the server, then refresh.
+        $root->exec("DROP VIEW `$db`.order_totals");
+        $root->exec("ALTER TABLE `$db`.orders CHANGE note notes TEXT NULL");
+        $api('POST', "/$id/catalog-refreshes")->assertAccepted();
+
+        $this->assertSame('Customer orders', $object('table', 'orders')->description);
+        $this->assertSame('missing', $object('column', 'orders.note')->status);
+        $this->assertSame('available', $object('column', 'orders.notes')->status);
+        $this->assertSame('missing', $object('table', 'order_totals')->status);
+
+        // A connection to another database has its own catalog.
+        $otherDb = $this->server->createDatabase('it_other_'.bin2hex(random_bytes(3)));
+        $root->exec("CREATE TABLE `$otherDb`.things (id INT PRIMARY KEY) ENGINE=InnoDB");
+        [$otherUser, $otherPassword] = $this->server->account(["GRANT SELECT, INSERT, UPDATE, DELETE ON `$otherDb`.* TO {account}"]);
+        $other = (string) $api('POST', '', [
+            'engine' => $this->server->engine, 'name' => 'Other', 'host' => $this->server->host, 'port' => $this->server->port,
+            'database' => $otherDb, 'username' => $otherUser, 'tls_mode' => 'required', 'credentials' => ['password' => $otherPassword],
+        ])->assertCreated()->json('data.id');
+        $api('POST', "/$other/catalog-refreshes")->assertAccepted();
+        $this->assertSame(['things'], CatalogObject::query()->where('connection_id', $other)->where('kind', 'table')->pluck('name')->all());
+        $api('GET', "/$other/catalog/{$orders->getKey()}")->assertNotFound();
+    }
+
     private function assertWithinSeconds(float $limit, callable $statement): void
     {
         $started = microtime(true);
@@ -267,6 +327,8 @@ class RealManagedDatabaseTest extends TestCase
      */
     private function apiFixture(): array
     {
+        CatalogObject::query()->delete();
+        CatalogRefresh::query()->delete();
         ManagedConnection::query()->delete();
         ManagedCredentialSecret::query()->delete();
         OrganizationInvitation::query()->delete();

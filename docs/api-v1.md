@@ -207,6 +207,45 @@ suspension, or organization suspension/closure.
 The exact parameters, request and response schemas, required headers, method
 matrix, and status codes are in the OpenAPI contract.
 
+### Catalog discovery
+
+`POST .../catalog-refreshes` reads the connection's configured database from
+MySQL/MariaDB `information_schema` (schema, tables, columns, primary keys,
+indexes and foreign keys; never row data) and stores the result in Pane. It
+first runs the same checks as a connection test (network rules, TLS, exact
+privileges). The refresh runs inside the request, so the `202` response already
+carries status `completed`. A disabled, unreachable or misconfigured connection
+returns `503 dependency_unavailable` with the reason, and the refresh is saved as
+`failed`. Refreshes are limited to 3 per minute per connection (`429`).
+
+Catalog objects have kind `schema`, `table`, `column` (named `table.column`) or
+`relationship` (named `table.constraint`), and a status:
+
+- `available`: usable. For a table, it meets the phase-one CRUD table contract:
+  a base table with plain identifiers (letters, digits, `_`, `$`), one
+  single-column primary key, a non-null indexed UUID `pane_membership_id`
+  (`CHAR(36)` or MariaDB `UUID`), `created_at` and `updated_at` timestamps, and a
+  nullable `deleted_at` timestamp.
+- `incompatible`: discovered but not usable (for example a view, a composite
+  primary key, an unsupported column type such as `GEOMETRY` or `BLOB`, or a
+  foreign key to another database). Pane keeps the reasons internally.
+- `missing`: no longer found on the server. Missing objects are kept with their
+  descriptions, and come back as the same object if they reappear. A rename is a
+  missing old object plus a new one.
+
+A refresh never changes descriptions. Pane never creates or alters anything in
+the managed database.
+
+`PATCH .../catalog/{catalog_object_id}` sets or clears (`null`) the
+description, up to 5000 characters. It needs the object's current `ETag` in
+`If-Match`; the ETag changes whenever the description, status or structure
+changes. Description changes and refreshes are audited.
+
+Only organization administrators can use the catalog routes until connection
+grants exist. A table can serve row CRUD only after an organization
+administrator explicitly enables it, and only while it stays `available`; a
+refresh that finds it missing or incompatible disables it again.
+
 `GET /session` has three discriminated modes and avoids repeating relational
 identifiers that could disagree. A `latte` session returns one `user`, its
 application projection, fixed organization, and membership projection. A

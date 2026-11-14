@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\WorkOsAuthController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ManagedConnectionController;
 use App\Http\Controllers\OrganizationController;
@@ -82,6 +83,14 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('organizations.connections.destroy');
         Route::post('/organizations/{organizationId}/connections/{connectionId}/test', [ManagedConnectionController::class, 'test'])
             ->name('organizations.connections.test');
+        Route::post('/organizations/{organizationId}/connections/{connectionId}/catalog-refreshes', [CatalogController::class, 'refresh'])
+            ->name('organizations.connections.catalog-refreshes.store');
+        Route::get('/organizations/{organizationId}/connections/{connectionId}/catalog', [CatalogController::class, 'list'])
+            ->name('organizations.connections.catalog.index');
+        Route::get('/organizations/{organizationId}/connections/{connectionId}/catalog/{catalogObjectId}', [CatalogController::class, 'show'])
+            ->name('organizations.connections.catalog.show');
+        Route::patch('/organizations/{organizationId}/connections/{connectionId}/catalog/{catalogObjectId}', [CatalogController::class, 'updateDescription'])
+            ->name('organizations.connections.catalog.update');
         Route::get('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'list'])
             ->name('organizations.invitations.index');
         Route::post('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'store'])

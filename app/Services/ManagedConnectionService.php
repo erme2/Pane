@@ -15,6 +15,7 @@ use App\Support\ManagedDatabase\PrivilegeInspector;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PDO;
 use RuntimeException;
 
 /**
@@ -193,6 +194,19 @@ class ManagedConnectionService
     }
 
     /**
+     * Opens the saved connection for reading, through the same checks as a
+     * connection test (network rules, TLS, reachability, exact privileges).
+     *
+     * @throws ConnectionRejectedException with a safe message when any check fails
+     */
+    public function open(ManagedConnection $connection, User $actor, ?string $requestId = null): PDO
+    {
+        $organization = $connection->organization()->firstOrFail();
+
+        return $this->probe($organization, $actor, $connection->getKey(), $this->profileOf($connection), $this->currentSecrets($connection), $requestId);
+    }
+
+    /**
      * Connects with the given profile and secrets, then checks the account's
      * privileges. Throws ConnectionRejectedException with a safe message;
      * code 1 means the database was reachable but the privileges are wrong.
@@ -200,7 +214,7 @@ class ManagedConnectionService
      * @param  array<string, mixed>  $profile
      * @param  array<string, string>  $secrets
      */
-    private function probe(Organization $organization, User $actor, string $connectionId, array $profile, #[\SensitiveParameter] array $secrets, ?string $requestId): void
+    private function probe(Organization $organization, User $actor, string $connectionId, array $profile, #[\SensitiveParameter] array $secrets, ?string $requestId): PDO
     {
         $credentials = new ManagedCredentials([
             'host' => $profile['host'],
@@ -236,6 +250,8 @@ class ManagedConnectionService
 
             throw new ConnectionRejectedException('The database account has the wrong privileges: '.implode('; ', $parts).'. Pane needs exactly SELECT, INSERT, UPDATE and DELETE on its own database.', 1);
         }
+
+        return $pdo;
     }
 
     /**

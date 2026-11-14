@@ -18,6 +18,10 @@ class PaneTable
 
     public const string MANAGED_CONNECTIONS = 'managed_connections';
 
+    public const string CATALOG_OBJECTS = 'catalog_objects';
+
+    public const string CATALOG_REFRESHES = 'catalog_refreshes';
+
     public const string AUDIT_EVENTS = 'audit_events';
 
     public const string MESSAGES = 'messages';
