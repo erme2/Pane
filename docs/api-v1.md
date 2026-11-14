@@ -192,6 +192,9 @@ suspension, or organization suspension/closure.
   manage membership state and roles.
 - `/organizations/{organization_id}/applications` lists the organization's
   active frontends (id, name, trusted origin) to organization administrators.
+- `/organizations/{organization_id}/maps` and
+  `/organizations/{organization_id}/maps/{source}/{table}` serve the maps
+  Latte builds itself from (see "Maps for Latte" below).
 - `/organizations/{organization_id}/invitations` and child invitation routes
   create, revoke, and resend organization invitations.
 - `/organizations/{organization_id}/connections` and child connection routes
@@ -247,6 +250,37 @@ app. The target must be an active Latte application of the organization, as
 listed by `/organizations/{organization_id}/applications`; an unknown,
 disabled, or other-organization ID returns `422 validation_failed`. The audit
 event records the frontend used as `target_application_id`.
+
+### Maps for Latte
+
+Latte builds its shell and views from two reads (Pane#154):
+
+- `GET /organizations/{organization_id}/maps` returns the bootstrap: the menu
+  map `version`, the `menu` items (`key`, `label`, `icon`, a `target` that is
+  either a `table` map `source`/`table` or a `function` key, an optional
+  `parent` key for one level of nesting, and `position`), the switchable
+  `functions` as `{key, enabled}` (`records`, `members`, `dashboard`; the maps,
+  menu and settings editors are always on and not listed), the public
+  `settings` as `{key, type, value}` (an empty list until Pane#158), and the
+  `tables` the caller can see.
+- `GET /organizations/{organization_id}/maps/{source}/{table}` returns one
+  table map: its `version`, `ui` and mapped `fields` in map order.
+
+Both responses send a strong `ETag`. Paths and responses use stable map names,
+never physical table or column names, and unmapped tables and fields never
+appear. Organization administrators see every app table map, plus the system
+maps (Pane's own tables) with `system: true`, read-only. Standard members get
+the menu, functions and public settings; table entries, and menu items that
+point at tables, are left out until per-table access policies (Pane#156) open
+them. A table map the caller can't see answers `404 resource_not_found`, like
+an unmapped one.
+
+The `ui` parts follow a published schema that stays open to extra keys. At
+table level: `label`, `description`, `list.columns[]` (field names) and
+`list.default_sort` (a field name, `-` prefixed for descending). At field
+level: `label`, `widget`, `help` and `hidden`. Field `validations` only carry
+the client-side hints `max`, `min` and `email`; rules that name other tables
+stay on the server.
 
 ## Success, pagination, and concurrency
 

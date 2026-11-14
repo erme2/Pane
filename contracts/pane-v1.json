@@ -1214,6 +1214,91 @@
                 "summary": "List Organization Frontends"
             }
         },
+        "/organizations/{organization_id}/maps": {
+            "get": {
+                "operationId": "getMaps",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Maps"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "Get Maps Bootstrap",
+                "description": "Menu, functions, public settings and the table maps the caller can see, for Latte to build its shell. Organization administrators see every app table map and the system maps (read-only, `system: true`). Standard members get the menu, functions and public settings; table entries and menu items that point at tables are left out until per-table access policies (Pane#156) open them. Unmapped tables and fields never appear."
+            }
+        },
+        "/organizations/{organization_id}/maps/{source}/{table}": {
+            "get": {
+                "operationId": "getTableMap",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapSourceName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapTableName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/TableMap"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "Get Table Map",
+                "description": "One table map's mapped fields and `ui`. A table the caller can't see answers `404 resource_not_found`, the same as an unmapped one."
+            }
+        },
         "/organizations/{organization_id}/invitations": {
             "get": {
                 "operationId": "listOrganizationInvitations",
@@ -2735,6 +2820,24 @@
                     "$ref": "#/components/schemas/OriginTransport"
                 },
                 "description": "Validated against the immutable server-session application when supplied. Its absence on a same-origin read is allowed and never changes application context."
+            },
+            "MapSourceName": {
+                "name": "source",
+                "in": "path",
+                "required": true,
+                "description": "Stable map name of the source, for example `install`. Never a physical database name.",
+                "schema": {
+                    "$ref": "#/components/schemas/MapName"
+                }
+            },
+            "MapTableName": {
+                "name": "table",
+                "in": "path",
+                "required": true,
+                "description": "Stable map name of the table within the source. Never the physical (prefixed) table name.",
+                "schema": {
+                    "$ref": "#/components/schemas/MapName"
+                }
             }
         },
         "schemas": {
@@ -4792,6 +4895,467 @@
                     }
                 },
                 "additionalProperties": false
+            },
+            "MapName": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                "description": "Stable map name: 1-64 lowercase letters, digits or underscores, starting with a letter."
+            },
+            "MapVersion": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Version of the map; every save adds one."
+            },
+            "MapFunctionKey": {
+                "type": "string",
+                "enum": [
+                    "records",
+                    "members",
+                    "dashboard"
+                ],
+                "description": "Switchable Latte functions Pane knows. The maps, menu and settings editors are always on and never listed."
+            },
+            "MapTableUi": {
+                "type": "object",
+                "description": "Table-level `ui` part. Published keys are typed; extra keys pass through so new ones don't break clients.",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "list": {
+                        "type": "object",
+                        "properties": {
+                            "columns": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapName"
+                                },
+                                "description": "Field names shown in list views, in order."
+                            },
+                            "default_sort": {
+                                "type": "string",
+                                "pattern": "^-?[a-z][a-z0-9_]{0,63}$",
+                                "description": "Field name, prefixed with `-` for descending order."
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "additionalProperties": true
+            },
+            "MapFieldUi": {
+                "type": "object",
+                "description": "Field-level `ui` part. Published keys are typed; extra keys pass through so new ones don't break clients.",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "widget": {
+                        "type": "string"
+                    },
+                    "help": {
+                        "type": "string"
+                    },
+                    "hidden": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": true
+            },
+            "MapMenuTarget": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "source",
+                            "table"
+                        ],
+                        "properties": {
+                            "type": {
+                                "const": "table"
+                            },
+                            "source": {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            "table": {
+                                "$ref": "#/components/schemas/MapName"
+                            }
+                        },
+                        "additionalProperties": false
+                    },
+                    {
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "function"
+                        ],
+                        "properties": {
+                            "type": {
+                                "const": "function"
+                            },
+                            "function": {
+                                "$ref": "#/components/schemas/MapFunctionKey"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type"
+                }
+            },
+            "MapMenuItem": {
+                "type": "object",
+                "required": [
+                    "key",
+                    "label",
+                    "icon",
+                    "target",
+                    "parent",
+                    "position"
+                ],
+                "properties": {
+                    "key": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "icon": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "target": {
+                        "$ref": "#/components/schemas/MapMenuTarget"
+                    },
+                    "parent": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Key of the parent item; one level of nesting only."
+                    },
+                    "position": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapFunction": {
+                "type": "object",
+                "required": [
+                    "key",
+                    "enabled"
+                ],
+                "properties": {
+                    "key": {
+                        "$ref": "#/components/schemas/MapFunctionKey"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapPublicSetting": {
+                "type": "object",
+                "required": [
+                    "key",
+                    "type",
+                    "value"
+                ],
+                "description": "A public setting declared in the maps. The list is empty until settings land (Pane#158).",
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "value": {}
+                },
+                "additionalProperties": false
+            },
+            "MapTableSummary": {
+                "type": "object",
+                "required": [
+                    "source",
+                    "table",
+                    "description",
+                    "system",
+                    "version",
+                    "ui"
+                ],
+                "properties": {
+                    "source": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "system": {
+                        "type": "boolean",
+                        "description": "Pane's own tables. Shown to organization administrators only, read-only."
+                    },
+                    "version": {
+                        "$ref": "#/components/schemas/MapVersion"
+                    },
+                    "ui": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MapTableUi"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapFieldValidation": {
+                "type": "object",
+                "required": [
+                    "rule"
+                ],
+                "description": "Client-side hints only. Server-side rules that name other tables (`unique`, `exists`) are not exposed.",
+                "properties": {
+                    "rule": {
+                        "type": "string",
+                        "enum": [
+                            "max",
+                            "min",
+                            "email"
+                        ]
+                    },
+                    "value": {
+                        "type": [
+                            "string",
+                            "number",
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapFieldResource": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "type",
+                    "description",
+                    "format",
+                    "primary",
+                    "nullable",
+                    "sortable",
+                    "computed",
+                    "default",
+                    "validations",
+                    "ui"
+                ],
+                "properties": {
+                    "name": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "number",
+                            "string",
+                            "text",
+                            "boolean",
+                            "date",
+                            "array",
+                            "password",
+                            "json"
+                        ]
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "format": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "primary": {
+                        "type": "boolean"
+                    },
+                    "nullable": {
+                        "type": "boolean"
+                    },
+                    "sortable": {
+                        "type": "boolean"
+                    },
+                    "computed": {
+                        "type": "boolean",
+                        "description": "Worked out by Pane; clients never write it."
+                    },
+                    "default": {},
+                    "validations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MapFieldValidation"
+                        }
+                    },
+                    "ui": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MapFieldUi"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapsResource": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "type": {
+                        "const": "maps"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "version",
+                            "menu",
+                            "functions",
+                            "settings",
+                            "tables"
+                        ],
+                        "properties": {
+                            "version": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/MapVersion"
+                                    }
+                                ],
+                                "description": "Version of the menu map."
+                            },
+                            "menu": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapMenuItem"
+                                }
+                            },
+                            "functions": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapFunction"
+                                }
+                            },
+                            "settings": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapPublicSetting"
+                                }
+                            },
+                            "tables": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapTableSummary"
+                                }
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TableMapResource": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "type": {
+                        "const": "table_map"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "source",
+                            "table",
+                            "description",
+                            "system",
+                            "version",
+                            "ui",
+                            "fields"
+                        ],
+                        "properties": {
+                            "source": {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            "table": {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            "description": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "system": {
+                                "type": "boolean"
+                            },
+                            "version": {
+                                "$ref": "#/components/schemas/MapVersion"
+                            },
+                            "ui": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/MapTableUi"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "fields": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapFieldResource"
+                                },
+                                "description": "Mapped fields in map order."
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "responses": {
@@ -6827,6 +7391,68 @@
                         }
                     }
                 }
+            },
+            "Maps": {
+                "description": "Maps bootstrap for the caller",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/MapsResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "TableMap": {
+                "description": "One table map",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/TableMapResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "headers": {
@@ -7507,6 +8133,55 @@
                 "membership_required",
                 "permission_denied",
                 "impersonation_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getMaps": {
+            "400": [
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getTableMap": {
+            "400": [
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
             ],
             "500": [
                 "internal_error"
