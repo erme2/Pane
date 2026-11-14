@@ -3,6 +3,7 @@
 namespace Tests\Feature\Organizations;
 
 use App\Models\ApplicationRegistration;
+use App\Models\AuditEvent;
 use App\Models\Message;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -173,6 +174,146 @@ class OrganizationInvitationApiTest extends TestCase
             (string) $resend->json('meta.invitation_url'),
             'https://customer.example.test/app'
         );
+    }
+
+    public function test_invitations_can_target_another_frontend_of_the_organization(): void
+    {
+        [$console, $organization] = $this->configuredApplicationAndOrganization();
+        $app = $this->latteApplication($organization, 'Sweegly app', 'https://app.example.test');
+        $this->withCsrfToken()->actingAs($this->organizationAdministrator($organization));
+
+        $create = $this
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => 'guest@example.com',
+                'role' => OrganizationMembership::ROLE_USER,
+                'target_application_id' => $app->application_id,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('meta.invitation_url', fn (string $url): bool => str_starts_with($url, 'https://app.example.test/auth/login?'));
+
+        $this->assertInvitationUrlTargetsApplication((string) $create->json('meta.invitation_url'), 'https://app.example.test/home');
+        $this->assertSame(
+            $create->json('meta.invitation_url'),
+            Message::query()->where('source_id', $create->json('data.id'))->sole()->payload['invitation_url']
+        );
+        $this->assertSame($app->application_id, $this->auditedTarget('organization.membership.invite', $create->json('data.id')));
+
+        $resend = $this
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->withHeader('If-Match', (string) $create->headers->get('ETag'))
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$create->json('data.id')}/resends", [
+                'target_application_id' => $app->application_id,
+            ])
+            ->assertCreated();
+
+        $this->assertInvitationUrlTargetsApplication((string) $resend->json('meta.invitation_url'), 'https://app.example.test/home');
+        $this->assertStringStartsWith('https://app.example.test/auth/login?', (string) $resend->json('meta.invitation_url'));
+        $this->assertSame($app->application_id, $this->auditedTarget('organization.membership.invitation.resend', $resend->json('data.id')));
+    }
+
+    public function test_invitations_without_a_target_use_the_requesting_frontend(): void
+    {
+        [$console, $organization] = $this->configuredApplicationAndOrganization();
+        $this->latteApplication($organization, 'Sweegly app', 'https://app.example.test');
+        $this->withCsrfToken()->actingAs($this->organizationAdministrator($organization));
+
+        $create = $this
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => 'guest@example.com',
+                'role' => OrganizationMembership::ROLE_USER,
+            ])
+            ->assertCreated();
+
+        $this->assertStringStartsWith('https://latte.test/auth/login?', (string) $create->json('meta.invitation_url'));
+        $this->assertInvitationUrlTargetsApplication((string) $create->json('meta.invitation_url'), 'https://latte.test/dashboard');
+        $this->assertSame($console->application_id, $this->auditedTarget('organization.membership.invite', $create->json('data.id')));
+    }
+
+    public function test_invitation_targets_must_be_active_frontends_of_the_same_organization(): void
+    {
+        [$console, $organization] = $this->configuredApplicationAndOrganization();
+        $otherOrganization = $this->tenancy->createOrganization('Other Workspace', 'other-workspace-'.Str::uuid());
+        $foreign = $this->latteApplication($otherOrganization, 'Other app', 'https://other.example.test');
+        $disabled = $this->latteApplication($organization, 'Old app', 'https://old.example.test', ApplicationRegistration::STATUS_DISABLED);
+        $this->withCsrfToken()->actingAs($this->organizationAdministrator($organization));
+
+        foreach ([$foreign->application_id, $disabled->application_id, (string) Str::uuid(), 'not-a-uuid', null] as $target) {
+            $this
+                ->withV1ApplicationSession($console)
+                ->withHeader('Origin', 'https://latte.test')
+                ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                    'email' => 'guest@example.com',
+                    'role' => OrganizationMembership::ROLE_USER,
+                    'target_application_id' => $target,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonPath('error.code', 'validation_failed');
+        }
+
+        $this->assertSame(0, OrganizationInvitation::query()->count());
+
+        $create = $this
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => 'guest@example.com',
+                'role' => OrganizationMembership::ROLE_USER,
+            ])
+            ->assertCreated();
+
+        foreach ([['target_application_id' => $foreign->application_id], ['target_application_id' => $disabled->application_id], ['role' => 'organization_administrator']] as $body) {
+            $this
+                ->withV1ApplicationSession($console)
+                ->withHeader('Origin', 'https://latte.test')
+                ->withHeader('If-Match', (string) $create->headers->get('ETag'))
+                ->postJson("/api/v1/organizations/$organization->organization_id/invitations/{$create->json('data.id')}/resends", $body)
+                ->assertUnprocessable()
+                ->assertJsonPath('error.code', 'validation_failed');
+        }
+
+        $this->assertSame(OrganizationInvitation::STATUS_PENDING, OrganizationInvitation::query()->findOrFail($create->json('data.id'))->status);
+    }
+
+    public function test_organization_administrators_can_list_the_active_frontends(): void
+    {
+        [$console, $organization] = $this->configuredApplicationAndOrganization();
+        $app = $this->latteApplication($organization, 'App', 'https://app.example.test');
+        $this->latteApplication($organization, 'Old app', 'https://old.example.test', ApplicationRegistration::STATUS_DISABLED);
+        $otherOrganization = $this->tenancy->createOrganization('Other Workspace', 'other-workspace-'.Str::uuid());
+        $this->latteApplication($otherOrganization, 'Other app', 'https://other.example.test');
+        $member = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $this->tenancy->addOrReactivateMembership($organization, $member, OrganizationMembership::ROLE_USER);
+
+        $list = $this
+            ->actingAs($this->organizationAdministrator($organization))
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->getJson("/api/v1/organizations/$organization->organization_id/applications")
+            ->assertOk()
+            ->assertHeader('X-Request-Id')
+            ->assertJsonCount(2, 'data');
+
+        $frontends = collect($list->json('data'))->keyBy('id');
+        $this->assertEqualsCanonicalizing([$app->application_id, $console->application_id], $frontends->keys()->all());
+        $this->assertSame([
+            'id' => $app->application_id,
+            'type' => 'organization_application',
+            'attributes' => ['name' => 'App', 'trusted_origin' => 'https://app.example.test'],
+        ], $frontends[$app->application_id]);
+        $this->assertSame('https://latte.test', $frontends[$console->application_id]['attributes']['trusted_origin']);
+
+        $this
+            ->actingAs($member)
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->getJson("/api/v1/organizations/$organization->organization_id/applications")
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'permission_denied');
     }
 
     public function test_organization_invitation_api_does_not_leak_other_organizations_or_allow_non_admins(): void
@@ -390,6 +531,32 @@ class OrganizationInvitationApiTest extends TestCase
         $organization = $application->organization()->firstOrFail();
 
         return [$application, $organization];
+    }
+
+    private function auditedTarget(string $action, string $invitationId): mixed
+    {
+        $event = AuditEvent::query()
+            ->where('action', $action)
+            ->get()
+            ->sole(fn (AuditEvent $event): bool => ($event->resource_ids['organization_invitation_id'] ?? null) === $invitationId);
+
+        return $event->metadata['target_application_id'] ?? null;
+    }
+
+    private function latteApplication(
+        Organization $organization,
+        string $name,
+        string $origin,
+        string $status = ApplicationRegistration::STATUS_ACTIVE
+    ): ApplicationRegistration {
+        return ApplicationRegistration::query()->create([
+            'name' => $name,
+            'kind' => ApplicationRegistration::KIND_LATTE,
+            'organization_id' => $organization->organization_id,
+            'trusted_origin' => $origin,
+            'redirect_uris' => [$origin.'/home'],
+            'status' => $status,
+        ]);
     }
 
     private function assertInvitationUrlTargetsApplication(string $url, string $redirectUri): void

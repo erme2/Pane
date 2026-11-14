@@ -316,6 +316,29 @@ class PaneV1ContractTest extends TestCase
         );
     }
 
+    public function test_organization_invitations_can_target_a_listed_frontend(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $list = $this->contract['paths']['/organizations/{organization_id}/applications']['get'];
+        $resend = $this->contract['paths']['/organizations/{organization_id}/invitations/{invitation_id}/resends']['post'];
+
+        $this->assertSame('listOrganizationApplications', $list['operationId']);
+        $this->assertSame('#/components/responses/OrganizationApplicationCollection', $list['responses']['200']['$ref']);
+        $this->assertSame(
+            ['name', 'trusted_origin'],
+            $schemas['OrganizationApplicationResource']['properties']['attributes']['required'],
+        );
+        $this->assertNotContains('target_application_id', $schemas['OrganizationInvitationCreate']['required']);
+        $this->assertSame('#/components/schemas/Uuid', $schemas['OrganizationInvitationCreate']['properties']['target_application_id']['$ref']);
+        $this->assertFalse($resend['requestBody']['required']);
+        $this->assertSame(
+            '#/components/schemas/OrganizationInvitationResend',
+            $resend['requestBody']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(['validation_failed'], $this->contract['x-pane-operation-errors']['resendOrganizationInvitation']['422']);
+        $this->assertStringContainsString('optional `target_application_id`', $this->documentation);
+    }
+
     public function test_application_and_invitation_responses_are_discriminated(): void
     {
         $schemas = $this->contract['components']['schemas'];

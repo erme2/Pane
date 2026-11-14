@@ -32,6 +32,7 @@ class OrganizationInvitationService
     /**
      * @param  (Closure(string): string)|null  $invitationUrl  builds the link from the token; when given,
      *                                                         an invitation email is queued in the same transaction
+     * @param  string|null  $targetApplicationId  the frontend the link opens, recorded in the audit event
      * @return array{invitation: OrganizationInvitation, token: string}
      */
     public function inviteOrganizationMember(
@@ -39,12 +40,13 @@ class OrganizationInvitationService
         Organization $organization,
         string $email,
         string $role,
-        ?Closure $invitationUrl = null
+        ?Closure $invitationUrl = null,
+        ?string $targetApplicationId = null
     ): array {
         $email = $this->normalizeEmail($email);
         $this->assertRole($role);
 
-        return DB::transaction(function () use ($actor, $organization, $email, $role, $invitationUrl): array {
+        return DB::transaction(function () use ($actor, $organization, $email, $role, $invitationUrl, $targetApplicationId): array {
             $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $this->assertEmailDoesNotBelongToActiveMembership($organization, $email);
             $this->revokePendingInvitationsForEmail($organization, $email);
@@ -59,11 +61,11 @@ class OrganizationInvitationService
                     'organization_invitation_id' => $invitation->getKey(),
                     'organization_id' => $organization->getKey(),
                 ],
-                'metadata' => [
+                'metadata' => $this->withTargetApplication([
                     'email' => $email,
                     'role' => $role,
                     'expires_at' => $invitation->expires_at->toJSON(),
-                ],
+                ], $targetApplicationId),
             ]);
 
             $this->queueInvitationEmail($organization, $invitation, $token, $invitationUrl);
@@ -129,6 +131,7 @@ class OrganizationInvitationService
 
     /**
      * @param  (Closure(string): string)|null  $invitationUrl  see inviteOrganizationMember()
+     * @param  string|null  $targetApplicationId  see inviteOrganizationMember()
      * @return array{invitation: OrganizationInvitation, token: string}
      */
     public function resendOrganizationInvitation(
@@ -136,9 +139,10 @@ class OrganizationInvitationService
         Organization $organization,
         OrganizationInvitation $invitation,
         string $expectedVersion,
-        ?Closure $invitationUrl = null
+        ?Closure $invitationUrl = null,
+        ?string $targetApplicationId = null
     ): array {
-        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion, $invitationUrl): array {
+        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion, $invitationUrl, $targetApplicationId): array {
             $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $locked = $this->lockedInvitation($organization, $invitation);
             $this->assertExpectedVersion($locked, $expectedVersion);
@@ -165,10 +169,10 @@ class OrganizationInvitationService
                     'previous_organization_invitation_id' => $locked->getKey(),
                     'organization_id' => $organization->getKey(),
                 ],
-                'metadata' => [
+                'metadata' => $this->withTargetApplication([
                     'email' => $replacement->email,
                     'role' => $replacement->role,
-                ],
+                ], $targetApplicationId),
             ]);
 
             $this->queueInvitationEmail($organization, $replacement, $token, $invitationUrl);
@@ -430,6 +434,17 @@ class OrganizationInvitationService
             $organization,
             $invitation,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function withTargetApplication(array $metadata, ?string $targetApplicationId): array
+    {
+        return $targetApplicationId === null
+            ? $metadata
+            : [...$metadata, 'target_application_id' => $targetApplicationId];
     }
 
     private function lockedInvitation(Organization $organization, OrganizationInvitation $invitation): OrganizationInvitation

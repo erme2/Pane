@@ -87,12 +87,10 @@ class OrganizationInvitationController extends Controller
             return $context;
         }
 
-        $unsupportedFields = array_values(array_diff(array_keys($request->all()), ['email', 'role']));
+        $unsupportedFields = $this->unsupportedFieldError($request, ['email', 'role', 'target_application_id']);
 
-        if ($unsupportedFields !== []) {
-            sort($unsupportedFields);
-
-            return $this->v1Error($request, 'validation_failed', 'The '.$unsupportedFields[0].' field is not supported.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        if ($unsupportedFields instanceof JsonResponse) {
+            return $unsupportedFields;
         }
 
         $validator = Validator::make($request->all(), [
@@ -104,13 +102,20 @@ class OrganizationInvitationController extends Controller
             return $this->v1Error($request, 'validation_failed', 'The email field must be valid and role must be supported.', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $target = $this->targetApplication($request, $context['organization'], $context['application']);
+
+        if ($target instanceof JsonResponse) {
+            return $target;
+        }
+
         try {
             $result = $this->invitations->inviteOrganizationMember(
                 $context['actor'],
                 $context['organization'],
                 (string) $request->input('email'),
                 (string) $request->input('role'),
-                fn (string $token): string => $this->invitationUrl($context['application'], $token)
+                fn (string $token): string => $this->invitationUrl($target, $token),
+                (string) $target->getKey()
             );
         } catch (InvalidArgumentException $exception) {
             return $this->v1Error($request, 'validation_failed', $exception->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -128,7 +133,7 @@ class OrganizationInvitationController extends Controller
             'data' => $this->resource($invitation),
             'meta' => [
                 'request_id' => $requestId,
-                'invitation_url' => $this->invitationUrl($context['application'], (string) $result['token']),
+                'invitation_url' => $this->invitationUrl($target, (string) $result['token']),
             ],
         ], Response::HTTP_CREATED)
             ->header('X-Request-Id', $requestId)
@@ -178,13 +183,26 @@ class OrganizationInvitationController extends Controller
             return $precondition;
         }
 
+        $unsupportedFields = $this->unsupportedFieldError($request, ['target_application_id']);
+
+        if ($unsupportedFields instanceof JsonResponse) {
+            return $unsupportedFields;
+        }
+
+        $target = $this->targetApplication($request, $context['organization'], $context['application']);
+
+        if ($target instanceof JsonResponse) {
+            return $target;
+        }
+
         try {
             $result = $this->invitations->resendOrganizationInvitation(
                 $context['actor'],
                 $context['organization'],
                 $invitation,
                 $invitation->versionTag(),
-                fn (string $token): string => $this->invitationUrl($context['application'], $token)
+                fn (string $token): string => $this->invitationUrl($target, $token),
+                (string) $target->getKey()
             );
         } catch (DomainException $exception) {
             if ($exception->getMessage() === OrganizationInvitationService::VERSION_CONFLICT_MESSAGE) {
@@ -204,7 +222,7 @@ class OrganizationInvitationController extends Controller
             'data' => $this->resource($replacement),
             'meta' => [
                 'request_id' => $requestId,
-                'invitation_url' => $this->invitationUrl($context['application'], (string) $result['token']),
+                'invitation_url' => $this->invitationUrl($target, (string) $result['token']),
             ],
         ], Response::HTTP_CREATED)->header('X-Request-Id', $requestId)
             ->header('ETag', $this->etag($replacement));
@@ -275,6 +293,50 @@ class OrganizationInvitationController extends Controller
             'organization' => $organization,
             'membership' => $membership,
         ];
+    }
+
+    /**
+     * @param  list<string>  $supportedFields
+     */
+    private function unsupportedFieldError(Request $request, array $supportedFields): ?JsonResponse
+    {
+        $unsupportedFields = array_values(array_diff(array_keys($request->all()), $supportedFields));
+
+        if ($unsupportedFields === []) {
+            return null;
+        }
+
+        sort($unsupportedFields);
+
+        return $this->v1Error($request, 'validation_failed', 'The '.$unsupportedFields[0].' field is not supported.', Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    /**
+     * The frontend the invitation link opens: the optional target_application_id, which must be an
+     * active Latte application of the same organization, or else the application making the request.
+     */
+    private function targetApplication(
+        Request $request,
+        Organization $organization,
+        ApplicationRegistration $requestingApplication
+    ): ApplicationRegistration|JsonResponse {
+        if (! $request->exists('target_application_id')) {
+            return $requestingApplication;
+        }
+
+        $targetId = $request->input('target_application_id');
+        $target = is_string($targetId) && Str::isUuid($targetId)
+            ? ApplicationRegistration::query()
+                ->whereKey($targetId)
+                ->where('kind', ApplicationRegistration::KIND_LATTE)
+                ->where('organization_id', $organization->getKey())
+                ->where('status', ApplicationRegistration::STATUS_ACTIVE)
+                ->first()
+            : null;
+
+        return $target instanceof ApplicationRegistration
+            ? $target
+            : $this->v1Error($request, 'validation_failed', 'The target_application_id field must be an active frontend of the organization.', Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     private function scopedInvitationOrError(

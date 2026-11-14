@@ -1177,6 +1177,43 @@
                 "summary": "Update Membership"
             }
         },
+        "/organizations/{organization_id}/applications": {
+            "get": {
+                "operationId": "listOrganizationApplications",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/OrganizationApplicationCollection"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "List Organization Frontends"
+            }
+        },
         "/organizations/{organization_id}/invitations": {
             "get": {
                 "operationId": "listOrganizationInvitations",
@@ -1407,6 +1444,16 @@
                         "$ref": "#/components/parameters/OriginRequired"
                     }
                 ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrganizationInvitationResend"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "201": {
                         "$ref": "#/components/responses/OrganizationInvitationCreated"
@@ -1431,6 +1478,9 @@
                     },
                     "428": {
                         "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Error422ValidationFailed"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
@@ -4100,6 +4150,10 @@
                             "organization_administrator",
                             "organization_user"
                         ]
+                    },
+                    "target_application_id": {
+                        "$ref": "#/components/schemas/Uuid",
+                        "description": "Optional frontend the invitation link opens: an active Latte application of the same organization (see listOrganizationApplications). Defaults to the application making the request."
                     }
                 },
                 "additionalProperties": false
@@ -4695,6 +4749,49 @@
                 "examples": [
                     "\"v1-01J2ABCDEF\""
                 ]
+            },
+            "OrganizationInvitationResend": {
+                "type": "object",
+                "properties": {
+                    "target_application_id": {
+                        "$ref": "#/components/schemas/Uuid",
+                        "description": "Optional frontend the replacement invitation link opens, with the same rules as OrganizationInvitationCreate. Defaults to the application making the request."
+                    }
+                },
+                "additionalProperties": false
+            },
+            "OrganizationApplicationResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/Uuid"
+                    },
+                    "type": {
+                        "const": "organization_application"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "trusted_origin"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "trusted_origin": {
+                                "$ref": "#/components/schemas/TrustedOrigin"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "responses": {
@@ -6699,6 +6796,37 @@
                         }
                     }
                 }
+            },
+            "OrganizationApplicationCollection": {
+                "description": "Active frontends of the organization",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrganizationApplicationResource"
+                                    }
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "headers": {
@@ -7364,6 +7492,29 @@
                 "dependency_unavailable"
             ]
         },
+        "listOrganizationApplications": {
+            "400": [
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
         "listOrganizationInvitations": {
             "400": [
                 "invalid_request",
@@ -7518,6 +7669,9 @@
             ],
             "428": [
                 "precondition_required"
+            ],
+            "422": [
+                "validation_failed"
             ],
             "429": [
                 "rate_limited"

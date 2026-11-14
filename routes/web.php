@@ -4,6 +4,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ManagedConnectionController;
+use App\Http\Controllers\OrganizationApplicationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationInvitationController;
 use App\Http\Controllers\OrganizationMembershipController;
@@ -82,6 +83,8 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('organizations.connections.destroy');
         Route::post('/organizations/{organizationId}/connections/{connectionId}/test', [ManagedConnectionController::class, 'test'])
             ->name('organizations.connections.test');
+        Route::get('/organizations/{organizationId}/applications', [OrganizationApplicationController::class, 'list'])
+            ->name('organizations.applications.index');
         Route::get('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'list'])
             ->name('organizations.invitations.index');
         Route::post('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'store'])
