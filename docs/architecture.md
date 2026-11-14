@@ -167,10 +167,14 @@ Stored in four system tables under `DB_TABLE_PREFIX`, edited only through
   Saves can pass the version they read, and a stale one is a conflict.
 
 A map is a system map when its `sql_name` starts with `DB_TABLE_PREFIX` or is
-one of the maps' own tables. This is worked out on every save, never stored
+one of the maps' own tables. With an empty `DB_TABLE_PREFIX` (installs whose
+Pane tables have no prefix, Pane#164), every table outside `APP_TABLE_PREFIX`
+is a system table. This is worked out on every save, never stored
 (`App\Support\Maps\MapProtection`); the models refuse to save or delete a
 system map or its fields, including moving an app map onto a system table.
-Pane refuses to boot when `APP_TABLE_PREFIX` and `DB_TABLE_PREFIX` overlap.
+Pane refuses to boot when `APP_TABLE_PREFIX` and `DB_TABLE_PREFIX` overlap, or,
+with an empty `DB_TABLE_PREFIX`, when `APP_TABLE_PREFIX` matches the start of
+one of Pane's own tables (system, framework or legacy `map_*`).
 The legacy `map_*` rows were imported once as version 1 by "system import";
 the legacy tables stay until #74. Menu, functions, settings, policies and the
 bundle format belong to their own tickets.

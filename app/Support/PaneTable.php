@@ -41,6 +41,32 @@ class PaneTable
     /** The maps' own tables: always system maps, whatever the prefix (decision 32). */
     public const array MAPS = [self::MAPS_SOURCES, self::MAPS_TABLES, self::MAPS_FIELDS, self::MAPS_VERSIONS];
 
+    /**
+     * Every table Pane creates under DB_TABLE_PREFIX, without the prefix. With an
+     * empty DB_TABLE_PREFIX, APP_TABLE_PREFIX must not match the start of any of
+     * these, of the framework tables or of the legacy `map_` tables.
+     */
+    public const array SYSTEM = [
+        self::ORGANIZATIONS,
+        self::ORGANIZATION_MEMBERSHIPS,
+        self::ORGANIZATION_INVITATIONS,
+        self::APPLICATIONS,
+        self::MANAGED_CREDENTIAL_SECRETS,
+        self::MANAGED_CONNECTIONS,
+        self::AUDIT_EVENTS,
+        self::MESSAGES,
+        self::PANE_ADMIN_INVITATIONS,
+        self::PANE_INSTALLATION_LOCKS,
+        self::SETTING_DEFAULTS,
+        self::SETTING_OVERRIDES,
+        ...self::MAPS,
+    ];
+
+    /** Laravel's own tables (migrations, and the database session, cache and queue drivers). */
+    public const array FRAMEWORK = [
+        'migrations', 'sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'password_reset_tokens',
+    ];
+
     public static function name(string $table): string
     {
         return self::prefix().$table;
@@ -54,5 +80,10 @@ class PaneTable
     public static function prefix(): string
     {
         return (string) config('database.table_prefix', 'pane_');
+    }
+
+    public static function appPrefix(): string
+    {
+        return (string) config('database.app_table_prefix', '');
     }
 }

@@ -17,7 +17,12 @@ class TablePrefixesTest extends TestCase
             'same prefix' => ['pane_', 'pane_'],
             'app starts with system' => ['pane_', 'pane_app_'],
             'system starts with app' => ['pane_', 'pan'],
-            'empty system prefix' => ['', 'sweegly_'],
+            'empty system prefix, app matches a Pane table' => ['', 'org'],
+            'empty system prefix, app is a whole Pane table name' => ['', 'messages'],
+            'empty system prefix, app matches a maps table' => ['', 'maps_'],
+            'empty system prefix, app matches a framework table' => ['', 'migr'],
+            'empty system prefix, app matches the legacy map_ tables' => ['', 'map'],
+            'empty system prefix, app starts with the legacy map_' => ['', 'map_sweegly_'],
         ];
     }
 
@@ -35,8 +40,9 @@ class TablePrefixesTest extends TestCase
         TablePrefixes::assertNoOverlap('pane_', 'sweegly_');
         TablePrefixes::assertNoOverlap('pane_', '');
         TablePrefixes::assertNoOverlap('', '');
+        TablePrefixes::assertNoOverlap('', 'sweegly_');
 
-        $this->addToAssertionCount(3);
+        $this->addToAssertionCount(4);
     }
 
     public function test_pane_refuses_to_boot_with_overlapping_prefixes(): void
@@ -47,5 +53,14 @@ class TablePrefixesTest extends TestCase
         $this->expectExceptionMessage('overlaps DB_TABLE_PREFIX');
 
         (new AppServiceProvider($this->app))->register();
+    }
+
+    public function test_pane_boots_with_an_empty_system_prefix_and_an_app_prefix(): void
+    {
+        config(['database.table_prefix' => '', 'database.app_table_prefix' => 'sweegly_']);
+
+        (new AppServiceProvider($this->app))->register();
+
+        $this->addToAssertionCount(1);
     }
 }

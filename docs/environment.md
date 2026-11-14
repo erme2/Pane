@@ -141,7 +141,7 @@ php artisan key:generate --force
 
 - `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` configure Pane's database connection.
 - `DB_TABLE_PREFIX` prefixes Pane-owned system and control-plane tables. Legacy mapper metadata tables keep the extra `map_` segment after this prefix. The Docker/local default is `pane_`.
-- `APP_TABLE_PREFIX` is the prefix of this install's own app tables (for example `sweegly_`). Optional for now: empty means the install has no app tables yet. Pane refuses to boot when it overlaps `DB_TABLE_PREFIX` (either one starting with the other), so an app table can never be taken for a protected system table.
+- `APP_TABLE_PREFIX` is the prefix of this install's own app tables (for example `sweegly_`). Optional for now: empty means the install has no app tables yet. Pane refuses to boot when it overlaps `DB_TABLE_PREFIX` (either one starting with the other), so an app table can never be taken for a protected system table. `DB_TABLE_PREFIX` may be empty when the install's Pane tables were created without a prefix: then every table outside `APP_TABLE_PREFIX` is protected, and Pane refuses to boot when `APP_TABLE_PREFIX` matches the start of one of its own table names (for example `org`) or starts with the legacy `map_`.
 
 ## Cache And Filesystem
 
