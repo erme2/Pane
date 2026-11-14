@@ -53,6 +53,10 @@ Composer, SSH/database assumptions, Laravel `public/` web-root handling,
 production `.env` safety checks, the preflight script, and the manual GitHub
 Actions deployment workflow.
 
+Before a release that migrates the database, or when a release has to be
+rolled back, follow the
+[Rollback, Backup and Operations Runbook](docs/rollback.md).
+
 ## Local development requirements
 
 - Docker Desktop with Docker Compose

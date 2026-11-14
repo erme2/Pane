@@ -102,7 +102,8 @@ in the password manager and update the protected GitHub Environment secret
 before dispatching a release when values change.
 
 The workflow records deployed version/ref/commit and smoke-check status in the
-GitHub step summary. Rollback and backup decisions are tracked by Pane #99.
+GitHub step summary. Backups before migrations, rollback to an earlier tag and
+leaked-secret steps are in the [Rollback, Backup and Operations Runbook](rollback.md).
 
 ## First Alpha Release Notes Template
 
@@ -137,8 +138,8 @@ Stability: unsafe public preview; APIs and deployment workflow may change.
 
 - Required production secrets were generated or rotated:
 - Database migrations reviewed:
-- Backups confirmed:
-- Rollback path confirmed:
+- Backups confirmed (see docs/rollback.md):
+- Rollback path confirmed (last good Pane and Latte tags):
 ```
 
 The release note must not contain secret values, host credentials, database
