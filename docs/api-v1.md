@@ -190,6 +190,8 @@ suspension, or organization suspension/closure.
 
 - `/organizations/{organization_id}/memberships` and child membership routes
   manage membership state and roles.
+- `/organizations/{organization_id}/applications` lists the organization's
+  active frontends (id, name, trusted origin) to organization administrators.
 - `/organizations/{organization_id}/invitations` and child invitation routes
   create, revoke, and resend organization invitations.
 - `/organizations/{organization_id}/connections` and child connection routes
@@ -236,6 +238,15 @@ a Pane-admin product decision and are not hard-coded into the HTTP contract.
 Pane-admin invitation creation also returns a one-time `meta.invitation_url`
 for delivery to the invited user; normal invitation representations and
 collection reads remain token-free.
+
+Organization invitation creation and resends build `meta.invitation_url` (and
+its `redirect_to`) from the application making the request. Both accept an
+optional `target_application_id` to send the guest to another frontend of the
+same organization instead, for example from an admin console to the product
+app. The target must be an active Latte application of the organization, as
+listed by `/organizations/{organization_id}/applications`; an unknown,
+disabled, or other-organization ID returns `422 validation_failed`. The audit
+event records the frontend used as `target_application_id`.
 
 ## Success, pagination, and concurrency
 

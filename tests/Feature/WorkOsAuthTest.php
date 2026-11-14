@@ -714,6 +714,94 @@ class WorkOsAuthTest extends TestCase
         $this->assertStringNotContainsString($token, $callback->getContent());
     }
 
+    public function test_v1_callback_accepts_an_organization_invitation_on_the_targeted_frontend(): void
+    {
+        config()->set('services.workos.api_key', 'sk_test_123');
+        config()->set('services.workos.client_id', 'client_123');
+        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
+        config()->set('services.workos.provider', 'authkit');
+        config()->set('services.latte.application_id', (string) Str::uuid());
+        config()->set('services.latte.organization_id', (string) Str::uuid());
+        config()->set('services.latte.frontend_url', 'https://latte.test');
+        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
+
+        $console = app(ApplicationRegistryService::class)->configuredLatteApplication();
+        $organization = $console->organization()->firstOrFail();
+        $app = ApplicationRegistration::query()->create([
+            'name' => 'Product app',
+            'kind' => ApplicationRegistration::KIND_LATTE,
+            'organization_id' => $organization->organization_id,
+            'trusted_origin' => 'https://app.example.test',
+            'redirect_uris' => ['https://app.example.test/home'],
+            'status' => ApplicationRegistration::STATUS_ACTIVE,
+        ]);
+        $administrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        app(OrganizationTenancyService::class)->addOrReactivateMembership($organization, $administrator, OrganizationMembership::ROLE_ADMINISTRATOR);
+
+        $invitationUrl = (string) $this
+            ->withCsrfToken()
+            ->actingAs($administrator)
+            ->withV1ApplicationSession($console)
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson("/api/v1/organizations/$organization->organization_id/invitations", [
+                'email' => 'guest@example.com',
+                'role' => OrganizationMembership::ROLE_USER,
+                'target_application_id' => $app->application_id,
+            ])
+            ->assertCreated()
+            ->json('meta.invitation_url');
+        $query = [];
+        parse_str((string) parse_url($invitationUrl, PHP_URL_QUERY), $query);
+        $this->assertStringStartsWith('https://app.example.test/auth/login?', $invitationUrl);
+
+        auth()->logout();
+        $this->flushSession();
+
+        $intent = $this
+            ->withHeader('Origin', 'https://app.example.test')
+            ->postJson('/api/v1/auth/login-intents', [
+                'redirect_to' => $query['redirect_to'],
+                'invitation_token' => $query['invitation_token'],
+            ])
+            ->assertOk();
+
+        Http::fake([
+            'api.workos.com/user_management/authenticate' => Http::response([
+                'user' => [
+                    'id' => 'user_guest',
+                    'email' => 'guest@example.com',
+                    'email_verified' => true,
+                    'first_name' => 'Invited',
+                    'last_name' => 'Guest',
+                ],
+                'session_id' => 'session_123',
+                'organization_id' => 'org_123',
+                'authentication_method' => 'sso',
+            ]),
+        ]);
+
+        $this
+            ->withSession(array_merge($this->v1ApplicationSession($app), [
+                'workos_state' => $intent->json('data.state'),
+                'workos_intended_url' => 'https://app.example.test/home',
+                'pane_admin_invitation_token_hash' => hash('sha256', $query['invitation_token']),
+            ]))
+            ->withHeader('Origin', 'https://app.example.test')
+            ->postJson('/api/v1/auth/callback', [
+                'code' => 'code_123',
+                'state' => $intent->json('data.state'),
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.application.id', $app->application_id)
+            ->assertJsonPath('data.organization.id', $organization->organization_id)
+            ->assertJsonPath('data.membership.attributes.role', OrganizationMembership::ROLE_USER);
+
+        $this->assertSame(
+            OrganizationInvitation::STATUS_ACCEPTED,
+            OrganizationInvitation::query()->where('email', 'guest@example.com')->where('organization_id', $organization->organization_id)->sole()->status
+        );
+    }
+
     public function test_v1_callback_accepts_organization_invitation_hash_from_state_bound_cookie(): void
     {
         config()->set('services.workos.api_key', 'sk_test_123');

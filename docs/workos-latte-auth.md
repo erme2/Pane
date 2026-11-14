@@ -43,7 +43,7 @@ Each extra frontend is registered as its own application in the configured organ
 
 Frontends of the same organization share one Pane session: signing in on one signs the user in on the others, and each request runs as the frontend it came from. Pane's membership roles still decide what a user may do, so an admin-only frontend should check the session's membership role and send other users to the product app. Removing an entry from `PANE_EXTRA_FRONTEND_ORIGINS` disables that frontend and invalidates its sessions; adding it back re-enables it. A frontend disabled through the applications API stays disabled.
 
-Organization invitation links point to the frontend that created the invitation.
+Organization invitation links point to the frontend that created the invitation, unless the request picks another active frontend of the organization with `target_application_id` (listed by `GET /api/v1/organizations/{organization_id}/applications`). This lets an admin console invite guests straight into the product app.
 
 ## Bootstrap the First Latte Invite
 
