@@ -64,11 +64,19 @@ Production migrations are forward-only.
 
 1. Roll the application back to the tag the backup was taken on (see below),
    with migrations off, so the code matches the restored schema.
-2. In hPanel, import the backup file into the installation's database
+2. Stop writes and the message worker before the database is touched:
+   - Put Pane into maintenance mode: `php artisan down`, run over SSH from the
+     installation directory (see [Hostinger](hostinger.md)).
+   - Pause the message worker: disable the every-minute `schedule:run` cron job
+     in hPanel (see [Message Worker (Cron)](hostinger.md#message-worker-cron)).
+3. In hPanel, import the backup file into the installation's database
    (Databases → phpMyAdmin → Import, or the plan's restore tool). Restore only
    that installation's database; installations sharing a database are
    separated by `APP_TABLE_PREFIX`, so check the dump holds only its tables.
-3. Run the smoke checks and record the backup used and the lost-writes window.
+4. Validate the restored data while Pane is still in maintenance mode (the
+   dump's tables are present and the key row counts look right).
+5. Resume: `php artisan up`, re-enable the `schedule:run` cron job, then run the
+   smoke checks. Record the backup used and the lost-writes window.
 
 `storage/` (uploaded files, logs) is not part of the database backup and is
 not touched by deploys or by a restore.
@@ -111,9 +119,11 @@ browser checks are manual.
    - **Database password:** change it in hPanel.
    - **WorkOS API key or client secret:** create a new one in the WorkOS
      dashboard, then revoke the old one after the deploy.
-   - **`APP_KEY`:** generate a new key and move the old one to
-     `APP_PREVIOUS_KEYS`, so data encrypted with it still decrypts. Signed-in
-     users must sign in again.
+   - **`APP_KEY`:** do not rotate it. `config/app.php` does not map
+     `APP_PREVIOUS_KEYS` yet, so a new key makes existing encrypted
+     `Message.payload` values unreadable. Escalate to the owner. The production
+     rotation procedure (previous-keys mapping and re-encryption of stored
+     payloads) will be its own ticket, written once Pane is in production.
    - **Managed-credential keys:** follow the rotation steps in
      [Environment Configuration](environment.md): add a new key ID, rotate,
      check, then remove the leaked key.
