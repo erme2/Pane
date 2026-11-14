@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Contracts;
 
+use App\Support\Maps\MapRules;
 use PHPUnit\Framework\TestCase;
 
 class PaneV1ContractTest extends TestCase
@@ -337,6 +338,68 @@ class PaneV1ContractTest extends TestCase
         );
         $this->assertSame(['validation_failed'], $this->contract['x-pane-operation-errors']['resendOrganizationInvitation']['422']);
         $this->assertStringContainsString('optional `target_application_id`', $this->documentation);
+    }
+
+    public function test_maps_read_routes_serve_latte_bootstrap_and_table_maps(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $responses = $this->contract['components']['responses'];
+        $bootstrap = $this->contract['paths']['/organizations/{organization_id}/maps']['get'];
+        $table = $this->contract['paths']['/organizations/{organization_id}/maps/{source}/{table}']['get'];
+
+        $this->assertSame('getMaps', $bootstrap['operationId']);
+        $this->assertSame('#/components/responses/Maps', $bootstrap['responses']['200']['$ref']);
+        $this->assertArrayNotHasKey('404', $bootstrap['responses']);
+        $this->assertSame('getTableMap', $table['operationId']);
+        $this->assertSame('#/components/responses/TableMap', $table['responses']['200']['$ref']);
+        $this->assertSame('#/components/responses/NotFound', $table['responses']['404']['$ref']);
+        $this->assertContains('#/components/parameters/MapSourceName', array_column($table['parameters'], '$ref'));
+        $this->assertContains('#/components/parameters/MapTableName', array_column($table['parameters'], '$ref'));
+
+        foreach (['Maps' => 'MapsResource', 'TableMap' => 'TableMapResource'] as $response => $schema) {
+            $this->assertSame('#/components/headers/ETag', $responses[$response]['headers']['ETag']['$ref']);
+            $this->assertSame(
+                '#/components/schemas/'.$schema,
+                $responses[$response]['content']['application/json']['schema']['properties']['data']['$ref'],
+            );
+        }
+
+        $this->assertSame(
+            ['version', 'menu', 'functions', 'settings', 'tables'],
+            $schemas['MapsResource']['properties']['attributes']['required'],
+        );
+        $this->assertSame(
+            ['source', 'table', 'description', 'system', 'version', 'ui', 'fields'],
+            $schemas['TableMapResource']['properties']['attributes']['required'],
+        );
+        $this->assertSame(['records', 'members', 'dashboard'], $schemas['MapFunctionKey']['enum']);
+        $this->assertSame(['key', 'enabled'], $schemas['MapFunction']['required']);
+        $this->assertSame(['key', 'type', 'value'], $schemas['MapPublicSetting']['required']);
+        $this->assertSame(
+            ['key', 'label', 'icon', 'target', 'parent', 'position'],
+            $schemas['MapMenuItem']['required'],
+        );
+        $this->assertSame(
+            ['table', 'function'],
+            array_map(fn (array $target): string => $target['properties']['type']['const'], $schemas['MapMenuTarget']['oneOf']),
+        );
+        $this->assertSame(MapRules::FIELD_TYPES, $schemas['MapFieldResource']['properties']['type']['enum']);
+        $this->assertSame(['max', 'min', 'email'], $schemas['MapFieldValidation']['properties']['rule']['enum']);
+        $this->assertArrayHasKey('system', $schemas['MapTableSummary']['properties']);
+
+        foreach (['MapTableUi' => ['label', 'description', 'list'], 'MapFieldUi' => ['label', 'widget', 'help', 'hidden']] as $ui => $keys) {
+            $this->assertTrue($schemas[$ui]['additionalProperties'], $ui.' stays open to extra keys');
+            $this->assertSame($keys, array_keys($schemas[$ui]['properties']));
+        }
+        $this->assertSame(['columns', 'default_sort'], array_keys($schemas['MapTableUi']['properties']['list']['properties']));
+
+        foreach (['MapTableSummary', 'MapFieldResource'] as $schema) {
+            $this->assertArrayNotHasKey('sql_name', $schemas[$schema]['properties'], $schema.' must not expose physical names');
+        }
+        $this->assertArrayNotHasKey('sql_name', $schemas['TableMapResource']['properties']['attributes']['properties']);
+
+        $this->assertSame(['resource_not_found'], $this->contract['x-pane-operation-errors']['getTableMap']['404']);
+        $this->assertStringContainsString('/organizations/{organization_id}/maps', $this->documentation);
     }
 
     public function test_application_and_invitation_responses_are_discriminated(): void
