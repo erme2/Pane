@@ -47,7 +47,8 @@ class MessageWorker
             $batch = $this->dueIds(min(self::BATCH_SIZE, $limit - $handled));
 
             foreach ($batch as $id) {
-                if ($handled >= $limit || $shouldStop()) {
+                // Maintenance mode (a restore) stops the claim, so a run already in progress stops writing.
+                if ($handled >= $limit || $shouldStop() || app()->isDownForMaintenance()) {
                     return $result;
                 }
 

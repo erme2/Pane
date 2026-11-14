@@ -69,6 +69,9 @@ Production migrations are forward-only.
      installation directory (see [Hostinger](hostinger.md)).
    - Pause the message worker: disable the every-minute `schedule:run` cron job
      in hPanel (see [Message Worker (Cron)](hostinger.md#message-worker-cron)).
+   - A worker that is already running stops claiming new messages once Pane is
+     in maintenance mode, but a send already in progress finishes. Wait for any
+     running `messages:send` process to exit before the import.
 3. In hPanel, import the backup file into the installation's database
    (Databases → phpMyAdmin → Import, or the plan's restore tool). Restore only
    that installation's database; installations sharing a database are

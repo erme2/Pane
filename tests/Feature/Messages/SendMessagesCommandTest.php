@@ -35,6 +35,23 @@ class SendMessagesCommandTest extends TestCase
         );
     }
 
+    public function test_a_run_stops_claiming_messages_once_pane_is_in_maintenance(): void
+    {
+        $message = $this->queue();
+        app()->maintenanceMode()->activate([]);
+
+        try {
+            $this->artisan('messages:send')->assertSuccessful();
+        } finally {
+            app()->maintenanceMode()->deactivate();
+        }
+
+        Mail::assertNotSent(QueuedMessageMail::class);
+        $message->refresh();
+        $this->assertSame(Message::STATUS_PENDING, $message->status);
+        $this->assertSame(0, $message->attempts);
+    }
+
     public function test_sends_due_messages_and_marks_them_sent(): void
     {
         $message = $this->queue();
