@@ -50,6 +50,23 @@ in [architecture.md](../architecture.md#target-product-installs-and-the-descript
 | 35 | Which S3-compatible storage do uploads use? | Cloudflare R2, one bucket and one set of access keys per install (e.g. sweegly-dev), kept in that install's deploy secrets. Pane talks to it through the S3 API, so another provider stays possible. |
 | 36 | Which generic Latte functions ship first? | Besides the always-on editors (maps, menu, settings) and the record list and edit views: members and invitations, and a dashboard (counts and recent records, configured in the maps). Each can be switched off per install. The calendar and the audit viewer come later. |
 
+## Map model (Pane#153)
+
+Decided by the product owner on 2026-11-13, on the questions raised in
+[Pane#153](https://github.com/erme2/Pane/issues/153#issuecomment-6866150444):
+
+| # | Question | Answer |
+|---|----------|--------|
+| 37 | Relational tables or one JSON document per map? | Relational rows for sources, tables and fields; `ui`, validations, defaults and computed expressions as JSON columns on their row. |
+| 38 | How fine-grained is versioning? | One version per table map (its fields and `ui` included) holding the full snapshot, the diff against the previous version, the author and the time. Restore saves the old snapshot as a new version. Sources are versioned the same way. |
+| 39 | What are the new tables called? | `maps_sources`, `maps_tables`, `maps_fields`, `maps_versions` under `DB_TABLE_PREFIX`, so they are system tables and don't clash with the legacy `map_*` tables. |
+| 40 | Which field types and validations? | The legacy lists (number, string, text, boolean, date, array, password, json; unique, exists, max, min, email), stored by name. More types come with the tickets that need them. |
+| 41 | What is a computed field in the first version? | Stored only (a type plus an opaque JSON expression). The read and CRUD tickets evaluate it. |
+| 42 | Is the system flag stored or worked out? | Worked out from the `sql_name` and `DB_TABLE_PREFIX` on every save, so a stale flag can't unprotect a table. The model layer refuses any change to a system map. |
+| 43 | What counts as overlapping prefixes? | Either prefix being a prefix of the other fails at boot. `APP_TABLE_PREFIX` is optional for now (empty means no app tables yet). |
+| 44 | How are the legacy maps imported? | A re-runnable data migration copies every legacy table and field (with type and validations) as version 1 by "system import". The legacy tables stay until #74. |
+| 45 | What does the first ticket leave out? | Menu, functions, settings, policies and the bundle JSON Schema stay with their own tickets. |
+
 ## Facts checked while deciding
 
 - The Sweegly app and Latte call only Pane's session and sign-in endpoints
@@ -62,9 +79,9 @@ in [architecture.md](../architecture.md#target-product-installs-and-the-descript
 
 These need their own decisions before or during implementation:
 
-- the exact map model and bundle JSON Schema for tables, `ui` views, menu,
-  functions, settings, policies, row conditions, named queries, the client
-  query language and actions;
+- the map model for menu, functions, settings, policies, row conditions,
+  named queries, the client query language and actions, and the bundle JSON
+  Schema (the model for sources, tables, fields and `ui` is settled in 37-45);
 - the limits of the client query language (joins depth, aggregates, paging);
 - the action building blocks in the first version, and whether webhooks need
   signing and retries;

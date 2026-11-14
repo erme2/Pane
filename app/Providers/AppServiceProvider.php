@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Support\ManagedDatabase\DnsHostResolver;
 use App\Support\ManagedDatabase\HostResolver;
+use App\Support\Maps\TablePrefixes;
 use App\Support\SessionCookieConfig;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -28,6 +29,11 @@ class AppServiceProvider extends ServiceProvider
         ) {
             throw new RuntimeException('Unsafe non-local configuration: SESSION_SECURE_COOKIE must be true unless APP_ENV is local or testing.');
         }
+
+        TablePrefixes::assertNoOverlap(
+            (string) $this->app['config']->get('database.table_prefix', ''),
+            (string) $this->app['config']->get('database.app_table_prefix', ''),
+        );
 
         $this->app->bind(HostResolver::class, DnsHostResolver::class);
     }

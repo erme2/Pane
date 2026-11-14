@@ -20,6 +20,10 @@ return [
 
     'table_prefix' => env('DB_TABLE_PREFIX', 'pane_'),
 
+    // Prefix of the app's own tables in this install (decision 34). Empty means
+    // no app tables yet. Pane refuses to boot when it overlaps table_prefix.
+    'app_table_prefix' => env('APP_TABLE_PREFIX', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

@@ -148,6 +148,33 @@ separately, and the two are allowed to differ for as long as needed:
   changed. A mapped field that no longer exists is unavailable (requests that
   need it fail with a clear error) until its map or the database is fixed.
 
+### Map model (Pane#153)
+
+Stored in four system tables under `DB_TABLE_PREFIX`, edited only through
+`App\Services\MapStore`:
+
+- `maps_sources`: one row per source. The import creates `install` (the
+  install's own database); `external` sources wait (decision 10);
+- `maps_tables`: one row per mapped table (source, stable `name`, `sql_name`,
+  description, `ui` as JSON);
+- `maps_fields`: one row per field (type and flags as columns; `default`,
+  `validations`, `computed` and `ui` as JSON). Types and validation rules are
+  the legacy closed lists, stored by name (`App\Support\Maps\MapRules`).
+  Computed fields are stored only; the read and CRUD work evaluates them;
+- `maps_versions`: every save of a source or table map adds a version with the
+  full snapshot (a table's fields and `ui` included), the diff against the
+  previous version, the author and, for a restore, the version it copied.
+  Saves can pass the version they read, and a stale one is a conflict.
+
+A map is a system map when its `sql_name` starts with `DB_TABLE_PREFIX` or is
+one of the maps' own tables. This is worked out on every save, never stored
+(`App\Support\Maps\MapProtection`); the models refuse to save or delete a
+system map or its fields, including moving an app map onto a system table.
+Pane refuses to boot when `APP_TABLE_PREFIX` and `DB_TABLE_PREFIX` overlap.
+The legacy `map_*` rows were imported once as version 1 by "system import";
+the legacy tables stay until #74. Menu, functions, settings, policies and the
+bundle format belong to their own tickets.
+
 ### Editing and protection
 
 - Admins edit maps, menu, views, functions and settings in Latte; the database
