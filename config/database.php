@@ -62,7 +62,9 @@ return [
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => env('DB_TABLE_PREFIX', 'pane_'),
+            // Pane adds DB_TABLE_PREFIX itself (PaneTable::name()); a connection prefix
+            // would apply it twice. Laravel's own tables stay unprefixed (Pane#164).
+            'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,

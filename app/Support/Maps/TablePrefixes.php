@@ -20,6 +20,10 @@ class TablePrefixes
             return;
         }
 
+        if ($systemPrefix === '') {
+            throw new RuntimeException('Unsafe table prefixes: APP_TABLE_PREFIX needs a non-empty DB_TABLE_PREFIX (for example pane_), or every table counts as a system table.');
+        }
+
         if (str_starts_with($appPrefix, $systemPrefix) || str_starts_with($systemPrefix, $appPrefix)) {
             throw new RuntimeException(sprintf(
                 'Unsafe table prefixes: APP_TABLE_PREFIX "%s" overlaps DB_TABLE_PREFIX "%s". Neither may start with the other.',

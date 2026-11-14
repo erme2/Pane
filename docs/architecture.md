@@ -395,6 +395,11 @@ mapper metadata tables keep their extra `map_` segment after this prefix. It is
 a naming convention inside the default database, not a tenant or
 connection-isolation boundary.
 
+Pane adds the prefix itself (`PaneTable::name()`); no database connection has a
+prefix, so Laravel's own tables (`migrations`, ...) stay unprefixed. Installs
+created with an empty prefix move under one with the
+`prefix_unprefixed_pane_tables` migration (Pane#164).
+
 WorkOS, frontend, database, session, host, and cookie configuration comes from
 environment variables mapped through Laravel config. The authoritative list is
 in [Environment Configuration](environment.md).

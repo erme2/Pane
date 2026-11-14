@@ -48,4 +48,12 @@ class TablePrefixesTest extends TestCase
 
         (new AppServiceProvider($this->app))->register();
     }
+
+    public function test_an_app_prefix_needs_a_system_prefix(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('needs a non-empty DB_TABLE_PREFIX');
+
+        TablePrefixes::assertNoOverlap('', 'sweegly_');
+    }
 }
