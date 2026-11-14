@@ -5755,10 +5755,12 @@
                         "number",
                         "integer",
                         "boolean",
-                        "null"
+                        "null",
+                        "array",
+                        "object"
                     ]
                 },
-                "description": "Values keyed by mapped field name, never by physical column name."
+                "description": "Values keyed by mapped field name, never by physical column name. `array` fields take native JSON arrays and `json` fields take any native JSON value (object, array or scalar); neither is ever a JSON-encoded string. Pane encodes and decodes them for storage."
             },
             "DataRowWrite": {
                 "type": "object",

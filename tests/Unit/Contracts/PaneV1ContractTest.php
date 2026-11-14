@@ -457,6 +457,8 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame('#/components/schemas/PageMeta', $responses['DataRowCollection']['content']['application/json']['schema']['properties']['meta']['$ref']);
         $this->assertSame(['source', 'table', 'row_key', 'values'], $schemas['DataRowResource']['properties']['attributes']['required']);
         $this->assertSame('#/components/schemas/MapName', $schemas['DataRowValues']['propertyNames']['$ref']);
+        $this->assertContains('array', $schemas['DataRowValues']['additionalProperties']['type']);
+        $this->assertContains('object', $schemas['DataRowValues']['additionalProperties']['type']);
 
         $this->assertSame(['owner_private', 'shared_read', 'shared_read_write', 'admins_only'], $schemas['DataPolicy']['enum']);
         $this->assertSame('admins_only', $schemas['DataPolicy']['default']);
