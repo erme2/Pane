@@ -195,6 +195,10 @@ suspension, or organization suspension/closure.
 - `/organizations/{organization_id}/maps` and
   `/organizations/{organization_id}/maps/{source}/{table}` serve the maps
   Latte builds itself from (see "Maps for Latte" below).
+- `/organizations/{organization_id}/data/{source}/tables/{table}/rows` and
+  `.../rows/{row_key}` expose CRUD on mapped app tables by stable name, under
+  each table's access policy and row conditions (see "Data rows by table name"
+  below).
 - `/organizations/{organization_id}/invitations` and child invitation routes
   create, revoke, and resend organization invitations.
 - `/organizations/{organization_id}/connections` and child connection routes
@@ -281,6 +285,54 @@ table level: `label`, `description`, `list.columns[]` (field names) and
 level: `label`, `widget`, `help` and `hidden`. Field `validations` only carry
 the client-side hints `max`, `min` and `email`; rules that name other tables
 stay on the server.
+
+### Data rows by table name
+
+Mapped app tables are read and written by stable name (Pane#156):
+
+- `GET` and `POST /organizations/{organization_id}/data/{source}/tables/{table}/rows`
+  list and create rows.
+- `GET`, `PATCH` and `DELETE .../rows/{row_key}` read, update and delete one
+  row. `PATCH` and `DELETE` need `If-Match` with the row's strong `ETag`.
+
+Rows are `data_row` resources whose `values` are keyed by mapped field name.
+`{row_key}` is the unpadded base64url encoding of the table's single scalar
+primary key. Only mapped app tables (under `APP_TABLE_PREFIX`) are served:
+unmapped tables and Pane's system tables answer `404 resource_not_found`, as
+does any table or row the caller can't see. Lists use cursor paging and an
+optional `sort` on one field marked `sortable` (`-` prefixed for descending,
+primary-key order otherwise); any other `sort` is `400 invalid_request`.
+Filtering waits for named queries (Pane#160), and there is no restore route in
+the first version.
+
+Each table map carries one access policy (`DataPolicy`, default
+`admins_only`):
+
+| Policy | Standard members | Organization administrators |
+| --- | --- | --- |
+| `owner_private` | read and write the rows they own | read and write every row |
+| `shared_read` | read | read and write |
+| `shared_read_write` | read and write | read and write |
+| `admins_only` | nothing (`404`) | read and write |
+
+An `owner_private` table map names an owner field. Pane sets it to the
+caller's membership ID on create and ignores client input for it; a table map
+without one can't be saved as `owner_private`. A write the policy doesn't allow
+returns `403 permission_denied`.
+
+Row conditions (`DataRowCondition`) are an admin-defined list combined with
+AND: `{field, op, value}` with `op` one of `=`, `!=`, `<`, `<=`, `>`, `>=`,
+`in` and `is_null`, and `value` a literal or `$membership_id` / `$user_id`.
+Pane applies them as parameterized `WHERE` clauses to reads, updates and
+deletes. A condition's `applies_to` is `members` (the default, skipped for
+organization administrators) or `everyone`. A create or update that would leave
+the row outside the caller's conditions returns `422 validation_failed`. OR,
+nesting and group rules wait for Pane#159.
+
+Values are validated from the map. An unknown, unmapped or computed field in
+`values`, or a primary-key field on update, returns `422 validation_failed`. Writes are
+audited as `data_row.created`, `data_row.updated` and `data_row.deleted`.
+`x-pane-data-access` in the contract holds the normative rules.
 
 ## Success, pagination, and concurrency
 

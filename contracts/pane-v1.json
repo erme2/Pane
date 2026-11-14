@@ -1299,6 +1299,311 @@
                 "description": "One table map's mapped fields and `ui`. A table the caller can't see answers `404 resource_not_found`, the same as an unmapped one."
             }
         },
+        "/organizations/{organization_id}/data/{source}/tables/{table}/rows": {
+            "get": {
+                "operationId": "listDataRows",
+                "summary": "List Data Rows",
+                "description": "Rows of a mapped app table that the caller's policy and row conditions allow. No filtering until named queries (Pane#160).",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapSourceName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapTableName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/DataSort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/DataRowCollection"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidRequestOrInvalidCursorOrInvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "createDataRow",
+                "summary": "Create Data Row",
+                "description": "Creates a row from mapped, non-computed fields. On `owner_private` tables Pane sets the owner field to the caller's membership and ignores any client value for it.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapSourceName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapTableName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginRequired"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DataRowWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/DataRow"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Error422ValidationFailed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                }
+            }
+        },
+        "/organizations/{organization_id}/data/{source}/tables/{table}/rows/{row_key}": {
+            "get": {
+                "operationId": "getDataRow",
+                "summary": "Get Data Row",
+                "description": "A row the caller can't see (policy or row conditions) answers `404 resource_not_found`, the same as a missing one.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapSourceName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapTableName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/DataRow"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "updateDataRow",
+                "summary": "Update Data Row",
+                "description": "Changes only the fields sent. Primary-key and computed fields can't be written, and the owner field of an `owner_private` table is ignored.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapSourceName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapTableName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginRequired"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DataRowWrite"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/DataRow"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidRequestOrInvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Error422ValidationFailed"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "deleteDataRow",
+                "summary": "Delete Data Row",
+                "description": "Deletes the row. There is no restore route in the first version.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapSourceName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/MapTableName"
+                    },
+                    {
+                        "$ref": "#/components/parameters/RowKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginRequired"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Row deleted",
+                        "headers": {
+                            "X-Request-Id": {
+                                "$ref": "#/components/headers/RequestId"
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidRequestOrInvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequiredOrCsrfFailed"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                }
+            }
+        },
         "/organizations/{organization_id}/invitations": {
             "get": {
                 "operationId": "listOrganizationInvitations",
@@ -2837,6 +3142,16 @@
                 "description": "Stable map name of the table within the source. Never the physical (prefixed) table name.",
                 "schema": {
                     "$ref": "#/components/schemas/MapName"
+                }
+            },
+            "DataSort": {
+                "name": "sort",
+                "in": "query",
+                "required": false,
+                "description": "One mapped field name marked `sortable`, `-` prefixed for descending. Without it rows come in primary-key order. Any other value returns `400 invalid_request`.",
+                "schema": {
+                    "type": "string",
+                    "pattern": "^-?[a-z][a-z0-9_]{0,63}$"
                 }
             }
         },
@@ -5356,6 +5671,144 @@
                     }
                 },
                 "additionalProperties": false
+            },
+            "DataPolicy": {
+                "type": "string",
+                "enum": [
+                    "owner_private",
+                    "shared_read",
+                    "shared_read_write",
+                    "admins_only"
+                ],
+                "default": "admins_only",
+                "description": "A table map's access policy, stored with the table map and versioned with it. A newly mapped table is `admins_only`."
+            },
+            "DataRowCondition": {
+                "type": "object",
+                "required": [
+                    "field",
+                    "op",
+                    "value"
+                ],
+                "properties": {
+                    "field": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "op": {
+                        "type": "string",
+                        "enum": [
+                            "=",
+                            "!=",
+                            "<",
+                            "<=",
+                            ">",
+                            ">=",
+                            "in",
+                            "is_null"
+                        ]
+                    },
+                    "value": {
+                        "description": "A literal (a list for `in`, a boolean for `is_null`), or `$membership_id` / `$user_id` for the caller's own.",
+                        "oneOf": [
+                            {
+                                "type": [
+                                    "string",
+                                    "number",
+                                    "integer",
+                                    "boolean"
+                                ]
+                            },
+                            {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": {
+                                    "type": [
+                                        "string",
+                                        "number",
+                                        "integer"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "applies_to": {
+                        "type": "string",
+                        "enum": [
+                            "members",
+                            "everyone"
+                        ],
+                        "default": "members",
+                        "description": "`members` conditions do not apply to organization administrators; `everyone` conditions do."
+                    }
+                },
+                "additionalProperties": false,
+                "description": "One admin-defined row condition. A table map's conditions are combined with AND and applied as parameterized WHERE clauses on reads, updates and deletes."
+            },
+            "DataRowValues": {
+                "type": "object",
+                "propertyNames": {
+                    "$ref": "#/components/schemas/MapName"
+                },
+                "additionalProperties": {
+                    "type": [
+                        "string",
+                        "number",
+                        "integer",
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "description": "Values keyed by mapped field name, never by physical column name."
+            },
+            "DataRowWrite": {
+                "type": "object",
+                "required": [
+                    "values"
+                ],
+                "properties": {
+                    "values": {
+                        "$ref": "#/components/schemas/DataRowValues"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "DataRowResource": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "type": {
+                        "const": "data_row"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "source",
+                            "table",
+                            "row_key",
+                            "values"
+                        ],
+                        "properties": {
+                            "source": {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            "table": {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            "row_key": {
+                                "type": "string",
+                                "description": "Unpadded base64url encoding of the row's scalar primary key, as used in `{row_key}`."
+                            },
+                            "values": {
+                                "$ref": "#/components/schemas/DataRowValues"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "responses": {
@@ -7453,6 +7906,68 @@
                         }
                     }
                 }
+            },
+            "DataRow": {
+                "description": "One data row",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    },
+                    "ETag": {
+                        "$ref": "#/components/headers/ETag"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/DataRowResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
+            },
+            "DataRowCollection": {
+                "description": "Paginated data rows",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DataRowResource"
+                                    }
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/PageMeta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "headers": {
@@ -8948,6 +9463,161 @@
             "503": [
                 "dependency_unavailable"
             ]
+        },
+        "listDataRows": {
+            "400": [
+                "invalid_request",
+                "invalid_cursor",
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createDataRow": {
+            "400": [
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getDataRow": {
+            "400": [
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "updateDataRow": {
+            "400": [
+                "invalid_request",
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "deleteDataRow": {
+            "400": [
+                "invalid_request",
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
         }
     },
     "x-pane-uri-normalization-examples": {
@@ -9139,6 +9809,78 @@
                 "value": "\"contains space\"",
                 "reason": "unsupported_character"
             }
+        ]
+    },
+    "x-pane-data-access": {
+        "tables": "Only mapped app tables (under APP_TABLE_PREFIX) with a single scalar primary key. Unmapped tables and Pane's system tables are never served and answer 404 resource_not_found.",
+        "fields": "Only mapped fields are read or written. An unknown, unmapped or computed field in values, or a primary-key field on update, returns 422 validation_failed. Values are validated from the map and bound as parameters.",
+        "policy_schema": "#/components/schemas/DataPolicy",
+        "policies": {
+            "owner_private": {
+                "members": "read_write_own",
+                "administrators": "read_write",
+                "requires": "owner_field"
+            },
+            "shared_read": {
+                "members": "read",
+                "administrators": "read_write"
+            },
+            "shared_read_write": {
+                "members": "read_write",
+                "administrators": "read_write"
+            },
+            "admins_only": {
+                "members": "none",
+                "administrators": "read_write"
+            }
+        },
+        "owner_field": "Named in the table map. Pane sets it to the caller's membership ID on create and ignores client input for it. Saving an owner_private table map without an owner field is rejected.",
+        "row_conditions": {
+            "schema": "#/components/schemas/DataRowCondition",
+            "combine": "and",
+            "applied_to": [
+                "read",
+                "update",
+                "delete"
+            ],
+            "variables": [
+                "$membership_id",
+                "$user_id"
+            ],
+            "administrators": "skip conditions with applies_to members, never those with applies_to everyone",
+            "deferred": "OR, nesting and group rules wait for Pane#159"
+        },
+        "outcomes": {
+            "table_not_visible": {
+                "status": 404,
+                "code": "resource_not_found"
+            },
+            "row_not_visible": {
+                "status": 404,
+                "code": "resource_not_found"
+            },
+            "write_not_allowed_by_policy": {
+                "status": 403,
+                "code": "permission_denied"
+            },
+            "write_leaves_row_outside_conditions": {
+                "status": 422,
+                "code": "validation_failed"
+            },
+            "unknown_or_unsortable_sort": {
+                "status": 400,
+                "code": "invalid_request"
+            }
+        },
+        "audit": [
+            "data_row.created",
+            "data_row.updated",
+            "data_row.deleted"
+        ],
+        "deferred": [
+            "filtering (Pane#160)",
+            "restore route",
+            "groups in policies (Pane#159)"
         ]
     }
 }
