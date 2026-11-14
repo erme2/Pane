@@ -167,14 +167,10 @@ Stored in four system tables under `DB_TABLE_PREFIX`, edited only through
   Saves can pass the version they read, and a stale one is a conflict.
 
 A map is a system map when its `sql_name` starts with `DB_TABLE_PREFIX` or is
-one of the maps' own tables. With an empty `DB_TABLE_PREFIX` (installs whose
-Pane tables have no prefix, Pane#164), every table outside `APP_TABLE_PREFIX`
-is a system table. This is worked out on every save, never stored
+one of the maps' own tables. This is worked out on every save, never stored
 (`App\Support\Maps\MapProtection`); the models refuse to save or delete a
 system map or its fields, including moving an app map onto a system table.
-Pane refuses to boot when `APP_TABLE_PREFIX` and `DB_TABLE_PREFIX` overlap, or,
-with an empty `DB_TABLE_PREFIX`, when `APP_TABLE_PREFIX` matches the start of
-one of Pane's own tables (system, framework or legacy `map_*`).
+Pane refuses to boot when `APP_TABLE_PREFIX` and `DB_TABLE_PREFIX` overlap.
 The legacy `map_*` rows were imported once as version 1 by "system import";
 the legacy tables stay until #74. Menu, functions, settings, policies and the
 bundle format belong to their own tickets.
@@ -398,6 +394,11 @@ default database.
 mapper metadata tables keep their extra `map_` segment after this prefix. It is
 a naming convention inside the default database, not a tenant or
 connection-isolation boundary.
+
+Pane adds the prefix itself (`PaneTable::name()`); no database connection has a
+prefix, so Laravel's own tables (`migrations`, ...) stay unprefixed. Installs
+created with an empty prefix move under one with the
+`prefix_unprefixed_pane_tables` migration (Pane#164).
 
 WorkOS, frontend, database, session, host, and cookie configuration comes from
 environment variables mapped through Laravel config. The authoritative list is

@@ -66,7 +66,7 @@ Decided by the product owner on 2026-11-13, on the questions raised in
 | 43 | What counts as overlapping prefixes? | Either prefix being a prefix of the other fails at boot. `APP_TABLE_PREFIX` is optional for now (empty means no app tables yet). |
 | 44 | How are the legacy maps imported? | A re-runnable data migration copies every legacy table and field (with type and validations) as version 1 by "system import". The legacy tables stay until #74. |
 | 45 | What does the first ticket leave out? | Menu, functions, settings, policies and the bundle JSON Schema stay with their own tickets. |
-| 46 | Can an install keep its Pane tables unprefixed? (2026-11-14, Pane#164) | Yes. The sweegly dev install keeps an empty `DB_TABLE_PREFIX` and adds only `APP_TABLE_PREFIX=sweegly_`; no tables are renamed. Then every table outside the app prefix is a system table, and Pane refuses to boot when the app prefix matches the start of one of its own table names. |
+| 46 | What about installs whose Pane tables have no prefix? (2026-11-14, Pane#164) | Solved once: a migration moves them under `DB_TABLE_PREFIX` (the sweegly dev install moves to `pane_`), and `APP_TABLE_PREFIX` needs a non-empty `DB_TABLE_PREFIX`. Pane applies the prefix itself, never through the database connection. |
 
 ## Facts checked while deciding
 

@@ -77,13 +77,15 @@ Prefer the narrowest suite that proves the behavior:
 
 `tests/Feature/ManagedDatabase/Integration` runs managed connections against a real MySQL or MariaDB server: TLS (`required` is encrypted, `disabled` only to an allowed private host), the privilege check (exact grants, missing, DDL, global, `GRANT OPTION`, other databases, roles, `_` wildcards), the query timeout for reads, lock waits and slow writes, and the connection lifecycle and organization isolation through the API.
 
+`tests/Feature/Maps/Integration` runs the Pane#164 table move (one `RENAME TABLE`, data and foreign keys kept) on the same servers.
+
 They skip unless `PANE_IT_DB_HOST` is set. CI runs them on every PR in the `integration` job, once on MySQL 8.4 and once on MariaDB 11.4, with `--fail-on-skipped`. To run them locally:
 
 ```bash
 docker run -d --rm --name pane-it-mysql -e MYSQL_ROOT_PASSWORD=root -p 33061:3306 mysql:8.4
 ./bash/test.sh -o no -f no   # once, to prepare the SQLite database
 PANE_IT_DB_ENGINE=mysql PANE_IT_DB_HOST=127.0.0.1 PANE_IT_DB_PORT=33061 PANE_IT_DB_ROOT_PASSWORD=root \
-  php artisan test --env=testing --filter=RealManagedDatabaseTest
+  php artisan test --env=testing --filter='RealManagedDatabaseTest|RealPrefixUnprefixedTablesTest'
 ```
 
 Use `mariadb:11.4` and `PANE_IT_DB_ENGINE=mariadb` for MariaDB. Each test creates its own database and accounts and drops them afterwards. A server without TLS isn't covered here; the fake-driver tests cover that rejection.

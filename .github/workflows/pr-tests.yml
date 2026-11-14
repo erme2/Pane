@@ -133,4 +133,4 @@ jobs:
           PANE_IT_DB_HOST: 127.0.0.1
           PANE_IT_DB_PORT: 3306
           PANE_IT_DB_ROOT_PASSWORD: root
-        run: php artisan test --env=testing --filter=RealManagedDatabaseTest --fail-on-skipped
+        run: php artisan test --env=testing --filter='RealManagedDatabaseTest|RealPrefixUnprefixedTablesTest' --fail-on-skipped

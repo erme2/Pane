@@ -31,7 +31,7 @@ class CiWorkflowTest extends TestCase
         $this->assertStringContainsString('image: mariadb:11.4', $workflow);
         $this->assertStringContainsString('PANE_IT_DB_HOST: 127.0.0.1', $workflow);
         // Fails instead of passing quietly if the tests can't find the server.
-        $this->assertStringContainsString('--filter=RealManagedDatabaseTest --fail-on-skipped', $workflow);
+        $this->assertStringContainsString("--filter='RealManagedDatabaseTest|RealPrefixUnprefixedTablesTest' --fail-on-skipped", $workflow);
     }
 
     public function test_tag_workflow_tags_merged_prs_after_tests_one_at_a_time(): void
