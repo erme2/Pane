@@ -402,6 +402,84 @@ class PaneV1ContractTest extends TestCase
         $this->assertStringContainsString('/organizations/{organization_id}/maps', $this->documentation);
     }
 
+    public function test_data_routes_serve_mapped_tables_by_stable_name_under_policies(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $responses = $this->contract['components']['responses'];
+        $matrix = $this->contract['x-pane-operation-errors'];
+        $rows = $this->contract['paths']['/organizations/{organization_id}/data/{source}/tables/{table}/rows'];
+        $row = $this->contract['paths']['/organizations/{organization_id}/data/{source}/tables/{table}/rows/{row_key}'];
+
+        $operations = [
+            'listDataRows' => $rows['get'],
+            'createDataRow' => $rows['post'],
+            'getDataRow' => $row['get'],
+            'updateDataRow' => $row['patch'],
+            'deleteDataRow' => $row['delete'],
+        ];
+
+        foreach ($operations as $operationId => $operation) {
+            $parameters = array_column($operation['parameters'], '$ref');
+
+            $this->assertSame($operationId, $operation['operationId']);
+            $this->assertContains('#/components/parameters/MapSourceName', $parameters);
+            $this->assertContains('#/components/parameters/MapTableName', $parameters);
+            $this->assertNotContains('#/components/parameters/TableId', $parameters, $operationId.' must use stable names');
+            $this->assertNotContains('#/components/parameters/Filter', $parameters, $operationId.' filters wait for named queries');
+            $this->assertSame('#/components/responses/NotFound', $operation['responses']['404']['$ref']);
+            $this->assertSame(['resource_not_found'], $matrix[$operationId]['404']);
+        }
+
+        $this->assertArrayNotHasKey('/organizations/{organization_id}/data/{source}/tables/{table}/rows/{row_key}/restore', $this->contract['paths']);
+        $this->assertContains('#/components/parameters/DataSort', array_column($rows['get']['parameters'], '$ref'));
+        $this->assertSame(1, preg_match('#'.$this->contract['components']['parameters']['DataSort']['schema']['pattern'].'#', '-created_at'));
+        $this->assertSame(0, preg_match('#'.$this->contract['components']['parameters']['DataSort']['schema']['pattern'].'#', 'name desc'));
+
+        foreach (['createDataRow', 'updateDataRow'] as $operationId) {
+            $this->assertSame(
+                '#/components/schemas/DataRowWrite',
+                $operations[$operationId]['requestBody']['content']['application/json']['schema']['$ref'],
+            );
+            $this->assertSame(['validation_failed'], $matrix[$operationId]['422']);
+        }
+
+        foreach (['updateDataRow', 'deleteDataRow'] as $operationId) {
+            $this->assertContains('#/components/parameters/IfMatch', array_column($operations[$operationId]['parameters'], '$ref'));
+        }
+
+        foreach (['createDataRow', 'updateDataRow', 'deleteDataRow'] as $operationId) {
+            $this->assertContains('permission_denied', $matrix[$operationId]['403']);
+            $this->assertContains('csrf_failed', $matrix[$operationId]['403']);
+        }
+
+        $this->assertSame('#/components/headers/ETag', $responses['DataRow']['headers']['ETag']['$ref']);
+        $this->assertSame('#/components/schemas/DataRowResource', $responses['DataRow']['content']['application/json']['schema']['properties']['data']['$ref']);
+        $this->assertSame('#/components/schemas/PageMeta', $responses['DataRowCollection']['content']['application/json']['schema']['properties']['meta']['$ref']);
+        $this->assertSame(['source', 'table', 'row_key', 'values'], $schemas['DataRowResource']['properties']['attributes']['required']);
+        $this->assertSame('#/components/schemas/MapName', $schemas['DataRowValues']['propertyNames']['$ref']);
+        $this->assertContains('array', $schemas['DataRowValues']['additionalProperties']['type']);
+        $this->assertContains('object', $schemas['DataRowValues']['additionalProperties']['type']);
+
+        $this->assertSame(['owner_private', 'shared_read', 'shared_read_write', 'admins_only'], $schemas['DataPolicy']['enum']);
+        $this->assertSame('admins_only', $schemas['DataPolicy']['default']);
+        $this->assertSame(['=', '!=', '<', '<=', '>', '>=', 'in', 'is_null'], $schemas['DataRowCondition']['properties']['op']['enum']);
+        $this->assertSame(['members', 'everyone'], $schemas['DataRowCondition']['properties']['applies_to']['enum']);
+        $this->assertSame('members', $schemas['DataRowCondition']['properties']['applies_to']['default']);
+
+        $access = $this->contract['x-pane-data-access'];
+        $this->assertSame($schemas['DataPolicy']['enum'], array_keys($access['policies']));
+        $this->assertSame('owner_field', $access['policies']['owner_private']['requires']);
+        $this->assertSame('none', $access['policies']['admins_only']['members']);
+        $this->assertSame('and', $access['row_conditions']['combine']);
+        $this->assertSame(['$membership_id', '$user_id'], $access['row_conditions']['variables']);
+        $this->assertSame(['status' => 404, 'code' => 'resource_not_found'], $access['outcomes']['row_not_visible']);
+        $this->assertSame(['status' => 403, 'code' => 'permission_denied'], $access['outcomes']['write_not_allowed_by_policy']);
+        $this->assertSame(['data_row.created', 'data_row.updated', 'data_row.deleted'], $access['audit']);
+
+        $this->assertStringContainsString('### Data rows by table name', $this->documentation);
+        $this->assertStringContainsString('/organizations/{organization_id}/data/{source}/tables/{table}/rows', $this->documentation);
+    }
+
     public function test_application_and_invitation_responses_are_discriminated(): void
     {
         $schemas = $this->contract['components']['schemas'];
