@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 class MapReader
 {
+    private const PUBLIC_VALIDATION_RULES = ['max', 'min', 'email'];
+
     /**
      * @return array{version: int, menu: list<array<string, mixed>>, functions: list<array<string, mixed>>, settings: list<array<string, mixed>>, tables: list<array<string, mixed>>}
      */
@@ -86,10 +88,25 @@ class MapReader
                 'sortable' => $field->sortable,
                 'computed' => $field->computed !== null,
                 'default' => $field->default,
-                'validations' => $field->validations ?? [],
+                'validations' => $this->publicValidations($field->validations ?? []),
                 'ui' => $field->ui,
             ])->all(),
         ];
+    }
+
+    /**
+     * Only the hints the contract publishes (MapFieldValidation); server-side
+     * rules such as unique and exists reference tables and stay private.
+     *
+     * @param  list<array<string, mixed>>  $validations
+     * @return list<array<string, mixed>>
+     */
+    private function publicValidations(array $validations): array
+    {
+        return array_values(array_filter(
+            $validations,
+            fn (mixed $validation): bool => is_array($validation) && in_array($validation['rule'] ?? null, self::PUBLIC_VALIDATION_RULES, true),
+        ));
     }
 
     /** @return list<array<string, mixed>> */

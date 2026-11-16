@@ -143,6 +143,27 @@ class MapReadApiTest extends TestCase
         $this->read($this->admin(), 'maps/nowhere/lists')->assertNotFound();
     }
 
+    public function test_table_map_hides_server_side_validation_rules(): void
+    {
+        app(MapStore::class)->saveTable('install', [
+            'name' => 'people',
+            'sql_name' => 'sweegly_people',
+            'fields' => [
+                ['name' => 'person_id', 'type' => 'number', 'primary' => true],
+                ['name' => 'email', 'type' => 'string', 'validations' => [
+                    ['rule' => 'unique', 'value' => 'private_customers,email'],
+                    ['rule' => 'exists', 'value' => 'private_accounts,id'],
+                    ['rule' => 'max', 'value' => '50'],
+                ]],
+            ],
+        ], 'test');
+
+        $response = $this->read($this->admin(), 'maps/install/people')->assertOk();
+
+        $this->assertSame([['rule' => 'max', 'value' => '50']], $response->json('data.attributes.fields.1.validations'));
+        $this->assertStringNotContainsString('private_', (string) $response->getContent());
+    }
+
     public function test_another_organization_cannot_read_these_maps(): void
     {
         $tenancy = app(OrganizationTenancyService::class);
