@@ -64,10 +64,13 @@ class MapDiscovery
 
             $mappedFields = [];
             foreach ($table->fields as $field) {
+                if ($field->computed !== null) {
+                    continue;
+                }
                 $sqlField = MapAvailability::sqlField($field);
                 $mappedFields[$sqlField] = true;
                 $column = $columns[$sqlField] ?? null;
-                if ($column === null || $field->computed !== null) {
+                if ($column === null) {
                     continue;
                 }
 

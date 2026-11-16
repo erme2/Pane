@@ -292,6 +292,24 @@ class MapDiscoveryTest extends TestCase
         $this->assertSame([], $report['changed']);
     }
 
+    public function test_a_computed_field_does_not_hide_a_physical_column_with_the_same_name(): void
+    {
+        $this->store->saveTable('install', [
+            'name' => 'lists',
+            'sql_name' => 'sweegly_lists',
+            'fields' => [
+                ['name' => 'list_id', 'type' => 'number', 'primary' => true],
+                ['name' => 'title', 'type' => 'string'],
+                // Same name as the physical notes column, but evaluated, so the column stays unmapped.
+                ['name' => 'notes', 'type' => 'string', 'computed' => ['expression' => 'title']],
+            ],
+        ], 'test');
+
+        $report = app(MapDiscovery::class)->report();
+
+        $this->assertContains('notes', array_column($report['unmapped_fields'], 'sql_field'));
+    }
+
     private function tableMap(string $name): MapTable
     {
         return MapTable::query()->where('name', $name)->firstOrFail();
