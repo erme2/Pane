@@ -72,6 +72,15 @@ Production migrations are forward-only.
    - A worker that is already running stops claiming new messages once Pane is
      in maintenance mode, but a send already in progress finishes. Wait for any
      running `messages:send` process to exit before the import.
+   - Drain the requests already in flight. Maintenance mode only stops requests
+     that arrive after it is on: a request that passed the check before
+     `php artisan down` keeps running and can still write. So wait at least as
+     long as the longest request the installation serves (the PHP
+     `max_execution_time` and the web server's request timeout, whichever is
+     longer). Then check the installation's web server access log for `POST`,
+     `PUT`, `PATCH` or `DELETE` requests made after the time you ran
+     `php artisan down`. Start the import only when there are none. If there
+     are any, wait the timeout again and check once more.
 3. In hPanel, import the backup file into the installation's database
    (Databases → phpMyAdmin → Import, or the plan's restore tool). Restore only
    that installation's database; installations sharing a database are
