@@ -1252,6 +1252,44 @@
                 "description": "Menu, functions, public settings and the table maps the caller can see, for Latte to build its shell. Organization administrators see every app table map and the system maps (read-only, `system: true`). Standard members get the menu, functions and public settings; table entries and menu items that point at tables are left out until per-table access policies (Pane#156) open them. Unmapped tables and fields never appear."
             }
         },
+        "/organizations/{organization_id}/maps/discovery": {
+            "get": {
+                "operationId": "getMapDiscovery",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OrganizationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MapDiscovery"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrOrganizationContextMismatchOrOrganizationInactiveOrMembershipRequiredOrPermissionDeniedOrImpersonationRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "Get Maps Discovery Report",
+                "description": "How the install's own app tables (under `APP_TABLE_PREFIX`) differ from the maps of its `install` sources: unmapped tables and fields, mapped tables and fields that are missing, and mapped fields whose column changed. Organization administrators only; standard members get `403 permission_denied`. Computed on each request and stored nowhere: it never changes maps or tables. Pane's system tables and system maps never appear, and an empty `APP_TABLE_PREFIX` gives an empty report."
+            }
+        },
         "/organizations/{organization_id}/maps/{source}/{table}": {
             "get": {
                 "operationId": "getTableMap",
@@ -5811,6 +5849,275 @@
                     }
                 },
                 "additionalProperties": false
+            },
+            "MapDiscoveryResource": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "attributes"
+                ],
+                "properties": {
+                    "type": {
+                        "const": "map_discovery"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "required": [
+                            "app_table_prefix",
+                            "unmapped_tables",
+                            "unmapped_fields",
+                            "missing",
+                            "changed"
+                        ],
+                        "properties": {
+                            "app_table_prefix": {
+                                "type": "string",
+                                "description": "The install's APP_TABLE_PREFIX. Empty means the install has no app tables yet."
+                            },
+                            "unmapped_tables": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapDiscoveryUnmappedTable"
+                                }
+                            },
+                            "unmapped_fields": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapDiscoveryUnmappedField"
+                                }
+                            },
+                            "missing": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapDiscoveryMissing"
+                                }
+                            },
+                            "changed": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MapDiscoveryChanged"
+                                }
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapDiscoveryUnmappedTable": {
+                "type": "object",
+                "description": "An app table no map points at, with its columns.",
+                "required": [
+                    "source",
+                    "sql_table",
+                    "fields"
+                ],
+                "properties": {
+                    "source": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "sql_table": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "Physical table or column name in the install's database."
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "sql_field",
+                                "sql_type",
+                                "nullable"
+                            ],
+                            "properties": {
+                                "sql_field": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 64,
+                                    "description": "Physical table or column name in the install's database."
+                                },
+                                "sql_type": {
+                                    "type": "string",
+                                    "description": "Column type as the database reports it, for example `varchar(120)` or `bigint unsigned`."
+                                },
+                                "nullable": {
+                                    "type": "boolean",
+                                    "description": "Whether the column accepts null."
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapDiscoveryUnmappedField": {
+                "type": "object",
+                "description": "A column of a mapped table that its map has no field for.",
+                "required": [
+                    "source",
+                    "table",
+                    "sql_table",
+                    "sql_field",
+                    "sql_type",
+                    "nullable"
+                ],
+                "properties": {
+                    "source": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "sql_table": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "Physical table or column name in the install's database."
+                    },
+                    "sql_field": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "Physical table or column name in the install's database."
+                    },
+                    "sql_type": {
+                        "type": "string",
+                        "description": "Column type as the database reports it, for example `varchar(120)` or `bigint unsigned`."
+                    },
+                    "nullable": {
+                        "type": "boolean",
+                        "description": "Whether the column accepts null."
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapDiscoveryMissing": {
+                "type": "object",
+                "description": "A mapped table (`field` null) or field that no longer exists. The map is unavailable until it is fixed.",
+                "required": [
+                    "source",
+                    "table",
+                    "field",
+                    "sql_table",
+                    "sql_field"
+                ],
+                "properties": {
+                    "source": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "field": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MapName"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "sql_table": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "Physical table or column name in the install's database."
+                    },
+                    "sql_field": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64,
+                                "description": "Physical table or column name in the install's database."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            },
+            "MapDiscoveryChanged": {
+                "type": "object",
+                "description": "A mapped field whose column no longer fits the map: `type` when the column type can't serve the map type, `nullable` when the map accepts null and the column doesn't.",
+                "required": [
+                    "source",
+                    "table",
+                    "field",
+                    "sql_table",
+                    "sql_field",
+                    "sql_type",
+                    "nullable",
+                    "map_type",
+                    "map_nullable",
+                    "reasons"
+                ],
+                "properties": {
+                    "source": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "field": {
+                        "$ref": "#/components/schemas/MapName"
+                    },
+                    "sql_table": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "Physical table or column name in the install's database."
+                    },
+                    "sql_field": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "Physical table or column name in the install's database."
+                    },
+                    "sql_type": {
+                        "type": "string",
+                        "description": "Column type as the database reports it, for example `varchar(120)` or `bigint unsigned`."
+                    },
+                    "nullable": {
+                        "type": "boolean",
+                        "description": "Whether the column accepts null."
+                    },
+                    "map_type": {
+                        "type": "string",
+                        "enum": [
+                            "number",
+                            "string",
+                            "text",
+                            "boolean",
+                            "date",
+                            "array",
+                            "password",
+                            "json"
+                        ]
+                    },
+                    "map_nullable": {
+                        "type": "boolean"
+                    },
+                    "reasons": {
+                        "type": "array",
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "type",
+                                "nullable"
+                            ]
+                        }
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "responses": {
@@ -7970,6 +8277,34 @@
                         }
                     }
                 }
+            },
+            "MapDiscovery": {
+                "description": "Maps discovery report",
+                "headers": {
+                    "X-Request-Id": {
+                        "$ref": "#/components/headers/RequestId"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data",
+                                "meta"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/components/schemas/MapDiscoveryResource"
+                                },
+                                "meta": {
+                                    "$ref": "#/components/schemas/Meta"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                }
             }
         },
         "headers": {
@@ -8659,6 +8994,29 @@
             ]
         },
         "getMaps": {
+            "400": [
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "organization_context_mismatch",
+                "organization_inactive",
+                "membership_required",
+                "permission_denied",
+                "impersonation_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "getMapDiscovery": {
             "400": [
                 "invalid_identifier"
             ],

@@ -194,7 +194,9 @@ suspension, or organization suspension/closure.
   active frontends (id, name, trusted origin) to organization administrators.
 - `/organizations/{organization_id}/maps` and
   `/organizations/{organization_id}/maps/{source}/{table}` serve the maps
-  Latte builds itself from (see "Maps for Latte" below).
+  Latte builds itself from (see "Maps for Latte" below), and
+  `/organizations/{organization_id}/maps/discovery` reports how the install's
+  app tables differ from the maps (see "Maps discovery" below).
 - `/organizations/{organization_id}/data/{source}/tables/{table}/rows` and
   `.../rows/{row_key}` expose CRUD on mapped app tables by stable name, under
   each table's access policy and row conditions (see "Data rows by table name"
@@ -285,6 +287,35 @@ table level: `label`, `description`, `list.columns[]` (field names) and
 level: `label`, `widget`, `help` and `hidden`. Field `validations` only carry
 the client-side hints `max`, `min` and `email`; rules that name other tables
 stay on the server.
+
+### Maps discovery
+
+`GET /organizations/{organization_id}/maps/discovery` (Pane#155) compares the
+real structure of the install's own app tables with the maps, so admins can map
+changes when they are ready. It is for organization administrators only
+(standard members get `403 permission_denied`), computed on each request,
+stored nowhere, and never changes maps or tables. The same report is printed by
+`php artisan pane:maps:discover` (`--json` for JSON).
+
+Discovery scans the base tables of the install's own database whose names start
+with `APP_TABLE_PREFIX`; an empty prefix means no app tables and an empty
+report. Pane's system tables, system maps, views, other databases and external
+sources never appear. Only maps of `install` sources whose table is under the
+app prefix take part. The report lists:
+
+- `unmapped_tables`: app tables no map points at, with their columns;
+- `unmapped_fields`: columns of a mapped table its map has no field for;
+- `missing`: mapped tables (`field` null) and fields that no longer exist;
+- `changed`: mapped fields whose column no longer fits, with `reasons`
+  `type` (the column type can't serve the map type) and/or `nullable` (the map
+  accepts null, the column doesn't).
+
+Each entry names the map `source`, the map `table` and `field` where there is
+one, the physical `sql_table` and `sql_field`, and the discovered `sql_type`.
+Unlike the other maps reads, this admin report shows physical names, because
+unmapped tables and columns have no map name yet. A map with a missing table or
+field is unavailable until it is fixed: the read and CRUD routes (Pane#154,
+Pane#156) will answer `409 map_unavailable` naming the field.
 
 ### Data rows by table name
 
