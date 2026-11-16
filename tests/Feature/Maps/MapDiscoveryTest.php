@@ -271,6 +271,27 @@ class MapDiscoveryTest extends TestCase
         return $user;
     }
 
+    public function test_a_computed_field_without_a_column_is_not_reported(): void
+    {
+        $this->store->saveTable('install', [
+            'name' => 'lists',
+            'sql_name' => 'sweegly_lists',
+            'fields' => [
+                ['name' => 'list_id', 'type' => 'number', 'primary' => true],
+                ['name' => 'title', 'type' => 'string'],
+                // Evaluated from other fields, so the table has no physical column for it.
+                ['name' => 'label', 'type' => 'string', 'computed' => ['expression' => 'title']],
+            ],
+        ], 'test');
+        $table = $this->tableMap('lists');
+
+        app(MapAvailability::class)->assertAvailable($table);
+        $report = app(MapDiscovery::class)->report();
+
+        $this->assertSame([], $report['missing']);
+        $this->assertSame([], $report['changed']);
+    }
+
     private function tableMap(string $name): MapTable
     {
         return MapTable::query()->where('name', $name)->firstOrFail();

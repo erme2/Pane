@@ -59,6 +59,11 @@ class MapAvailability
 
         $missing = [];
         foreach ($table->fields as $field) {
+            if ($field->computed !== null) {
+                // A computed field is evaluated from other fields and needs no column of its own.
+                continue;
+            }
+
             $sqlField = self::sqlField($field);
             if (! array_key_exists($sqlField, $columns)) {
                 $missing[] = ['table' => $table->name, 'field' => $field->name, 'sql_table' => $sqlTable, 'sql_field' => $sqlField];
