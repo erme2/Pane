@@ -38,8 +38,15 @@ class PaneTable
 
     public const string MAPS_VERSIONS = 'maps_versions';
 
+    public const string MAPS_MENU = 'maps_menu';
+
+    public const string MAPS_FUNCTIONS = 'maps_functions';
+
     /** The maps' own tables: always system maps, whatever the prefix (decision 32). */
-    public const array MAPS = [self::MAPS_SOURCES, self::MAPS_TABLES, self::MAPS_FIELDS, self::MAPS_VERSIONS];
+    public const array MAPS = [
+        self::MAPS_SOURCES, self::MAPS_TABLES, self::MAPS_FIELDS, self::MAPS_VERSIONS,
+        self::MAPS_MENU, self::MAPS_FUNCTIONS,
+    ];
 
     public static function name(string $table): string
     {
