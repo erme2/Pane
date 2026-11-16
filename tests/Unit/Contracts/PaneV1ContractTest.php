@@ -402,6 +402,38 @@ class PaneV1ContractTest extends TestCase
         $this->assertStringContainsString('/organizations/{organization_id}/maps', $this->documentation);
     }
 
+    public function test_maps_discovery_reports_unmapped_missing_and_changed_parts(): void
+    {
+        $schemas = $this->contract['components']['schemas'];
+        $operation = $this->contract['paths']['/organizations/{organization_id}/maps/discovery']['get'];
+
+        $this->assertSame('getMapDiscovery', $operation['operationId']);
+        $this->assertSame('#/components/responses/MapDiscovery', $operation['responses']['200']['$ref']);
+        $this->assertArrayNotHasKey('404', $operation['responses']);
+        $this->assertContains('permission_denied', $this->contract['x-pane-operation-errors']['getMapDiscovery']['403']);
+        $this->assertSame(
+            '#/components/schemas/MapDiscoveryResource',
+            $this->contract['components']['responses']['MapDiscovery']['content']['application/json']['schema']['properties']['data']['$ref'],
+        );
+        $this->assertSame(
+            ['app_table_prefix', 'unmapped_tables', 'unmapped_fields', 'missing', 'changed'],
+            $schemas['MapDiscoveryResource']['properties']['attributes']['required'],
+        );
+
+        foreach (['MapDiscoveryUnmappedField', 'MapDiscoveryMissing', 'MapDiscoveryChanged'] as $schema) {
+            foreach (['source', 'table', 'sql_table', 'sql_field'] as $key) {
+                $this->assertContains($key, $schemas[$schema]['required'], $schema.' needs '.$key);
+            }
+        }
+        $this->assertContains('sql_type', $schemas['MapDiscoveryUnmappedField']['required']);
+        $this->assertContains('sql_type', $schemas['MapDiscoveryChanged']['required']);
+        $this->assertSame(['sql_field', 'sql_type', 'nullable'], $schemas['MapDiscoveryUnmappedTable']['properties']['fields']['items']['required']);
+        $this->assertSame(['type', 'nullable'], $schemas['MapDiscoveryChanged']['properties']['reasons']['items']['enum']);
+        $this->assertSame(MapRules::FIELD_TYPES, $schemas['MapDiscoveryChanged']['properties']['map_type']['enum']);
+        $this->assertStringContainsString('/organizations/{organization_id}/maps/discovery', $this->documentation);
+        $this->assertStringContainsString('pane:maps:discover', $this->documentation);
+    }
+
     public function test_data_routes_serve_mapped_tables_by_stable_name_under_policies(): void
     {
         $schemas = $this->contract['components']['schemas'];
