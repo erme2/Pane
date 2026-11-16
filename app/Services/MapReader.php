@@ -105,7 +105,7 @@ class MapReader
     {
         return array_values(array_filter(
             $validations,
-            fn (mixed $validation): bool => is_array($validation) && in_array($validation['rule'] ?? null, self::PUBLIC_VALIDATION_RULES, true),
+            fn (array $validation): bool => in_array($validation['rule'] ?? null, self::PUBLIC_VALIDATION_RULES, true),
         ));
     }
 
