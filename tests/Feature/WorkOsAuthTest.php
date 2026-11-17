@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ApplicationRegistration;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
@@ -26,7 +25,6 @@ class WorkOsAuthTest extends TestCase
 
         OrganizationInvitation::query()->delete();
         PaneAdminInvitation::query()->delete();
-        ApplicationRegistration::query()->delete();
         OrganizationMembership::query()->delete();
         Organization::query()->delete();
         User::query()->delete();
@@ -511,219 +509,6 @@ class WorkOsAuthTest extends TestCase
         $this->assertNull($user->last_login_at);
     }
 
-    public function test_v1_callback_does_not_sync_non_admin_when_burro_access_is_denied(): void
-    {
-        config()->set('services.workos.api_key', 'sk_test_123');
-        config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://burro.test/auth/callback');
-        config()->set('services.workos.provider', 'authkit');
-
-        $application = ApplicationRegistration::query()->create([
-            'name' => 'Burro',
-            'kind' => ApplicationRegistration::KIND_BURRO,
-            'organization_id' => null,
-            'trusted_origin' => 'https://burro.test',
-            'redirect_uris' => ['https://burro.test/dashboard'],
-            'status' => ApplicationRegistration::STATUS_ACTIVE,
-        ]);
-        $user = User::query()->create([
-            'user_type_id' => User::STANDARD_USER_TYPE_ID,
-            'name' => 'Original Name',
-            'email' => 'existing@example.com',
-            'password' => 'password',
-            'details' => ['source' => 'original'],
-            'is_active' => true,
-        ]);
-
-        Http::fake([
-            'api.workos.com/user_management/authenticate' => Http::response([
-                'user' => [
-                    'id' => 'user_existing',
-                    'email' => 'existing@example.com',
-                    'email_verified' => true,
-                    'first_name' => 'Changed',
-                    'last_name' => 'Name',
-                ],
-                'session_id' => 'session_123',
-                'organization_id' => 'changed_organization',
-                'authentication_method' => 'sso',
-            ]),
-        ]);
-
-        $this
-            ->withSession(array_merge($this->v1ApplicationSession($application), [
-                'workos_state' => 'expected_state',
-            ]))
-            ->withHeader('Origin', 'https://burro.test')
-            ->postJson('/api/v1/auth/callback', [
-                'code' => 'code_123',
-                'state' => 'expected_state',
-            ])
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'permission_denied');
-
-        $user->refresh();
-
-        $this->assertSame('Original Name', $user->name);
-        $this->assertNull($user->workos_id);
-        $this->assertSame(['source' => 'original'], $user->details);
-        $this->assertNull($user->email_verified_at);
-        $this->assertNull($user->last_login_at);
-    }
-
-    public function test_v1_callback_does_not_sync_suspended_pane_admin_with_active_membership(): void
-    {
-        config()->set('services.workos.api_key', 'sk_test_123');
-        config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
-        config()->set('services.workos.provider', 'authkit');
-        config()->set('services.latte.application_id', (string) Str::uuid());
-        config()->set('services.latte.organization_id', (string) Str::uuid());
-        config()->set('services.latte.frontend_url', 'https://latte.test');
-        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
-
-        $application = app(ApplicationRegistryService::class)->configuredLatteApplication();
-        $organization = $application->organization()->firstOrFail();
-        $user = User::query()->create([
-            'user_type_id' => User::PANE_ADMINISTRATOR_USER_TYPE_ID,
-            'name' => 'Suspended Administrator',
-            'email' => 'suspended-admin@example.com',
-            'password' => 'password',
-            'workos_organization_id' => 'original_organization',
-            'details' => ['source' => 'original'],
-            'is_active' => false,
-        ]);
-        app(OrganizationTenancyService::class)->addOrReactivateMembership(
-            $organization,
-            $user,
-            OrganizationMembership::ROLE_USER,
-        );
-
-        Http::fake([
-            'api.workos.com/user_management/authenticate' => Http::response([
-                'user' => [
-                    'id' => 'user_suspended_admin',
-                    'email' => 'suspended-admin@example.com',
-                    'email_verified' => true,
-                    'first_name' => 'Changed',
-                    'last_name' => 'Name',
-                ],
-                'session_id' => 'session_123',
-                'organization_id' => 'changed_organization',
-                'authentication_method' => 'sso',
-            ]),
-        ]);
-
-        $this
-            ->withSession(array_merge($this->v1ApplicationSession($application), [
-                'workos_state' => 'expected_state',
-            ]))
-            ->withHeader('Origin', 'https://latte.test')
-            ->postJson('/api/v1/auth/callback', [
-                'code' => 'code_123',
-                'state' => 'expected_state',
-            ])
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'permission_denied')
-            ->assertJsonPath('error.message', 'Pane account is inactive.');
-
-        $user->refresh();
-
-        $this->assertSame('Suspended Administrator', $user->name);
-        $this->assertNull($user->workos_id);
-        $this->assertSame('original_organization', $user->workos_organization_id);
-        $this->assertSame(['source' => 'original'], $user->details);
-        $this->assertFalse($user->is_active);
-        $this->assertNull($user->email_verified_at);
-        $this->assertNull($user->last_login_at);
-    }
-
-    public function test_v1_callback_accepts_organization_invitation_and_reactivates_suspended_membership(): void
-    {
-        config()->set('services.workos.api_key', 'sk_test_123');
-        config()->set('services.workos.client_id', 'client_123');
-        config()->set('services.workos.redirect_uri', 'https://latte.test/auth/callback');
-        config()->set('services.workos.provider', 'authkit');
-        config()->set('services.latte.application_id', (string) Str::uuid());
-        config()->set('services.latte.organization_id', (string) Str::uuid());
-        config()->set('services.latte.frontend_url', 'https://latte.test');
-        config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
-
-        $application = app(ApplicationRegistryService::class)->configuredLatteApplication();
-        $organization = $application->organization()->firstOrFail();
-        $tenancy = app(OrganizationTenancyService::class);
-        $administrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $member = User::query()->create([
-            'user_type_id' => User::STANDARD_USER_TYPE_ID,
-            'name' => 'Suspended Member',
-            'email' => 'member@example.com',
-            'password' => 'password',
-            'is_active' => true,
-        ]);
-        $tenancy->addOrReactivateMembership($organization, $administrator, OrganizationMembership::ROLE_ADMINISTRATOR);
-        $membership = $tenancy->addOrReactivateMembership($organization, $member, OrganizationMembership::ROLE_USER);
-        $tenancy->suspendMembership($membership);
-
-        $result = app(OrganizationInvitationService::class)->inviteOrganizationMember(
-            $administrator,
-            $organization,
-            'Member@Example.COM',
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
-        $token = $result['token'];
-        /** @var OrganizationInvitation $invitation */
-        $invitation = $result['invitation'];
-
-        $intent = $this
-            ->withHeader('Origin', 'https://latte.test')
-            ->postJson('/api/v1/auth/login-intents', [
-                'redirect_to' => 'https://latte.test/dashboard',
-                'invitation_token' => $token,
-            ]);
-
-        $intent
-            ->assertOk()
-            ->assertSessionHas('pane_admin_invitation_token_hash', hash('sha256', $token));
-
-        Http::fake([
-            'api.workos.com/user_management/authenticate' => Http::response([
-                'user' => [
-                    'id' => 'user_member',
-                    'email' => 'member@example.com',
-                    'email_verified' => true,
-                    'first_name' => 'Invited',
-                    'last_name' => 'Member',
-                ],
-                'session_id' => 'session_123',
-                'organization_id' => 'org_123',
-                'authentication_method' => 'sso',
-            ]),
-        ]);
-
-        $callback = $this
-            ->withSession(array_merge($this->v1ApplicationSession($application), [
-                'workos_state' => $intent->json('data.state'),
-                'workos_intended_url' => 'https://latte.test/dashboard',
-                'pane_admin_invitation_token_hash' => hash('sha256', $token),
-            ]))
-            ->withHeader('Origin', 'https://latte.test')
-            ->postJson('/api/v1/auth/callback', [
-                'code' => 'code_123',
-                'state' => $intent->json('data.state'),
-            ]);
-
-        $callback
-            ->assertOk()
-            ->assertSessionMissing('pane_admin_invitation_token_hash')
-            ->assertJsonPath('data.organization.id', $organization->organization_id)
-            ->assertJsonPath('data.membership.id', $membership->membership_id)
-            ->assertJsonPath('data.membership.attributes.role', OrganizationMembership::ROLE_ADMINISTRATOR);
-
-        $this->assertSame(OrganizationInvitation::STATUS_ACCEPTED, $invitation->fresh()->status);
-        $this->assertSame(OrganizationMembership::STATUS_ACTIVE, $membership->fresh()->status);
-        $this->assertStringNotContainsString($token, $callback->getContent());
-    }
-
     public function test_v1_callback_accepts_an_organization_invitation_on_the_targeted_frontend(): void
     {
         config()->set('services.workos.api_key', 'sk_test_123');
@@ -736,15 +521,9 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
         $console = app(ApplicationRegistryService::class)->configuredLatteApplication();
-        $organization = $console->organization()->firstOrFail();
-        $app = ApplicationRegistration::query()->create([
-            'name' => 'Product app',
-            'kind' => ApplicationRegistration::KIND_LATTE,
-            'organization_id' => $organization->organization_id,
-            'trusted_origin' => 'https://app.example.test',
-            'redirect_uris' => ['https://app.example.test/home'],
-            'status' => ApplicationRegistration::STATUS_ACTIVE,
-        ]);
+        $organization = $this->organizationFor($console);
+        config()->set('services.latte.extra_frontend_origins', 'https://app.example.test|https://app.example.test/home');
+        $app = app(ApplicationRegistryService::class)->activeApplicationForOrigin('https://app.example.test');
         $administrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
         app(OrganizationTenancyService::class)->addOrReactivateMembership($organization, $administrator, OrganizationMembership::ROLE_ADMINISTRATOR);
 
@@ -824,7 +603,7 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
         $application = app(ApplicationRegistryService::class)->configuredLatteApplication();
-        $organization = $application->organization()->firstOrFail();
+        $organization = $this->organizationFor($application);
         $tenancy = app(OrganizationTenancyService::class);
         $administrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
         $tenancy->addOrReactivateMembership($organization, $administrator, OrganizationMembership::ROLE_ADMINISTRATOR);
@@ -889,7 +668,7 @@ class WorkOsAuthTest extends TestCase
         config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
         $application = app(ApplicationRegistryService::class)->configuredLatteApplication();
-        $organization = $application->organization()->firstOrFail();
+        $organization = $this->organizationFor($application);
         $tenancy = app(OrganizationTenancyService::class);
         $administrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
         $suspendedPaneAdmin = User::query()->create([
@@ -1060,10 +839,6 @@ class WorkOsAuthTest extends TestCase
 
     public function test_v1_session_rejects_stale_bound_application(): void
     {
-        ApplicationRegistration::query()
-            ->whereKey('00000000-0000-4000-8000-000000000201')
-            ->delete();
-
         config()->set('services.latte.application_id', '00000000-0000-4000-8000-000000000301');
         config()->set('services.latte.frontend_url', 'https://current-latte.test');
 

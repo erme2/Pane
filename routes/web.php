@@ -1,12 +1,8 @@
 <?php
 
-use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ManagedConnectionController;
-use App\Http\Controllers\MapDiscoveryController;
 use App\Http\Controllers\MapReadController;
-use App\Http\Controllers\OrganizationApplicationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationInvitationController;
 use App\Http\Controllers\OrganizationMembershipController;
@@ -43,16 +39,6 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/session', [WorkOsAuthController::class, 'session'])->name('session.show');
         Route::delete('/session', [WorkOsAuthController::class, 'destroySession'])->name('session.destroy');
-        Route::get('/installation/applications', [ApplicationController::class, 'list'])
-            ->name('installation.applications.index');
-        Route::post('/installation/applications', [ApplicationController::class, 'store'])
-            ->name('installation.applications.store');
-        Route::get('/installation/applications/{applicationId}', [ApplicationController::class, 'show'])
-            ->name('installation.applications.show');
-        Route::patch('/installation/applications/{applicationId}', [ApplicationController::class, 'update'])
-            ->name('installation.applications.update');
-        Route::delete('/installation/applications/{applicationId}', [ApplicationController::class, 'destroy'])
-            ->name('installation.applications.destroy');
         Route::get('/installation/organizations', [OrganizationController::class, 'list'])
             ->name('installation.organizations.index');
         Route::post('/installation/organizations', [OrganizationController::class, 'store'])
@@ -73,26 +59,10 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('organizations.memberships.show');
         Route::patch('/organizations/{organizationId}/memberships/{membershipId}', [OrganizationMembershipController::class, 'update'])
             ->name('organizations.memberships.update');
-        Route::get('/organizations/{organizationId}/maps/discovery', [MapDiscoveryController::class, 'show'])
-            ->name('organizations.maps.discovery');
         Route::get('/organizations/{organizationId}/maps', [MapReadController::class, 'show'])
             ->name('organizations.maps.show');
         Route::get('/organizations/{organizationId}/maps/{source}/{table}', [MapReadController::class, 'table'])
             ->name('organizations.maps.table');
-        Route::get('/organizations/{organizationId}/connections', [ManagedConnectionController::class, 'list'])
-            ->name('organizations.connections.index');
-        Route::post('/organizations/{organizationId}/connections', [ManagedConnectionController::class, 'store'])
-            ->name('organizations.connections.store');
-        Route::get('/organizations/{organizationId}/connections/{connectionId}', [ManagedConnectionController::class, 'show'])
-            ->name('organizations.connections.show');
-        Route::patch('/organizations/{organizationId}/connections/{connectionId}', [ManagedConnectionController::class, 'update'])
-            ->name('organizations.connections.update');
-        Route::delete('/organizations/{organizationId}/connections/{connectionId}', [ManagedConnectionController::class, 'destroy'])
-            ->name('organizations.connections.destroy');
-        Route::post('/organizations/{organizationId}/connections/{connectionId}/test', [ManagedConnectionController::class, 'test'])
-            ->name('organizations.connections.test');
-        Route::get('/organizations/{organizationId}/applications', [OrganizationApplicationController::class, 'list'])
-            ->name('organizations.applications.index');
         Route::get('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'list'])
             ->name('organizations.invitations.index');
         Route::post('/organizations/{organizationId}/invitations', [OrganizationInvitationController::class, 'store'])

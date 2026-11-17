@@ -12,15 +12,7 @@ class PaneTable
 
     public const string ORGANIZATION_INVITATIONS = 'organization_invitations';
 
-    public const string APPLICATIONS = 'applications';
-
-    public const string MANAGED_CREDENTIAL_SECRETS = 'managed_credential_secrets';
-
-    public const string MANAGED_CONNECTIONS = 'managed_connections';
-
     public const string AUDIT_EVENTS = 'audit_events';
-
-    public const string MESSAGES = 'messages';
 
     public const string PANE_ADMIN_INVITATIONS = 'admin_invitations';
 

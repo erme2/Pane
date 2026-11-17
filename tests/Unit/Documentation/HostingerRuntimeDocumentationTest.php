@@ -32,7 +32,6 @@ class HostingerRuntimeDocumentationTest extends TestCase
         self::assertStringContainsString('php artisan config:clear --env="${TEMP_LARAVEL_ENV_NAME}"', $script);
         self::assertStringContainsString('composer check-platform-reqs --no-dev', $script);
         self::assertStringContainsString('PDO($dsn', $script);
-        self::assertStringContainsString('PANE_MANAGED_CREDENTIAL_KEYS', $script);
         self::assertStringContainsString('PANE_STATUS_PASSWORD', $script);
     }
 }

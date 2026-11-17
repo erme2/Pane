@@ -47,10 +47,8 @@ Generate a unique Laravel key on the host:
 php artisan key:generate --force
 ```
 
-Generate managed-credential key material separately from `APP_KEY`, store it in
-the production environment, and keep older key IDs available during rotation.
 Do not print or paste `APP_KEY`, WorkOS secrets, database credentials, or
-managed-credential keys in tickets, logs, release notes, or support messages.
+other secrets in tickets, logs, release notes, or support messages.
 
 ## GitHub Actions Deployment
 
@@ -106,33 +104,13 @@ The workflow can also be run manually with inputs for:
 
 After upload, the workflow runs the Hostinger preflight on the remote directory,
 optionally runs migrations, caches Laravel config/routes/views, and smoke
-checks `/`, `/docs/openapi.json`, `/api/v1/release`, `/api/v1/session`, and
-`/api/v1/installation/applications`. View caching is skipped when the deployed
+checks `/`, `/docs/openapi.json`, `/api/v1/release`, and
+`/api/v1/session`. View caching is skipped when the deployed
 tree has no `resources/views` directory.
 
-## Message Worker (Cron)
+## Email
 
-Pane queues outgoing email in the `messages` table and `php artisan messages:send` sends it (see [Outgoing Messages](environment.md#outgoing-messages)). Hostinger web hosting can't keep a worker process running, so a cron job runs Laravel's scheduler every minute, and the scheduler runs `messages:send --limit=50 --max-time=50` without letting runs pile up.
-
-Add one cron job per installation in hPanel → Advanced → Cron Jobs, set to every minute (`* * * * *`):
-
-```text
-cd <DEPLOY_PATH> && <PHP> artisan schedule:run >> /dev/null 2>&1
-```
-
-- `<DEPLOY_PATH>` is the installation's directory, e.g. `/home/u253124519/public_html/pane` for erme2 production, or the `DEPLOY_PATH` of the `sweegly-pane-dev` Environment.
-- `<PHP>` must be PHP 8.5, the same version as the site. Check over SSH with `which php` and `php -v`; hPanel's default `/usr/bin/php` can be older. Hostinger's versioned binaries look like `/opt/alt/php85/usr/bin/php`.
-- Test it once over SSH before saving: `cd <DEPLOY_PATH> && <PHP> artisan schedule:run`, then `<PHP> artisan messages:send --once` prints what it sent.
-
-Check it's working on `GET /status` (Basic auth), under `data.messages`:
-
-- `worker`: `ok` when a run finished in the last 5 minutes, `stale` when it stopped, `never` before the first run. The heartbeat lives in Laravel's cache, so clearing the cache shows `never` until the next run.
-- `due` and `oldest_due_age_seconds`: messages waiting to be sent and how long the oldest has waited. A growing age means the worker isn't running or can't send.
-- `failed`: messages that ran out of retries; their `last_error` in the `messages` table says why.
-
-The deploy workflow doesn't check the cron: it lives in hPanel, outside the deploy. Check `/status` after setting up a new installation.
-
-Other options, if every-minute cron stops being enough: send right after the request as well (cron stays as the safety net), or run `messages:send` under Supervisor on a VPS.
+Pane sends invitation email directly through Laravel Mail when the invitation is created or resent (see [Outgoing Email](environment.md#outgoing-email)). There is no worker, no queue and no cron job to set up: the `MAIL_*` settings are all it needs. `GET /status` no longer reports a message queue.
 
 ## Preflight Script
 
@@ -166,7 +144,6 @@ The script verifies:
 - Placeholder production secrets are rejected.
 - `APP_ENV`, `APP_DEBUG`, HTTPS URLs, and secure session cookies are safe for
   production.
-- Managed-credential key configuration is syntactically usable.
 - Laravel writable directories are ready.
 - MySQL/MariaDB connectivity works unless `-d no` is used.
 - Composer production platform requirements pass.

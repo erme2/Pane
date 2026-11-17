@@ -21,7 +21,7 @@ class PrefixUnprefixedTablesTest extends TestCase
         config(['database.connections.unprefixed' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']]);
         $this->db = DB::connection('unprefixed');
         $schema = $this->db->getSchemaBuilder();
-        foreach (['organizations', 'messages', 'migrations'] as $table) {
+        foreach (['organizations', 'audit_events', 'migrations'] as $table) {
             $schema->create($table, fn (Blueprint $t) => $t->id());
         }
         $schema->create('map_tables', function (Blueprint $t): void {
@@ -53,7 +53,7 @@ class PrefixUnprefixedTablesTest extends TestCase
         $moved = $this->migration()->prefixTables($this->db, 'pane_');
 
         $this->assertSame(
-            ['organizations' => 'pane_organizations', 'messages' => 'pane_messages', 'map_tables' => 'pane_map_tables'],
+            ['organizations' => 'pane_organizations', 'audit_events' => 'pane_audit_events', 'map_tables' => 'pane_map_tables'],
             $moved,
         );
         $schema = $this->db->getSchemaBuilder();
@@ -89,10 +89,10 @@ class PrefixUnprefixedTablesTest extends TestCase
 
     public function test_it_refuses_when_both_names_exist(): void
     {
-        $this->db->getSchemaBuilder()->create('pane_messages', fn (Blueprint $t) => $t->id());
+        $this->db->getSchemaBuilder()->create('pane_audit_events', fn (Blueprint $t) => $t->id());
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('"messages" and "pane_messages"');
+        $this->expectExceptionMessage('"audit_events" and "pane_audit_events"');
 
         try {
             $this->migration()->prefixTables($this->db, 'pane_');

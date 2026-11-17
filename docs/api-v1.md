@@ -2,6 +2,16 @@
 
 Status: phase-one contract
 
+> Pane#181 removed the application registry table, managed-database connections,
+> catalog and map discovery and the message queue from the implementation.
+> Trusted frontends now come from the environment only (`FRONTEND_URL` and
+> `PANE_EXTRA_FRONTEND_ORIGINS`, see `environment.md`), with ids derived from the
+> origin. This contract and the text below still describe the planned
+> registrations, `/installation/applications`, connections, catalogs and
+> discovery; none of those routes exist any more, and reconciling this document
+> with `contracts/pane-v1.json` is a follow-up. The legacy Story/Action/Mapper
+> CRUD route stays until the `/data` routes ship.
+
 The machine-readable companion to this document is the OpenAPI 3.1 document
 [`contracts/pane-v1.json`](../contracts/pane-v1.json). It is the shared contract
 for Pane, Latte, and Burro and can drive client generation and request/response

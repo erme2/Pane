@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Support\ManagedDatabase\DnsHostResolver;
-use App\Support\ManagedDatabase\HostResolver;
 use App\Support\Maps\TablePrefixes;
 use App\Support\SessionCookieConfig;
 use Illuminate\Support\ServiceProvider;
@@ -34,8 +32,6 @@ class AppServiceProvider extends ServiceProvider
             (string) $this->app['config']->get('database.table_prefix', ''),
             (string) $this->app['config']->get('database.app_table_prefix', ''),
         );
-
-        $this->app->bind(HostResolver::class, DnsHostResolver::class);
     }
 
     /**

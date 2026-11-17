@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Organizations;
 
-use App\Models\ApplicationRegistration;
 use App\Models\AuditEvent;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -21,7 +20,6 @@ class LatteOrganizationBootstrapCommandTest extends TestCase
 
         OrganizationInvitation::query()->delete();
         OrganizationMembership::query()->delete();
-        ApplicationRegistration::query()->delete();
         Organization::query()->delete();
         User::query()->delete();
     }

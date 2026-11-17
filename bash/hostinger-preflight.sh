@@ -137,8 +137,6 @@ $required = [
     'LATTE_REDIRECT_URIS',
     'WORKOS_REDIRECT_URI',
     'WORKOS_PROVIDER',
-    'PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID',
-    'PANE_MANAGED_CREDENTIAL_KEYS',
 ];
 
 foreach ($required as $key) {
@@ -154,7 +152,6 @@ $placeholderPrefixes = [
     'WORKOS_ORGANIZATION_ID' => ['org_'],
     'WORKOS_CONNECTION_ID' => ['conn_'],
     'DB_PASSWORD' => ['secret', 'password', 'changeme'],
-    'PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID' => ['2026-08-primary'],
 ];
 
 foreach ($placeholderPrefixes as $key => $placeholders) {
@@ -187,21 +184,6 @@ if (! str_starts_with($values['APP_URL'], 'https://')) {
 
 if (! str_starts_with($values['FRONTEND_URL'], 'https://')) {
     $fail('FRONTEND_URL must use https');
-}
-
-$managedKeys = json_decode($values['PANE_MANAGED_CREDENTIAL_KEYS'], true);
-if (! is_array($managedKeys) || $managedKeys === []) {
-    $fail('PANE_MANAGED_CREDENTIAL_KEYS must be a non-empty JSON object');
-}
-
-if (! array_key_exists($values['PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID'], $managedKeys)) {
-    $fail('PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID must exist in PANE_MANAGED_CREDENTIAL_KEYS');
-}
-
-foreach ($managedKeys as $keyId => $keyMaterial) {
-    if (! is_string($keyId) || $keyId === '' || ! is_string($keyMaterial) || ! str_starts_with($keyMaterial, 'base64:')) {
-        $fail('PANE_MANAGED_CREDENTIAL_KEYS must map key IDs to base64 keys');
-    }
 }
 
 $pass('production environment values are present and safe to report by key name');

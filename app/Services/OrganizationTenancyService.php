@@ -101,49 +101,8 @@ class OrganizationTenancyService
                 'metadata' => [
                     'status' => $locked->status,
                     'database_limit' => $locked->database_limit,
-                    'over_database_limit' => $locked->isOverDatabaseLimit(),
                 ],
             ]);
-
-            return $locked;
-        });
-    }
-
-    public function reserveDatabaseConnectionSlot(Organization $organization): Organization
-    {
-        return DB::transaction(function () use ($organization): Organization {
-            $locked = Organization::query()
-                ->whereKey($organization->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if (! $locked->isActive()) {
-                throw new DomainException('The organization is inactive.');
-            }
-
-            if ($locked->active_database_connections >= $locked->database_limit) {
-                throw new DomainException('The organization database connection quota is exceeded.');
-            }
-
-            $locked->forceFill([
-                'active_database_connections' => $locked->active_database_connections + 1,
-            ])->save();
-
-            return $locked;
-        });
-    }
-
-    public function releaseDatabaseConnectionSlot(Organization $organization): Organization
-    {
-        return DB::transaction(function () use ($organization): Organization {
-            $locked = Organization::query()
-                ->whereKey($organization->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $locked->forceFill([
-                'active_database_connections' => max(0, $locked->active_database_connections - 1),
-            ])->save();
 
             return $locked;
         });

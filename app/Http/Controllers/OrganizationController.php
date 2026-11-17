@@ -195,8 +195,6 @@ class OrganizationController extends Controller
                 'slug' => $organization->slug,
                 'status' => $organization->status,
                 'database_limit' => $organization->database_limit,
-                'active_database_connections' => $organization->active_database_connections,
-                'over_database_limit' => $organization->isOverDatabaseLimit(),
                 'created_at' => $organization->created_at?->toJSON(),
                 'updated_at' => $organization->updated_at?->toJSON(),
             ],
