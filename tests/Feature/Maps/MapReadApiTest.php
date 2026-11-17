@@ -6,12 +6,9 @@ use App\Models\ApplicationRegistration;
 use App\Models\Maps\MapField;
 use App\Models\Maps\MapTable;
 use App\Models\Maps\MapVersion;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
 use App\Services\MapStore;
-use App\Services\OrganizationTenancyService;
 use App\Support\Maps\MapProtection;
 use App\Support\PaneTable;
 use Illuminate\Support\Facades\DB;
@@ -20,14 +17,11 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * The maps read API (Pane#178): bootstrap and one table map, for organization
- * administrators, standard members and other organizations.
+ * The maps read API (Pane#178): bootstrap and one table map, for admins and users.
  */
 class MapReadApiTest extends TestCase
 {
     private ApplicationRegistration $application;
-
-    private Organization $organization;
 
     protected function setUp(): void
     {
@@ -51,7 +45,6 @@ class MapReadApiTest extends TestCase
 
         $this->resetMenu();
         $this->application = $this->latteApplication();
-        $this->organization = $this->organizationFor($this->application);
     }
 
     protected function tearDown(): void
@@ -93,14 +86,14 @@ class MapReadApiTest extends TestCase
         $this->assertSame(['source' => 'install', 'table' => 'lists', 'description' => 'Shopping lists', 'system' => false, 'version' => 1, 'ui' => ['label' => 'Lists']], $lists);
     }
 
-    public function test_members_get_no_tables_and_no_table_menu_items(): void
+    public function test_users_get_no_tables_and_no_table_menu_items(): void
     {
         DB::table(PaneTable::name(PaneTable::MAPS_MENU))->insert([
             'key' => 'lists', 'label' => 'Lists', 'target_type' => 'table', 'target_source' => 'install',
             'target_table' => 'lists', 'position' => 5,
         ]);
 
-        $this->read($this->member(OrganizationMembership::ROLE_USER), 'maps')->assertOk()
+        $this->read($this->user(), 'maps')->assertOk()
             ->assertJsonPath('data.attributes.tables', [])
             ->assertJsonPath('data.attributes.menu.0.key', 'records')
             ->assertJsonPath('data.attributes.menu.1.key', 'members')
@@ -134,7 +127,7 @@ class MapReadApiTest extends TestCase
         $this->assertArrayNotHasKey('sql_name', $fields[0]);
         $this->assertStringNotContainsString('sweegly_lists', (string) $response->getContent());
 
-        $this->read($this->member(OrganizationMembership::ROLE_USER), 'maps/install/lists')
+        $this->read($this->user(), 'maps/install/lists')
             ->assertNotFound()
             ->assertJsonPath('error.code', 'resource_not_found');
         $this->read($this->admin(), 'maps/install/missing')
@@ -164,19 +157,25 @@ class MapReadApiTest extends TestCase
         $this->assertStringNotContainsString('private_', (string) $response->getContent());
     }
 
-    public function test_another_organization_cannot_read_these_maps(): void
+    public function test_signed_out_requests_are_rejected(): void
     {
-        $tenancy = app(OrganizationTenancyService::class);
-        $other = $tenancy->createOrganization('Other Workspace', 'Other Workspace '.Str::uuid());
-        $user = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $tenancy->addOrReactivateMembership($other, $user, OrganizationMembership::ROLE_ADMINISTRATOR);
         $this->flushHeaders();
-        $this->actingAs($user);
 
         $this->withV1ApplicationSession($this->application)
             ->withHeader('Origin', 'https://latte.test')
-            ->getJson("/api/v1/organizations/{$this->organization->organization_id}/maps")
-            ->assertForbidden();
+            ->getJson('/api/v1/maps')
+            ->assertUnauthorized();
+    }
+
+    public function test_a_session_without_an_application_is_rejected(): void
+    {
+        $this->flushHeaders();
+        $this->actingAs($this->admin());
+
+        $this->withHeader('Origin', 'https://latte.test')
+            ->getJson('/api/v1/maps')
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'application_not_allowed');
     }
 
     public function test_the_menu_and_function_tables_are_system_maps(): void
@@ -192,29 +191,23 @@ class MapReadApiTest extends TestCase
 
         return $this->withV1ApplicationSession($this->application)
             ->withHeader('Origin', 'https://latte.test')
-            ->getJson("/api/v1/organizations/{$this->organization->organization_id}/$path");
+            ->getJson("/api/v1/$path");
     }
 
     private function admin(): User
     {
-        return $this->member(OrganizationMembership::ROLE_ADMINISTRATOR);
+        return $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
     }
 
-    private function member(string $role): User
+    private function user(): User
     {
-        $user = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        app(OrganizationTenancyService::class)->addOrReactivateMembership($this->organization, $user, $role);
-
-        return $user;
+        return $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
     }
 
     private function latteApplication(): ApplicationRegistration
     {
-        OrganizationMembership::query()->delete();
-        Organization::query()->delete();
         User::query()->delete();
         config()->set('services.latte.application_id', (string) Str::uuid());
-        config()->set('services.latte.organization_id', (string) Str::uuid());
         config()->set('services.latte.frontend_url', 'https://latte.test');
         config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 

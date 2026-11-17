@@ -26,7 +26,6 @@ final class ApplicationRegistration
      */
     public function __construct(
         public readonly string $application_id,
-        public readonly ?string $organization_id,
         public readonly string $name,
         public readonly string $trusted_origin,
         public readonly array $redirect_uris,

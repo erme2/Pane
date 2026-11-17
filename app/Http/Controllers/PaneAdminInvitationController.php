@@ -164,7 +164,6 @@ class PaneAdminInvitationController extends Controller
             'type' => 'invitation',
             'attributes' => [
                 'scope' => 'installation',
-                'organization_id' => null,
                 'email' => $invitation->email,
                 'role' => 'pane_administrator',
                 'status' => $invitation->status,

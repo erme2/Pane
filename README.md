@@ -1,14 +1,13 @@
 # Pane
 
-Pane is an independently installable Laravel data-access control plane. It owns
-authentication, organization isolation, authorization, encrypted database
-connections, catalog discovery, descriptions, and controlled CRUD for
-applications created from Latte.
+Pane is an independently installable Laravel control plane. It owns
+authentication, the admin and user roles, authorization, descriptions (maps),
+and controlled CRUD over the install's own database.
 
-Each Pane installation is an independent universe that may serve many unrelated
-organizations. Every Latte-derived application is linked to exactly one
-organization and uses Pane as its only data-access layer. A separate Burro
-application is planned as the private Pane-administrator console.
+Each Pane installation is one organization: its users are `admin` or `user`,
+and Latte-derived applications sign in to it like any other user. There is no
+organization model. A separate Burro application is planned as the private
+Pane-administrator console.
 
 The current code is a transitional metadata-driven CRUD implementation over one
 default database. The target (see `plans/2026-11-16-pane-simple-cpanel.yaml` in
@@ -120,15 +119,13 @@ Also add `https://latte.localhost/` as a Sign-out redirect. When
 `WORKOS_RETURN_TO` is blank, Pane sends WorkOS logout back to the normalized
 `FRONTEND_URL` root.
 
-Create the first Latte organization administrator invite with:
+Create the first administrator with:
 
 ```bash
-php artisan latte:bootstrap-organization first.admin@example.com
+php artisan pane:bootstrap-admin first.admin@example.com
 ```
 
-Omit the email argument to be prompted interactively.
-The command temporarily uses that same email as the bootstrap actor and removes
-the temporary actor after creating the invitation.
+Other admins join by invitation from an existing admin.
 
 Routes:
 

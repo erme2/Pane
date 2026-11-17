@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\AuditEvent;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\SettingDefault;
 use App\Models\SettingOverride;
 use App\Models\User;
@@ -21,24 +19,9 @@ class SettingsService
         private readonly AuditEventService $audit,
     ) {}
 
-    public function resolve(string $key, ?Organization $organization = null): mixed
+    public function resolve(string $key): mixed
     {
         $definition = $this->registry->get($key);
-
-        if (
-            $organization instanceof Organization
-            && $definition->allowsScope(SettingDefinition::SCOPE_ORGANIZATION)
-        ) {
-            $organizationOverride = $this->findOverride(
-                $key,
-                SettingDefinition::SCOPE_ORGANIZATION,
-                (string) $organization->getKey()
-            );
-
-            if ($organizationOverride instanceof SettingOverride) {
-                return $organizationOverride->value;
-            }
-        }
 
         if ($definition->allowsScope(SettingDefinition::SCOPE_INSTALLATION)) {
             $installationOverride = $this->findOverride(
@@ -70,26 +53,6 @@ class SettingsService
             scope: SettingDefinition::SCOPE_INSTALLATION,
             scopeId: '',
             value: $value,
-            organization: null,
-        );
-    }
-
-    public function setOrganizationOverride(User $actor, Organization $organization, string $key, mixed $value): SettingOverride
-    {
-        $definition = $this->registry->get($key);
-
-        $this->assertScope($definition, SettingDefinition::SCOPE_ORGANIZATION);
-        $this->assertOrganizationAdministrator($actor, $organization);
-        $this->assertAdministrator($definition, SettingDefinition::ADMINISTRATOR_ORGANIZATION);
-        $this->assertValidValue($definition, $value);
-
-        return $this->saveOverride(
-            actor: $actor,
-            definition: $definition,
-            scope: SettingDefinition::SCOPE_ORGANIZATION,
-            scopeId: (string) $organization->getKey(),
-            value: $value,
-            organization: $organization,
         );
     }
 
@@ -107,9 +70,8 @@ class SettingsService
         string $scope,
         string $scopeId,
         mixed $value,
-        ?Organization $organization,
     ): SettingOverride {
-        return DB::transaction(function () use ($actor, $definition, $scope, $scopeId, $value, $organization): SettingOverride {
+        return DB::transaction(function () use ($actor, $definition, $scope, $scopeId, $value): SettingOverride {
             $override = SettingOverride::query()->updateOrCreate(
                 [
                     'setting_key' => $definition->key,
@@ -126,7 +88,6 @@ class SettingsService
             $this->audit->record('settings.override.update', AuditEvent::OUTCOME_SUCCESS, [
                 'real_actor' => $actor,
                 'effective_user' => $actor,
-                'organization' => $organization,
                 'resource_ids' => [
                     'setting_key' => $definition->key,
                     'setting_override_id' => $override->getKey(),
@@ -176,19 +137,6 @@ class SettingsService
         }
     }
 
-    private function assertOrganizationAdministrator(User $actor, Organization $organization): void
-    {
-        $membership = $organization->activeMembershipFor($actor);
-
-        if (
-            ! $organization->isActive()
-            || ! $membership instanceof OrganizationMembership
-            || ! $membership->isAdministrator()
-        ) {
-            throw new DomainException('Only active organization administrators can change organization settings.');
-        }
-    }
-
     private function assertAdministrator(SettingDefinition $definition, string $administrator): void
     {
         if (! $definition->allowsAdministrator($administrator)) {
@@ -202,7 +150,8 @@ class SettingsService
             throw new InvalidArgumentException("Setting [{$definition->key}] requires an integer value.");
         }
 
-        [$minimum, $maximum] = $this->boundsFor($definition);
+        $minimum = $definition->minimum;
+        $maximum = $definition->maximum;
 
         if (is_int($value) && $minimum !== null && $value < $minimum) {
             throw new InvalidArgumentException("Setting [{$definition->key}] must be at least $minimum.");
@@ -211,70 +160,5 @@ class SettingsService
         if (is_int($value) && $maximum !== null && $value > $maximum) {
             throw new InvalidArgumentException("Setting [{$definition->key}] must be at most $maximum.");
         }
-
-        if ($definition->key === SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS) {
-            $currentMaximum = $this->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS);
-
-            if (is_int($currentMaximum) && is_int($value) && $value > $currentMaximum) {
-                throw new InvalidArgumentException('Organization invitation minimum expiry cannot exceed the maximum expiry.');
-            }
-
-            $this->assertExistingInvitationOverridesRespectMinimum($value);
-        }
-
-        if ($definition->key === SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS) {
-            $currentMinimum = $this->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS);
-
-            if (is_int($currentMinimum) && is_int($value) && $value < $currentMinimum) {
-                throw new InvalidArgumentException('Organization invitation maximum expiry cannot be lower than the minimum expiry.');
-            }
-
-            $this->assertExistingInvitationOverridesRespectMaximum($value);
-        }
-    }
-
-    private function assertExistingInvitationOverridesRespectMinimum(int $minimum): void
-    {
-        $hasInvalidOverride = SettingOverride::query()
-            ->where('setting_key', SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
-            ->get()
-            ->contains(static fn (SettingOverride $override): bool => is_int($override->value) && $override->value < $minimum);
-
-        if ($hasInvalidOverride) {
-            throw new InvalidArgumentException('Organization invitation minimum expiry cannot exceed existing invitation overrides.');
-        }
-    }
-
-    private function assertExistingInvitationOverridesRespectMaximum(int $maximum): void
-    {
-        $hasInvalidOverride = SettingOverride::query()
-            ->where('setting_key', SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
-            ->get()
-            ->contains(static fn (SettingOverride $override): bool => is_int($override->value) && $override->value > $maximum);
-
-        if ($hasInvalidOverride) {
-            throw new InvalidArgumentException('Organization invitation maximum expiry cannot be lower than existing invitation overrides.');
-        }
-    }
-
-    /**
-     * @return array{0: int|float|null, 1: int|float|null}
-     */
-    private function boundsFor(SettingDefinition $definition): array
-    {
-        $minimum = $definition->minimum;
-        $maximum = $definition->maximum;
-
-        if ($definition->minimumSettingKey !== null) {
-            $resolvedMinimum = $this->resolve($definition->minimumSettingKey);
-            $minimum = is_int($resolvedMinimum) || is_float($resolvedMinimum) ? $resolvedMinimum : $minimum;
-        }
-
-        if ($definition->maximumSettingKey !== null) {
-            $resolvedMaximum = $this->resolve($definition->maximumSettingKey);
-            $maximum = is_int($resolvedMaximum) || is_float($resolvedMaximum) ? $resolvedMaximum : $maximum;
-        }
-
-        return [$minimum, $maximum];
     }
 }

@@ -3,6 +3,11 @@
 Status: verified current architecture and agreed phase-one target, revised by
 the [2026-11-13 product installs and description layer decision](decisions/2026-11-13-product-installs-and-description-layer.md)
 
+> Pane#182 removed the organization model: each install is the organization and
+> users carry the `admin` or `user` role. The organization and membership
+> sections below are historical until the docs rewrite of the plan
+> (`plans/2026-11-16-pane-simple-cpanel.yaml` in Yaup).
+
 This document is the architectural entry point for Pane. It separates facts
 verified in the current repository from the intended product architecture.
 Code that matches the current architecture is not automatically the desired

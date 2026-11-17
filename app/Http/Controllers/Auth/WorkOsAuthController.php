@@ -4,11 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApplicationRegistration;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
-use App\Services\OrganizationInvitationService;
 use App\Services\PaneAdminLifecycleService;
 use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
@@ -39,7 +36,6 @@ class WorkOsAuthController extends Controller
     public function __construct(
         private readonly WorkOsService $workOs,
         private readonly PaneAdminLifecycleService $administrators,
-        private readonly OrganizationInvitationService $organizationInvitations,
         private readonly ApplicationRegistryService $applications,
     ) {}
 
@@ -349,45 +345,19 @@ class WorkOsAuthController extends Controller
     private function versionedAuthenticatedResponse(Request $request): JsonResponse
     {
         $user = $request->user();
-        $now = now()->toJSON();
         $application = $this->activeSessionApplication($request);
 
         if ($application instanceof JsonResponse) {
             return $application;
         }
 
-        $organization = $this->applications->fixedOrganizationFor($application);
-
-        if (! $organization instanceof Organization || ! $organization->isActive()) {
-            return $this->versionedErrorResponse(
-                $request,
-                'organization_inactive',
-                'The application organization is inactive.',
-                Response::HTTP_FORBIDDEN
-            );
-        }
-
-        $membership = $organization->activeMembershipFor($user);
         $requestId = $this->requestId($request);
-
-        if (! $membership instanceof OrganizationMembership && ! $user->isPaneAdministrator()) {
-            return $this->versionedErrorResponse(
-                $request,
-                'membership_required',
-                'An active organization membership is required.',
-                Response::HTTP_FORBIDDEN
-            );
-        }
 
         return response()->json([
             'data' => [
                 'mode' => 'latte',
                 'user' => $this->userResource($user),
-                'application' => $this->applicationResource($application, true),
-                'organization' => $this->organizationResource($organization),
-                'membership' => $membership instanceof OrganizationMembership
-                    ? $this->membershipResource($membership)
-                    : $this->syntheticPaneAdminMembershipResource($organization, $user, $now),
+                'application' => $this->applicationResource($application),
             ],
             'meta' => ['request_id' => $requestId],
         ])->header('X-Request-Id', $requestId);
@@ -396,14 +366,6 @@ class WorkOsAuthController extends Controller
     private function versionedUserId(User $user): string
     {
         return (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'pane:user:'.$user->getKey());
-    }
-
-    private function versionedMembershipId(string $organizationId, User $user): string
-    {
-        return (string) Uuid::uuid5(
-            Uuid::NAMESPACE_URL,
-            'pane:membership:'.$organizationId.':'.$user->getKey()
-        );
     }
 
     private function activeSessionApplication(Request $request): ApplicationRegistration|JsonResponse
@@ -636,6 +598,7 @@ class WorkOsAuthController extends Controller
             'attributes' => [
                 'email' => $email,
                 'name' => (string) ($user->getAttribute('name') ?: $email),
+                'role' => $user->role(),
             ],
         ];
     }
@@ -643,7 +606,7 @@ class WorkOsAuthController extends Controller
     /**
      * @return array{id: string, type: string, attributes: array<string, mixed>}
      */
-    private function applicationResource(ApplicationRegistration $application, bool $sessionLatte = false): array
+    private function applicationResource(ApplicationRegistration $application): array
     {
         $attributes = [
             'kind' => $application->kind,
@@ -653,67 +616,10 @@ class WorkOsAuthController extends Controller
             'status' => $application->status,
         ];
 
-        if (! $sessionLatte) {
-            $attributes['organization_id'] = $application->isLatte() ? $application->organization_id : null;
-        }
-
         return [
             'id' => (string) $application->getKey(),
             'type' => 'application',
             'attributes' => $attributes,
-        ];
-    }
-
-    /**
-     * @return array{id: string, type: string, attributes: array<string, mixed>}
-     */
-    private function organizationResource(Organization $organization): array
-    {
-        return [
-            'id' => (string) $organization->getKey(),
-            'type' => 'organization',
-            'attributes' => [
-                'name' => $organization->name,
-                'slug' => $organization->slug,
-                'status' => $organization->status,
-                'database_limit' => $organization->database_limit,
-                'created_at' => $organization->created_at?->toJSON(),
-                'updated_at' => $organization->updated_at?->toJSON(),
-            ],
-        ];
-    }
-
-    /**
-     * @return array{id: string, type: string, attributes: array<string, mixed>}
-     */
-    private function membershipResource(OrganizationMembership $membership): array
-    {
-        return [
-            'id' => (string) $membership->getKey(),
-            'type' => 'membership',
-            'attributes' => [
-                'role' => $membership->role,
-                'status' => $membership->status,
-                'created_at' => $membership->created_at?->toJSON(),
-                'updated_at' => $membership->updated_at?->toJSON(),
-            ],
-        ];
-    }
-
-    /**
-     * @return array{id: string, type: string, attributes: array<string, mixed>}
-     */
-    private function syntheticPaneAdminMembershipResource(Organization $organization, User $user, string $now): array
-    {
-        return [
-            'id' => $this->versionedMembershipId((string) $organization->getKey(), $user),
-            'type' => 'membership',
-            'attributes' => [
-                'role' => $user->isPaneAdministrator() ? 'organization_administrator' : 'organization_user',
-                'status' => 'active',
-                'created_at' => optional($user->getAttribute('created_at'))->toJSON() ?: $now,
-                'updated_at' => optional($user->getAttribute('updated_at'))->toJSON() ?: $now,
-            ],
         ];
     }
 
@@ -897,23 +803,13 @@ class WorkOsAuthController extends Controller
         }
 
         if (is_string($invitationTokenHash)) {
-            return $this->acceptVersionedInvitation($application, $invitationTokenHash, $workOsUser, $authentication);
+            return $this->acceptVersionedInvitation($invitationTokenHash, $workOsUser, $authentication);
         }
 
-        return DB::transaction(function () use ($application, $authentication): User {
+        return DB::transaction(function () use ($authentication): User {
             $user = $this->existingVersionedUser($authentication);
 
             $this->assertVersionedUserCanActivate($user);
-
-            $organization = $this->applications->fixedOrganizationFor($application);
-
-            if (! $organization instanceof Organization || ! $organization->isActive()) {
-                throw new InvalidArgumentException('The application organization is inactive.');
-            }
-
-            if (! $user->isPaneAdministrator() && ! $organization->activeMembershipFor($user) instanceof OrganizationMembership) {
-                throw new InvalidArgumentException('An active organization membership or invitation is required.');
-            }
 
             return $this->syncExistingVersionedUser($user, $authentication);
         });
@@ -924,26 +820,10 @@ class WorkOsAuthController extends Controller
      * @param  array<string, mixed>  $authentication
      */
     private function acceptVersionedInvitation(
-        ApplicationRegistration $application,
         string $tokenHash,
         array $workOsUser,
         array $authentication
     ): User {
-        $organization = $this->applications->fixedOrganizationFor($application);
-
-        if (
-            $application->isLatte()
-            && $organization instanceof Organization
-            && $this->organizationInvitations->hasOrganizationInvitationHash($organization, $tokenHash)
-        ) {
-            return $this->organizationInvitations->acceptOrganizationInvitationHash(
-                $organization,
-                $tokenHash,
-                $workOsUser,
-                $authentication
-            );
-        }
-
         return $this->administrators->acceptPaneAdministratorInvitationHash(
             $tokenHash,
             $workOsUser,
@@ -974,7 +854,7 @@ class WorkOsAuthController extends Controller
             ->first();
 
         if (! $user instanceof User) {
-            throw new InvalidArgumentException('An active organization membership or invitation is required.');
+            throw new InvalidArgumentException('An active account or invitation is required.');
         }
 
         return $user;
@@ -1026,32 +906,29 @@ class WorkOsAuthController extends Controller
 
     private function assertVersionedUserCanActivate(User $user): void
     {
-        if (
-            (int) $user->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID
-            && ! (bool) $user->is_active
-        ) {
-            throw new InvalidArgumentException('Pane account is inactive.');
+        if ((bool) $user->is_active) {
+            return;
         }
+
+        // A deactivated user is refused like an unknown one: only an invitation can bring them back.
+        throw new InvalidArgumentException(
+            (int) $user->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID
+                ? 'Pane account is inactive.'
+                : 'An active account or invitation is required.'
+        );
     }
 
     private function invitationErrorCode(InvalidArgumentException $exception): string
     {
         return match ($exception->getMessage()) {
             'Pane administrator invitation has expired.' => 'invitation_expired',
-            'Organization invitation has expired.' => 'invitation_expired',
             'Pane administrator invitation was revoked.' => 'invitation_revoked',
-            'Organization invitation was revoked.' => 'invitation_revoked',
             'Pane administrator invitation was already accepted.' => 'invitation_already_accepted',
-            'Organization invitation was already accepted.' => 'invitation_already_accepted',
             'Pane administrator invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
-            'Organization invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
-            'Organization invitation requires a verified WorkOS email.' => 'invitation_email_unverified',
-            'An active organization membership or invitation is required.' => 'membership_required',
+            'An active account or invitation is required.' => 'membership_required',
             'Only active Pane administrators can access Burro.' => 'permission_denied',
             'Pane account is inactive.' => 'permission_denied',
-            'The application organization is inactive.' => 'organization_inactive',
             'The application origin is not allowed.' => 'application_not_allowed',
-            'Organization membership already exists.' => 'operation_conflict',
             default => 'invitation_invalid',
         };
     }

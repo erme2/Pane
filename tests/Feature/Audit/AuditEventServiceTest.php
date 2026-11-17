@@ -3,11 +3,8 @@
 namespace Tests\Feature\Audit;
 
 use App\Models\AuditEvent;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\AuditEventService;
-use App\Services\OrganizationTenancyService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
@@ -21,26 +18,21 @@ class AuditEventServiceTest extends TestCase
 {
     private AuditEventService $audit;
 
-    private OrganizationTenancyService $tenancy;
-
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->audit = app(AuditEventService::class);
-        $this->tenancy = app(OrganizationTenancyService::class);
     }
 
     public function test_records_actor_context_resource_metadata_and_redacts_sensitive_values(): void
     {
         $realActor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
         $effectiveUser = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Audited Workspace');
 
-        $event = $this->audit->record('organization.membership.invite', AuditEvent::OUTCOME_SUCCESS, [
+        $event = $this->audit->record('installation.admin.invite', AuditEvent::OUTCOME_SUCCESS, [
             'real_actor' => $realActor,
             'effective_user' => $effectiveUser,
-            'organization' => $organization,
             'resource_ids' => [
                 'membership_id' => (string) Str::uuid(),
                 'invitation_token' => 'raw-token',
@@ -71,8 +63,7 @@ class AuditEventServiceTest extends TestCase
         $this->assertNotEmpty($event->audit_event_id);
         $this->assertSame($realActor->getKey(), $event->real_actor_user_id);
         $this->assertSame($effectiveUser->getKey(), $event->effective_user_id);
-        $this->assertSame($organization->getKey(), $event->organization_id);
-        $this->assertSame('organization.membership.invite', $event->action);
+        $this->assertSame('installation.admin.invite', $event->action);
         $this->assertSame(AuditEvent::OUTCOME_SUCCESS, $event->outcome);
         $this->assertSame(['name', 'email'], $event->changed_columns);
         $this->assertSame('invitation queued', $event->metadata['safe_note']);
@@ -154,58 +145,18 @@ class AuditEventServiceTest extends TestCase
         $this->assertFalse(AuditEvent::query()->where('action', $action)->exists());
     }
 
-    public function test_pane_admin_can_view_installation_events_and_org_admin_only_sees_own_organization(): void
+    public function test_admin_can_view_installation_events_and_a_user_cannot(): void
     {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organizationUser = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $externalAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
+        $administrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $user = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
 
-        $organization = $this->createOrganization('Audit Workspace');
-        $otherOrganization = $this->createOrganization('Other Audit Workspace');
+        $event = $this->audit->record('installation.admin.invite', AuditEvent::OUTCOME_DENIED);
 
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationUser,
-            OrganizationMembership::ROLE_USER
-        );
-        $this->tenancy->addOrReactivateMembership(
-            $otherOrganization,
-            $externalAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
-
-        $organizationEvent = $this->audit->record('organization.member.suspend', AuditEvent::OUTCOME_SUCCESS, [
-            'organization' => $organization,
-        ]);
-        $otherOrganizationEvent = $this->audit->record('organization.member.suspend', AuditEvent::OUTCOME_SUCCESS, [
-            'organization' => $otherOrganization,
-        ]);
-        $installationEvent = $this->audit->record('installation.admin.invite', AuditEvent::OUTCOME_DENIED);
-
-        $installationEvents = $this->audit->installationEventsFor($paneAdministrator);
-
-        $this->assertTrue($installationEvents->contains($organizationEvent));
-        $this->assertTrue($installationEvents->contains($otherOrganizationEvent));
-        $this->assertTrue($installationEvents->contains($installationEvent));
-        $this->assertTrue(Gate::forUser($paneAdministrator)->allows('viewAny', AuditEvent::class));
-
-        $organizationEvents = $this->audit->organizationEventsFor($organizationAdministrator, $organization);
-
-        $this->assertTrue($organizationEvents->contains($organizationEvent));
-        $this->assertFalse($organizationEvents->contains($otherOrganizationEvent));
-        $this->assertFalse($organizationEvents->contains($installationEvent));
-        $this->assertTrue(Gate::forUser($organizationAdministrator)->allows('view', $organizationEvent));
-        $this->assertTrue(Gate::forUser($organizationAdministrator)->denies('view', $otherOrganizationEvent));
-        $this->assertTrue(Gate::forUser($organizationAdministrator)->denies('view', $installationEvent));
-
-        $this->expectException(DomainException::class);
-        $this->audit->organizationEventsFor($organizationUser, $organization);
+        $this->assertTrue($this->audit->installationEventsFor($administrator)->contains($event));
+        $this->assertTrue(Gate::forUser($administrator)->allows('viewAny', AuditEvent::class));
+        $this->assertTrue(Gate::forUser($administrator)->allows('view', $event));
+        $this->assertTrue(Gate::forUser($user)->denies('viewAny', AuditEvent::class));
+        $this->assertTrue(Gate::forUser($user)->denies('view', $event));
     }
 
     public function test_non_pane_admin_cannot_view_installation_events(): void
@@ -218,57 +169,40 @@ class AuditEventServiceTest extends TestCase
 
     public function test_audit_event_views_are_bounded_and_stably_ordered(): void
     {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Paged Audit Workspace');
-
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
+        $administrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
 
         $baseTime = now();
 
         Carbon::setTestNow($baseTime->copy()->addSecond());
-        $this->audit->record('audit.page.one', AuditEvent::OUTCOME_SUCCESS, [
-            'organization' => $organization,
-        ]);
+        $this->audit->record('audit.page.one', AuditEvent::OUTCOME_SUCCESS);
 
         Carbon::setTestNow($baseTime->copy()->addSeconds(2));
-        $this->audit->record('audit.page.two', AuditEvent::OUTCOME_SUCCESS, [
-            'organization' => $organization,
-        ]);
+        $this->audit->record('audit.page.two', AuditEvent::OUTCOME_SUCCESS);
 
         Carbon::setTestNow($baseTime->copy()->addSeconds(3));
-        $this->audit->record('audit.page.three', AuditEvent::OUTCOME_SUCCESS, [
-            'organization' => $organization,
-        ]);
+        $this->audit->record('audit.page.three', AuditEvent::OUTCOME_SUCCESS);
 
         Carbon::setTestNow();
 
-        $this->assertSame(
-            ['audit.page.three', 'audit.page.two'],
-            $this->audit->organizationEventsFor($organizationAdministrator, $organization, 2)
-                ->pluck('action')
-                ->all()
-        );
+        // Audit events are append-only, so the table also holds the events of other tests.
+        $all = $this->audit->installationEventsFor($administrator, 100)->pluck('audit_event_id')->all();
+        $recorded = $this->audit->installationEventsFor($administrator, 100)
+            ->whereIn('action', ['audit.page.one', 'audit.page.two', 'audit.page.three'])
+            ->pluck('action')
+            ->take(3)
+            ->all();
 
+        $this->assertSame(['audit.page.three', 'audit.page.two', 'audit.page.one'], $recorded);
         $this->assertSame(
-            ['audit.page.one'],
-            $this->audit->organizationEventsFor($organizationAdministrator, $organization, 2, 2)
-                ->pluck('action')
-                ->all()
+            array_slice($all, 0, 2),
+            $this->audit->installationEventsFor($administrator, 2)->pluck('audit_event_id')->all()
         );
-
-        $this->assertCount(2, $this->audit->installationEventsFor($paneAdministrator, 2));
+        $this->assertSame(
+            array_slice($all, 2, 2),
+            $this->audit->installationEventsFor($administrator, 2, 2)->pluck('audit_event_id')->all()
+        );
 
         $this->expectException(InvalidArgumentException::class);
-        $this->audit->organizationEventsFor($organizationAdministrator, $organization, 101);
-    }
-
-    private function createOrganization(string $name): Organization
-    {
-        return $this->tenancy->createOrganization($name, $name.' '.Str::uuid());
+        $this->audit->installationEventsFor($administrator, 101);
     }
 }

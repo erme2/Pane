@@ -24,8 +24,6 @@ abstract class AbstractMapper
         'validation_types' => 'validation_types',
         'users' => 'users',
         'user_types' => 'user_types',
-        'organizations' => 'organizations',
-        'organization_memberships' => 'organization_memberships',
         'audit_events' => 'audit_events',
         'test_table' => 'test_table',
     ];
