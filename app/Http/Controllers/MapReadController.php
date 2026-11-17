@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\Maps\MapNotFoundException;
-use App\Models\OrganizationMembership;
+use App\Models\User;
 use App\Services\MapReader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,14 +19,14 @@ class MapReadController extends Controller
 {
     public function __construct(private readonly MapReader $reader) {}
 
-    public function show(Request $request, string $organizationId): JsonResponse
+    public function show(Request $request): JsonResponse
     {
         $attributes = $this->reader->bootstrap($this->isAdministrator($request));
 
         return $this->respond($request, 'maps', $attributes, $attributes['version']);
     }
 
-    public function table(Request $request, string $organizationId, string $source, string $table): JsonResponse
+    public function table(Request $request, string $source, string $table): JsonResponse
     {
         try {
             if (! $this->isAdministrator($request)) {
@@ -62,9 +62,9 @@ class MapReadController extends Controller
 
     private function isAdministrator(Request $request): bool
     {
-        $membership = $request->attributes->get('pane_v1_membership');
+        $user = $request->user();
 
-        return $membership instanceof OrganizationMembership && $membership->isAdministrator();
+        return $user instanceof User && $user->isPaneAdministrator();
     }
 
     private function requestId(Request $request): string

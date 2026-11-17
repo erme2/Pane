@@ -189,7 +189,7 @@ class PaneAdminInvitationApiTest extends TestCase
             ->postJson('/api/v1/installation/pane-admin-invitations', [
                 'email' => 'invited.admin@example.com',
                 'expires_in_seconds' => 999999,
-                'role' => 'organization_administrator',
+                'role' => 'admin',
             ])
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
             ->assertJsonPath('error.code', 'validation_failed');

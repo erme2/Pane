@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Helpers\DefaultsHelper;
 use App\Models\AuditEvent;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\User;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
@@ -40,7 +38,6 @@ class AuditEventService
      * @param array{
      *     real_actor?: User|null,
      *     effective_user?: User|null,
-     *     organization?: Organization|null,
      *     resource_ids?: array<string, mixed>,
      *     request_id?: string|null,
      *     client_metadata?: array<string, mixed>,
@@ -66,13 +63,11 @@ class AuditEventService
 
         $realActor = $context['real_actor'] ?? null;
         $effectiveUser = $context['effective_user'] ?? null;
-        $organization = $context['organization'] ?? null;
 
         $event = AuditEvent::query()->create([
             'occurred_at' => now(),
             'real_actor_user_id' => $realActor?->getKey(),
             'effective_user_id' => $effectiveUser?->getKey(),
-            'organization_id' => $organization?->getKey(),
             'action' => $action,
             'outcome' => $outcome,
             'resource_ids' => $this->sanitizeMap($context['resource_ids'] ?? []),
@@ -102,37 +97,6 @@ class AuditEventService
         $this->assertPageOffset($offset);
 
         return AuditEvent::query()
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('audit_event_id')
-            ->limit($limit)
-            ->offset($offset)
-            ->get();
-    }
-
-    /**
-     * @return Collection<int, AuditEvent>
-     */
-    public function organizationEventsFor(
-        User $viewer,
-        Organization $organization,
-        ?int $limit = null,
-        int $offset = 0
-    ): Collection {
-        $membership = $organization->activeMembershipFor($viewer);
-
-        if (
-            ! $organization->isActive()
-            || ! $membership instanceof OrganizationMembership
-            || ! $membership->isAdministrator()
-        ) {
-            throw new DomainException('Only active organization administrators can view organization audit events.');
-        }
-
-        $limit = $this->normalizePageLimit($limit);
-        $this->assertPageOffset($offset);
-
-        return AuditEvent::query()
-            ->where('organization_id', $organization->getKey())
             ->orderByDesc('occurred_at')
             ->orderByDesc('audit_event_id')
             ->limit($limit)

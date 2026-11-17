@@ -16,21 +16,6 @@ return new class extends Migration
      */
     private const array VERSION_1_DEFAULTS = [
         [
-            'setting_key' => 'organization.invitation_expiry_min_seconds',
-            'value' => 3600,
-            'default_version' => 1,
-        ],
-        [
-            'setting_key' => 'organization.invitation_expiry_max_seconds',
-            'value' => 2_592_000,
-            'default_version' => 1,
-        ],
-        [
-            'setting_key' => 'organization.invitation_expiry_seconds',
-            'value' => 604_800,
-            'default_version' => 1,
-        ],
-        [
             'setting_key' => 'pane_admin.invitation_expiry_seconds',
             'value' => 86_400,
             'default_version' => 1,

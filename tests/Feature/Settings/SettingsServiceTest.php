@@ -3,17 +3,13 @@
 namespace Tests\Feature\Settings;
 
 use App\Models\AuditEvent;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\SettingDefault;
 use App\Models\SettingOverride;
 use App\Models\User;
-use App\Services\OrganizationTenancyService;
 use App\Services\SettingsService;
 use App\Support\SettingDefinition;
 use App\Support\SettingsRegistry;
 use DomainException;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -26,8 +22,6 @@ class SettingsServiceTest extends TestCase
 
     private SettingsService $settings;
 
-    private OrganizationTenancyService $tenancy;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,63 +30,33 @@ class SettingsServiceTest extends TestCase
         $this->restoreMigratedDefaults();
 
         $this->settings = app(SettingsService::class);
-        $this->tenancy = app(OrganizationTenancyService::class);
     }
 
-    public function test_resolution_prefers_organization_override_then_installation_override_then_versioned_default(): void
+    public function test_resolution_prefers_the_installation_override_then_the_versioned_default(): void
     {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Settings Workspace');
-
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
+        $administrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
 
         $this->assertSame(
-            604_800,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
+            86_400,
+            $this->settings->resolve(SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS)
         );
 
-        $installationOverride = $this->settings->setInstallationOverride(
-            $paneAdministrator,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
+        $override = $this->settings->setInstallationOverride(
+            $administrator,
+            SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS,
             172_800
         );
 
-        $this->assertSame(1, $installationOverride->default_version);
+        $this->assertSame(1, $override->default_version);
         $this->assertSame(
             172_800,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
-        );
-
-        $organizationOverride = $this->settings->setOrganizationOverride(
-            $organizationAdministrator,
-            $organization,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
-            86_400
-        );
-
-        $this->assertSame(1, $organizationOverride->default_version);
-        $this->assertSame(
-            86_400,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
+            $this->settings->resolve(SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS)
         );
     }
 
-    public function test_invalid_settings_and_scope_are_rejected(): void
+    public function test_invalid_settings_are_rejected(): void
     {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Rejected Settings Workspace');
-
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
+        $administrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
 
         try {
             $this->settings->resolve('missing.setting');
@@ -103,229 +67,65 @@ class SettingsServiceTest extends TestCase
 
         try {
             $this->settings->setInstallationOverride(
-                $paneAdministrator,
-                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
-                '604800'
+                $administrator,
+                SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS,
+                '86400'
             );
             $this->fail('Expected wrong-type setting update to fail.');
         } catch (InvalidArgumentException $exception) {
             $this->assertSame(
-                'Setting [organization.invitation_expiry_seconds] requires an integer value.',
+                'Setting [pane_admin.invitation_expiry_seconds] requires an integer value.',
                 $exception->getMessage()
             );
         }
 
         try {
-            $this->settings->setOrganizationOverride(
-                $organizationAdministrator,
-                $organization,
+            $this->settings->setInstallationOverride(
+                $administrator,
                 SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS,
-                86_400
-            );
-            $this->fail('Expected incorrectly scoped setting update to fail.');
-        } catch (InvalidArgumentException $exception) {
-            $this->assertSame(
-                'Setting [pane_admin.invitation_expiry_seconds] does not allow [organization] overrides.',
-                $exception->getMessage()
-            );
-        }
-
-        try {
-            $this->settings->setOrganizationOverride(
-                $organizationAdministrator,
-                $organization,
-                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
                 300
             );
             $this->fail('Expected out-of-bounds setting update to fail.');
         } catch (InvalidArgumentException $exception) {
             $this->assertSame(
-                'Setting [organization.invitation_expiry_seconds] must be at least 3600.',
+                'Setting [pane_admin.invitation_expiry_seconds] must be at least 3600.',
                 $exception->getMessage()
             );
         }
     }
 
-    public function test_organization_administrators_cannot_change_installation_settings(): void
+    public function test_users_cannot_change_installation_settings(): void
     {
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Org Admin Settings Workspace');
-
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
+        $user = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
 
         $this->expectException(DomainException::class);
         $this->settings->setInstallationOverride(
-            $organizationAdministrator,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
+            $user,
+            SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS,
             86_400
-        );
-    }
-
-    public function test_pane_admin_controls_bounds_for_organization_overrides(): void
-    {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Bounded Settings Workspace');
-
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
-
-        $this->settings->setInstallationOverride(
-            $paneAdministrator,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS,
-            7200
-        );
-        $this->settings->setInstallationOverride(
-            $paneAdministrator,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS,
-            172_800
-        );
-
-        $this->settings->setOrganizationOverride(
-            $organizationAdministrator,
-            $organization,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
-            86_400
-        );
-
-        $this->assertSame(
-            86_400,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
-        );
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->settings->setOrganizationOverride(
-            $organizationAdministrator,
-            $organization,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
-            259_200
-        );
-    }
-
-    public function test_pane_admin_cannot_tighten_bounds_past_existing_organization_overrides(): void
-    {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-        $organizationAdministrator = $this->makePaneUser(User::STANDARD_USER_TYPE_ID);
-        $organization = $this->createOrganization('Existing Override Bounds Workspace');
-
-        $this->tenancy->addOrReactivateMembership(
-            $organization,
-            $organizationAdministrator,
-            OrganizationMembership::ROLE_ADMINISTRATOR
-        );
-
-        $this->settings->setOrganizationOverride(
-            $organizationAdministrator,
-            $organization,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
-            172_800
-        );
-
-        try {
-            $this->settings->setInstallationOverride(
-                $paneAdministrator,
-                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS,
-                86_400
-            );
-            $this->fail('Expected maximum bound tightening past an existing organization override to fail.');
-        } catch (InvalidArgumentException $exception) {
-            $this->assertSame(
-                'Organization invitation maximum expiry cannot be lower than existing invitation overrides.',
-                $exception->getMessage()
-            );
-        }
-
-        try {
-            $this->settings->setInstallationOverride(
-                $paneAdministrator,
-                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS,
-                259_200
-            );
-            $this->fail('Expected minimum bound tightening past an existing organization override to fail.');
-        } catch (InvalidArgumentException $exception) {
-            $this->assertSame(
-                'Organization invitation minimum expiry cannot exceed existing invitation overrides.',
-                $exception->getMessage()
-            );
-        }
-
-        $this->assertSame(
-            172_800,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS, $organization)
-        );
-    }
-
-    public function test_pane_admin_cannot_tighten_bounds_past_installation_invitation_override(): void
-    {
-        $paneAdministrator = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
-
-        $this->settings->setInstallationOverride(
-            $paneAdministrator,
-            SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS,
-            172_800
-        );
-
-        try {
-            $this->settings->setInstallationOverride(
-                $paneAdministrator,
-                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MAX_SECONDS,
-                86_400
-            );
-            $this->fail('Expected maximum bound tightening past an existing installation override to fail.');
-        } catch (InvalidArgumentException $exception) {
-            $this->assertSame(
-                'Organization invitation maximum expiry cannot be lower than existing invitation overrides.',
-                $exception->getMessage()
-            );
-        }
-
-        try {
-            $this->settings->setInstallationOverride(
-                $paneAdministrator,
-                SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_MIN_SECONDS,
-                259_200
-            );
-            $this->fail('Expected minimum bound tightening past an existing installation override to fail.');
-        } catch (InvalidArgumentException $exception) {
-            $this->assertSame(
-                'Organization invitation minimum expiry cannot exceed existing invitation overrides.',
-                $exception->getMessage()
-            );
-        }
-
-        $this->assertSame(
-            172_800,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
         );
     }
 
     public function test_defaults_are_resolved_from_migrated_versioned_state(): void
     {
         $default = SettingDefault::query()
-            ->where('setting_key', SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
+            ->where('setting_key', SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS)
             ->firstOrFail();
 
         $this->assertSame(1, $default->default_version);
         $this->assertSame(
-            604_800,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
+            86_400,
+            $this->settings->resolve(SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS)
         );
 
         $default->update([
-            'value' => 1_209_600,
+            'value' => 172_800,
             'default_version' => 2,
         ]);
 
         $this->assertSame(
-            1_209_600,
-            $this->settings->resolve(SettingsRegistry::ORGANIZATION_INVITATION_EXPIRY_SECONDS)
+            172_800,
+            $this->settings->resolve(SettingsRegistry::PANE_ADMIN_INVITATION_EXPIRY_SECONDS)
         );
     }
 
@@ -358,11 +158,6 @@ class SettingsServiceTest extends TestCase
                 ->whereJsonContains('resource_ids->setting_override_id', $override->getKey())
                 ->exists()
         );
-    }
-
-    private function createOrganization(string $name): Organization
-    {
-        return $this->tenancy->createOrganization($name, Str::slug($name).'-'.Str::uuid());
     }
 
     private function restoreMigratedDefaults(): void

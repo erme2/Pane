@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\ApplicationRegistration;
-use App\Models\Organization;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -99,29 +98,10 @@ class ApplicationRegistryService
         return $this->primaryApplication();
     }
 
-    public function fixedOrganizationFor(ApplicationRegistration $application): ?Organization
-    {
-        if ($application->organization_id === null) {
-            return null;
-        }
-
-        // Organizations go away with #182; until then the configured one is created on first use.
-        return Organization::query()->firstOrCreate(
-            ['organization_id' => $application->organization_id],
-            [
-                'name' => 'Latte Local',
-                'slug' => 'latte-local-'.substr($application->organization_id, 0, 8),
-                'status' => Organization::STATUS_ACTIVE,
-                'database_limit' => 1,
-            ],
-        );
-    }
-
     private function primaryApplication(): ApplicationRegistration
     {
         return new ApplicationRegistration(
             $this->configuredId('application_id', 'Latte application'),
-            $this->configuredId('organization_id', 'Latte organization'),
             (string) config('app.name', 'Latte'),
             LatteApplicationConfig::trustedOrigin(),
             LatteApplicationConfig::redirectUris(),
@@ -132,7 +112,6 @@ class ApplicationRegistryService
     {
         return new ApplicationRegistration(
             Uuid::uuid5($this->configuredId('application_id', 'Latte application'), $trustedOrigin)->toString(),
-            $this->configuredId('organization_id', 'Latte organization'),
             $trustedOrigin,
             $trustedOrigin,
             LatteApplicationConfig::extraFrontendOrigins()[$trustedOrigin],

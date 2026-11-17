@@ -3,8 +3,6 @@
 namespace Tests\Feature\ApplicationRegistry;
 
 use App\Models\ApplicationRegistration;
-use App\Models\Organization;
-use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
 use Illuminate\Testing\TestResponse;
@@ -18,8 +16,6 @@ class ExtraFrontendsTest extends TestCase
     {
         parent::setUp();
 
-        OrganizationMembership::query()->delete();
-        Organization::query()->delete();
         User::query()->delete();
 
         config()->set('services.workos.api_key', 'sk_test_123');
@@ -33,7 +29,7 @@ class ExtraFrontendsTest extends TestCase
         config()->set('cors.allowed_origins', ['https://app.example.test']);
     }
 
-    public function test_extra_frontend_logs_in_with_its_own_callback_in_the_configured_organization(): void
+    public function test_extra_frontend_logs_in_with_its_own_callback(): void
     {
         $response = $this
             ->withHeader('Origin', self::ADMIN_ORIGIN)
@@ -44,7 +40,6 @@ class ExtraFrontendsTest extends TestCase
 
         $this->assertNotNull($application);
         $this->assertSame(ApplicationRegistration::KIND_LATTE, $application->kind);
-        $this->assertSame(config('services.latte.organization_id'), $application->organization_id);
         $this->assertSame([self::ADMIN_ORIGIN.'/auth/callback', self::ADMIN_ORIGIN.'/dashboard'], $application->redirect_uris);
         $response->assertSessionHas('pane_v1_application_id', $application->application_id);
         $this->assertStringContainsString(
@@ -109,7 +104,7 @@ class ExtraFrontendsTest extends TestCase
         );
     }
 
-    public function test_frontends_of_the_same_organization_share_one_session(): void
+    public function test_frontends_of_the_same_install_share_one_session(): void
     {
         $this->withCsrfToken()->actingAs($this->makePaneUser(2));
 

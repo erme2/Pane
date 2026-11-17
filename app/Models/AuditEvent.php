@@ -14,7 +14,6 @@ use Illuminate\Support\Str;
  * @property Carbon $occurred_at
  * @property int|null $real_actor_user_id
  * @property int|null $effective_user_id
- * @property string|null $organization_id
  * @property string $action
  * @property string $outcome
  * @property array<string, mixed>|null $resource_ids
@@ -54,7 +53,6 @@ class AuditEvent extends Model
         'occurred_at',
         'real_actor_user_id',
         'effective_user_id',
-        'organization_id',
         'action',
         'outcome',
         'resource_ids',
@@ -114,13 +112,5 @@ class AuditEvent extends Model
     public function effectiveUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'effective_user_id', 'user_id');
-    }
-
-    /**
-     * @return BelongsTo<Organization, $this>
-     */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class, 'organization_id', 'organization_id');
     }
 }

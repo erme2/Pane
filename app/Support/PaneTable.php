@@ -6,12 +6,6 @@ use App\Mappers\AbstractMapper;
 
 class PaneTable
 {
-    public const string ORGANIZATIONS = 'organizations';
-
-    public const string ORGANIZATION_MEMBERSHIPS = 'organization_memberships';
-
-    public const string ORGANIZATION_INVITATIONS = 'organization_invitations';
-
     public const string AUDIT_EVENTS = 'audit_events';
 
     public const string PANE_ADMIN_INVITATIONS = 'admin_invitations';

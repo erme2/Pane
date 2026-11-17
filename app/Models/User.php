@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Mappers\AbstractMapper;
 use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -33,6 +32,10 @@ class User extends Authenticatable
     public const int PANE_ADMINISTRATOR_USER_TYPE_ID = 1;
 
     public const int STANDARD_USER_TYPE_ID = 2;
+
+    public const string ROLE_ADMIN = 'admin';
+
+    public const string ROLE_USER = 'user';
 
     protected $primaryKey = 'user_id';
 
@@ -86,19 +89,13 @@ class User extends Authenticatable
     ];
 
     /**
-     * @return HasMany<OrganizationMembership, $this>
+     * The user's role in this install: `admin` or `user`.
      */
-    public function organizationMemberships(): HasMany
+    public function role(): string
     {
-        return $this->hasMany(OrganizationMembership::class, 'user_id', 'user_id');
-    }
-
-    /**
-     * @return HasMany<OrganizationMembership, $this>
-     */
-    public function activeOrganizationMemberships(): HasMany
-    {
-        return $this->organizationMemberships()->where('status', OrganizationMembership::STATUS_ACTIVE);
+        return (int) $this->user_type_id === self::PANE_ADMINISTRATOR_USER_TYPE_ID
+            ? self::ROLE_ADMIN
+            : self::ROLE_USER;
     }
 
     public function isPaneAdministrator(): bool

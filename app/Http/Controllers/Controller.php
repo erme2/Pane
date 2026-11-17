@@ -27,8 +27,6 @@ class Controller extends BaseController
         AbstractMapper::TABLES['validation_types'],
         AbstractMapper::TABLES['users'],
         AbstractMapper::TABLES['user_types'],
-        AbstractMapper::TABLES['organizations'],
-        AbstractMapper::TABLES['organization_memberships'],
         AbstractMapper::TABLES['audit_events'],
     ];
 

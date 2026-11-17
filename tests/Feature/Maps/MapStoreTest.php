@@ -147,7 +147,7 @@ class MapStoreTest extends TestCase
     {
         $this->store->saveTable('install', $this->listsMap(), 'user:1');
         $moved = $this->listsMap();
-        $moved['sql_name'] = PaneTable::name('organizations');
+        $moved['sql_name'] = PaneTable::name('audit_events');
 
         $this->expectException(SystemMapProtectedException::class);
         $this->store->saveTable('install', $moved, 'user:1');

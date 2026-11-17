@@ -8,11 +8,7 @@ class SettingDefinition
 
     public const string SCOPE_INSTALLATION = 'installation';
 
-    public const string SCOPE_ORGANIZATION = 'organization';
-
     public const string ADMINISTRATOR_PANE = 'pane_administrator';
-
-    public const string ADMINISTRATOR_ORGANIZATION = 'organization_administrator';
 
     /**
      * @param  array<int, string>  $scopes
@@ -27,8 +23,6 @@ class SettingDefinition
         public readonly array $administrators,
         public readonly int|float|null $minimum = null,
         public readonly int|float|null $maximum = null,
-        public readonly ?string $minimumSettingKey = null,
-        public readonly ?string $maximumSettingKey = null,
     ) {}
 
     public function allowsScope(string $scope): bool

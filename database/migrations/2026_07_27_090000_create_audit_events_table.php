@@ -19,7 +19,6 @@ return new class extends Migration
             $table->dateTimeTz('occurred_at')->index();
             $table->unsignedInteger('real_actor_user_id')->nullable()->index();
             $table->unsignedInteger('effective_user_id')->nullable()->index();
-            $table->uuid('organization_id')->nullable()->index();
             $table->string('action')->index();
             $table->string('outcome')->index();
             $table->json('resource_ids')->nullable();

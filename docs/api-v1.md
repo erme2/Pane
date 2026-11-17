@@ -11,6 +11,14 @@ Status: phase-one contract
 > discovery; none of those routes exist any more, and reconciling this document
 > with `contracts/pane-v1.json` is a follow-up. The legacy Story/Action/Mapper
 > CRUD route stays until the `/data` routes ship.
+>
+> Pane#182 removed organizations, memberships, organization invitations and the
+> tenancy service. Each install is the organization; users are `admin` or `user`
+> (`data.user.attributes.role` on `GET /api/v1/session`, which no longer returns
+> `organization` or `membership`). The maps read API moved to `GET /api/v1/maps`
+> and `GET /api/v1/maps/{source}/{table}`. Every `/organizations/...` and
+> `/installation/organizations...` route in the text and in
+> `contracts/pane-v1.json` is gone; that rewrite is the docs step of the plan.
 
 The machine-readable companion to this document is the OpenAPI 3.1 document
 [`contracts/pane-v1.json`](../contracts/pane-v1.json). It is the shared contract

@@ -3,7 +3,6 @@
 namespace Tests;
 
 use App\Models\ApplicationRegistration;
-use App\Models\Organization;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -87,12 +86,6 @@ abstract class TestCase extends BaseTestCase
     protected function withV1ApplicationSession(?ApplicationRegistration $application = null): static
     {
         return $this->withSession($this->v1ApplicationSession($application));
-    }
-
-    protected function organizationFor(ApplicationRegistration $application): Organization
-    {
-        return app(ApplicationRegistryService::class)->fixedOrganizationFor($application)
-            ?? throw new \RuntimeException('The application has no organization.');
     }
 
     protected function authenticateAsUser(): User

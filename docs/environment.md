@@ -21,9 +21,8 @@ Pane trusts the frontends listed in its environment, and nothing else. There is 
 
 Pane sends invitation email directly through Laravel Mail and the `MAIL_*` settings, right after the invitation is saved. There is no message queue, no worker and no cron job for email.
 
-- Creating or resending an organization invitation through the v1 API sends one email with the invitation link. Revoking sends none. The API response, including `meta.invitation_url`, is the same either way.
+- Creating an administrator invitation through the v1 API sends one email with the invitation link. Revoking sends none. The API response, including `meta.invitation_url`, is the same either way.
 - If the send fails, the invitation stays: the failure is logged (invitation id and exception class only, never the address or link) and the caller still gets the link to pass on.
-- `php artisan latte:bootstrap-organization` also sends its first invitation through Laravel Mail directly.
 
 ## URLs And Trusted Hosts
 
