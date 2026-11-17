@@ -162,7 +162,12 @@ suspension, or organization suspension/closure.
   whose returned user payload fails Pane validation, such as a missing email,
   returns `422 validation_failed`. Callback rejection responses omit
   `error.details` and must not expose organization identifiers, target emails,
-  or identity-provider data.
+  or identity-provider data. A sign-in refused with `422 membership_required`
+  (no invitation or membership) creates no Pane session but includes
+  `error.logout_url`, the WorkOS logout URL for that session returning to the
+  application's frontend. Following it ends the WorkOS session so signing in
+  again shows the account choice. The field is omitted when the session id is
+  unknown.
 - `GET /session` returns the real actor, effective user, application, fixed
   organization (if any), membership (if any), and active impersonation state.
 - `DELETE /session` invalidates the Pane session and returns a WorkOS logout URL

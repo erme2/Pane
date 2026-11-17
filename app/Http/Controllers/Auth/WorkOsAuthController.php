@@ -287,12 +287,18 @@ class WorkOsAuthController extends Controller
             $request->session()->forget(self::PANE_ADMIN_INVITATION_TOKEN_HASH_SESSION_KEY);
             Cookie::queue(Cookie::forget(self::INVITATION_TOKEN_HASH_COOKIE));
 
+            $errorCode = $this->invitationErrorCode($exception);
+
+            if ($versioned && $errorCode === 'membership_required') {
+                return $this->membershipRefusedResponse($request, $authentication, $exception->getMessage());
+            }
+
             return $this->callbackErrorResponse(
                 $request,
                 $versioned,
                 $exception->getMessage(),
                 Response::HTTP_UNPROCESSABLE_ENTITY,
-                $this->invitationErrorCode($exception)
+                $errorCode
             );
         }
 
@@ -478,17 +484,46 @@ class WorkOsAuthController extends Controller
             );
     }
 
-    private function versionedErrorResponse(Request $request, string $code, string $message, int $status): JsonResponse
-    {
+    private function versionedErrorResponse(
+        Request $request,
+        string $code,
+        string $message,
+        int $status,
+        ?string $logoutUrl = null
+    ): JsonResponse {
         $requestId = $this->requestId($request);
 
         return response()->json([
-            'error' => [
+            'error' => array_filter([
                 'code' => $code,
                 'message' => $message,
                 'request_id' => $requestId,
-            ],
+                'logout_url' => $logoutUrl,
+            ], fn ($value) => $value !== null),
         ], $status)->header('X-Request-Id', $requestId);
+    }
+
+    /**
+     * No Pane session exists for a refused sign-in, so the WorkOS session id
+     * from this callback is the only way to let the frontend end that session.
+     *
+     * @param  array<string, mixed>  $authentication
+     */
+    private function membershipRefusedResponse(Request $request, array $authentication, string $message): JsonResponse
+    {
+        $application = $this->activeSessionApplication($request);
+        $sessionId = $this->workOsSessionId($authentication);
+        $logoutUrl = $application instanceof ApplicationRegistration && is_string($sessionId)
+            ? $this->workOs->logoutUrl($sessionId, $application)
+            : null;
+
+        return $this->versionedErrorResponse(
+            $request,
+            'membership_required',
+            $message,
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            $logoutUrl
+        );
     }
 
     private function callbackErrorResponse(
