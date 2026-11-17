@@ -3,11 +3,14 @@
 namespace Tests\Feature\crud;
 
 use App\Mappers\AbstractMapper;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Response;
 use Tests\TestCase;
 
 class CrudAuthorizationTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_crud_routes_require_authentication(): void
     {
         $this->getJson('/crud/'.AbstractMapper::TABLES['test_table'])

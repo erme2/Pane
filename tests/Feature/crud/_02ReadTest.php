@@ -6,12 +6,15 @@ use App\Exceptions\SystemException;
 use App\Helpers\DefaultsHelper;
 use App\Mappers\AbstractMapper;
 use Database\Seeders\TestTableSeeder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class _02ReadTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();
