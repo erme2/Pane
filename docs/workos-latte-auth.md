@@ -39,11 +39,11 @@ WORKOS_REDIRECT_URI=https://dev.sweegly.co.uk/auth/callback
 PANE_EXTRA_FRONTEND_ORIGINS=https://admin.dev.sweegly.co.uk|https://admin.dev.sweegly.co.uk/auth/callback,https://admin.dev.sweegly.co.uk/dashboard
 ```
 
-Each extra frontend is registered as its own application in the configured organization, with its own `redirect_to` allowlist. Pane accepts CORS and v1 requests from it, sends its WorkOS callback to the `WORKOS_REDIRECT_URI` path on its own origin (here `https://admin.dev.sweegly.co.uk/auth/callback`), and returns its logout to its own root. Add that callback to the WorkOS Redirects tab and the root as a Sign-out redirect.
+Each extra frontend is resolved from the environment (no table) in the configured organization, with its own `redirect_to` allowlist. Pane accepts CORS and v1 requests from it, sends its WorkOS callback to the `WORKOS_REDIRECT_URI` path on its own origin (here `https://admin.dev.sweegly.co.uk/auth/callback`), and returns its logout to its own root. Add that callback to the WorkOS Redirects tab and the root as a Sign-out redirect.
 
-Frontends of the same organization share one Pane session: signing in on one signs the user in on the others, and each request runs as the frontend it came from. Pane's membership roles still decide what a user may do, so an admin-only frontend should check the session's membership role and send other users to the product app. Removing an entry from `PANE_EXTRA_FRONTEND_ORIGINS` disables that frontend and invalidates its sessions; adding it back re-enables it. A frontend disabled through the applications API stays disabled.
+Frontends of the same organization share one Pane session: signing in on one signs the user in on the others, and each request runs as the frontend it came from. Pane's membership roles still decide what a user may do, so an admin-only frontend should check the session's membership role and send other users to the product app. Removing an entry from `PANE_EXTRA_FRONTEND_ORIGINS` stops that frontend resolving, which ends its sessions; adding it back restores it with the same id.
 
-Organization invitation links point to the frontend that created the invitation, unless the request picks another active frontend of the organization with `target_application_id` (listed by `GET /api/v1/organizations/{organization_id}/applications`). This lets an admin console invite guests straight into the product app.
+Organization invitation links point to the frontend that created the invitation, unless the request picks another configured frontend with `target_application_id` (its id is derived from its origin and `LATTE_APPLICATION_ID`). This lets an admin console invite guests straight into the product app.
 
 ## Bootstrap the First Latte Invite
 

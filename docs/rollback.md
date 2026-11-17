@@ -64,14 +64,9 @@ Production migrations are forward-only.
 
 1. Roll the application back to the tag the backup was taken on (see below),
    with migrations off, so the code matches the restored schema.
-2. Stop writes and the message worker before the database is touched:
+2. Stop writes before the database is touched:
    - Put Pane into maintenance mode: `php artisan down`, run over SSH from the
      installation directory (see [Hostinger](hostinger.md)).
-   - Pause the message worker: disable the every-minute `schedule:run` cron job
-     in hPanel (see [Message Worker (Cron)](hostinger.md#message-worker-cron)).
-   - A worker that is already running stops claiming new messages once Pane is
-     in maintenance mode, but a send already in progress finishes. Wait for any
-     running `messages:send` process to exit before the import.
    - Drain the requests already in flight. Maintenance mode only stops requests
      that arrive after it is on: a request that passed the check before
      `php artisan down` keeps running and can still write. Let `T` be the longer
@@ -135,13 +130,10 @@ browser checks are manual.
    - **WorkOS API key or client secret:** create a new one in the WorkOS
      dashboard, then revoke the old one after the deploy.
    - **`APP_KEY`:** do not rotate it. `config/app.php` does not map
-     `APP_PREVIOUS_KEYS` yet, so a new key makes existing encrypted
-     `Message.payload` values unreadable. Escalate to the owner. The production
+     `APP_PREVIOUS_KEYS` yet, so a new key makes existing
+     encrypted values unreadable. Escalate to the owner. The production
      rotation procedure (previous-keys mapping and re-encryption of stored
-     payloads) will be its own ticket, written once Pane is in production.
-   - **Managed-credential keys:** follow the rotation steps in
-     [Environment Configuration](environment.md): add a new key ID, rotate,
-     check, then remove the leaked key.
+     values) will be its own ticket, written once Pane is in production.
    - **`PANE_STATUS_PASSWORD`:** set a new random value.
    - **Hostinger SSH key:** remove the public key from the Hostinger account,
      create a new key pair and add the new public key.

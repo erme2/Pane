@@ -5,14 +5,14 @@ namespace Tests\Support;
 use PDO;
 
 /**
- * A real MySQL or MariaDB server for the managed-database integration tests,
+ * A real MySQL or MariaDB server for the real-database integration tests,
  * configured by PANE_IT_DB_ENGINE (mysql|mariadb), PANE_IT_DB_HOST,
  * PANE_IT_DB_PORT and PANE_IT_DB_ROOT_PASSWORD. Tests skip when it's unset.
  *
  * Each instance creates its own database and accounts and drops them in
  * cleanup(), so runs don't interfere.
  */
-final class RealManagedDatabase
+final class RealDatabaseServer
 {
     public readonly string $engine;
 

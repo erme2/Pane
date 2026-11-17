@@ -8,98 +8,22 @@ Pane uses `.env.example` as the template for local and deployed environment file
 - `APP_ENV` controls environment-sensitive behavior. Use `local` or `testing` for local/test runs. Use `production`, `staging`, or another non-local value for deployed environments.
 - `APP_KEY` is the Laravel encryption key. Keep it blank in committed templates and generate a real value for every local, CI, staging, and production environment.
 - `APP_DEBUG` must be `false` in production. Pane fails closed when production debug is enabled.
-- `PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID` selects the external managed-credential key used for new managed-database secret writes.
-- `PANE_MANAGED_CREDENTIAL_KEYS` is a JSON object mapping key IDs to `base64:` encoded 32-byte keys. Keep this material outside Pane's primary database and separate from `APP_KEY`; retain old key IDs during rotation so existing envelopes can still decrypt.
 
-Example managed-credential key configuration:
+## Trusted Frontends
 
-```env
-PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID=2026-08-primary
-PANE_MANAGED_CREDENTIAL_KEYS={"2026-07-primary":"base64:old-32-byte-key-material","2026-08-primary":"base64:new-32-byte-key-material"}
-```
+Pane trusts the frontends listed in its environment, and nothing else. There is no application table and no API to manage them: change the env to add or remove one.
 
-Generate a key (32 random bytes, `base64:` prefix):
+- `FRONTEND_URL` is the main frontend origin. `LATTE_REDIRECT_URIS` lists the redirect URIs it may use after sign-in.
+- `PANE_EXTRA_FRONTEND_ORIGINS` adds more frontends: entries separated by `;`, each `origin` or `origin|redirect_uri,redirect_uri`. Without redirect URIs a frontend gets `<origin>/auth/callback`.
+- Every frontend gets a stable id derived from its origin and `LATTE_APPLICATION_ID`, so ids and sessions survive redeploys. A frontend removed from the env stops resolving, which ends its sessions.
 
-```bash
-php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
-```
+## Outgoing Email
 
-Rotating the managed-credential key:
+Pane sends invitation email directly through Laravel Mail and the `MAIL_*` settings, right after the invitation is saved. There is no message queue, no worker and no cron job for email.
 
-1. Add the new key to `PANE_MANAGED_CREDENTIAL_KEYS`, keeping the old one, and set `PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID` to the new key ID. Deploy. New secrets use the new key; old ones still decrypt.
-2. Run `php artisan managed-credentials:rotate --dry-run` to see how many secrets still use an older key, then `php artisan managed-credentials:rotate` (repeat, or raise `--limit`, until nothing is left).
-3. Run `php artisan managed-credentials:check`: it fails if the active key is missing or if any secret uses a key that is no longer configured.
-4. Only then remove the old key from `PANE_MANAGED_CREDENTIAL_KEYS`.
-
-`GET /status` (behind the status password) includes `managed_credentials`: whether the active key is usable and how many secrets are stored, still on an older key, or on a key that is no longer configured. It never includes key material or credentials.
-
-Stored envelopes are bound to their secret record (ID, organization, connection, purpose), so copying an envelope onto another row makes it fail to decrypt. Decrypted credentials are held in `App\Support\ManagedCredentials`, which redacts itself in dumps, strings and JSON and refuses to be serialized, so it can't end up in queued jobs, cache or logs by accident.
-
-## Managed-Database Network Policy
-
-Every managed-database connection (connection tests and runtime queries) is opened by `App\Services\ManagedDatabaseConnector`, the only code allowed to connect to an organization's database. It asks `App\Services\ManagedDatabaseEgressPolicy` first, then connects to one of the addresses that were checked, never re-resolving the hostname, so DNS can't be swapped in between. It also applies the connect timeout and a per-session query timeout.
-
-- Denied by default: loopback, private, shared (CGNAT), link-local, documentation, benchmarking, multicast and reserved ranges, for IPv4 and IPv6, including IPv4-mapped and NAT64 forms. Every DNS answer must pass, so one private answer blocks the host.
-- Never allowed: cloud metadata addresses and hostnames (e.g. `169.254.169.254`, `fd00:ec2::254`, `metadata.google.internal`), multicast and unspecified addresses.
-- `PANE_MANAGED_DB_EGRESS_ALLOW` is a comma-separated list of approved hosts and ranges, for installation-wide private networks, e.g. `localhost,10.20.0.0/16,fd00:1234::/32`. A hostname rule opens only that exact name; an IP rule opens that address or range. An invalid rule blocks every connection until it's fixed. Organizations can't change these rules.
-- `PANE_MANAGED_DB_CONNECT_TIMEOUT` (default 5 s, at most 30) and `PANE_MANAGED_DB_QUERY_TIMEOUT` (default 15 s, at most 120) apply to every organization. The query timeout stops any statement on MariaDB (`max_statement_time`). On MySQL, `max_execution_time` only stops SELECT, so Pane also caps lock waits (`innodb_lock_wait_timeout`, `lock_wait_timeout`) and stops waiting for any reply 2 s after the query timeout. That is not a strict timeout for writes: a MySQL write that is already running may still commit on the server after Pane reports a timeout, and the outcome is then unknown. Mutating queries must not be retried blindly until an operation-status check can reconcile the result.
-- Each decision is audited as `managed_database.egress.allowed` or `.denied`, with host, port, resolved addresses and the reason. No credentials are recorded.
-
-On Hostinger, a database on the same server is usually `localhost`: add `localhost` to `PANE_MANAGED_DB_EGRESS_ALLOW`.
-
-### Connections (`/api/v1/organizations/{organization_id}/connections`)
-
-Organization administrators add, test, update, disable (`DELETE`) and reactivate (`PATCH status=active`) their databases. Each active connection uses one slot of the organization's `database_limit`.
-
-- Every create, reactivation, or change to engine, host, port, database, user, TLS mode or password is tested first, and nothing is saved if the test fails.
-- The database account must have exactly `SELECT, INSERT, UPDATE, DELETE` on its own database. DDL (`CREATE`, `ALTER`, `DROP`…), `ALL PRIVILEGES`, server-wide, `FILE`, `PROCESS`, `SUPER`, `GRANT OPTION`, roles, or grants on other databases are rejected. A hosting panel grant like `` `u123_shop`.* `` (where `_` is a wildcard) is accepted only when it matches no other database the account can see.
-- `tls_mode`: `required` encrypts the connection (the certificate isn't checked, since Pane connects to the IP address); `disabled` only for hosts opened by `PANE_MANAGED_DB_EGRESS_ALLOW`, such as `localhost`; `verify_ca` and `verify_identity` are rejected for now.
-- Passwords and certificates are write-only: the API only returns `credentials_configured`. They're stored encrypted (see the managed-credential keys above) and never written to the audit log.
-
-Example account for a same-server database:
-
-```sql
-CREATE USER 'pane_app'@'localhost' IDENTIFIED BY '…';
-GRANT SELECT, INSERT, UPDATE, DELETE ON `shop`.* TO 'pane_app'@'localhost';
-```
-
-## Outgoing Messages
-
-Pane never sends email from a request. It adds a row to the `messages` table (`pane_messages` with the default prefix) and the worker sends it later.
-
-- Types: `system_email` (account and invitation email, always sent) and `marketing_email` (not created anywhere yet; will respect opt-out). The list lives in `App\Models\Message::TYPES` and the column is a plain string, so adding a type needs no migration. `purpose` says what a message is for inside its type (e.g. `invitation`), for templates.
-- `status` moves `pending` → `sending` → `sent`, or `failed` after the last retry. `available_at` delays a message or schedules its retry; the worker reads by (`status`, `available_at`).
-- `payload` holds the data the template needs. It can contain credentials (an invitation link signs the recipient in), so it is encrypted with `APP_KEY`, hidden from serialization and never logged. Rotating `APP_KEY` makes pending payloads unreadable.
-- The subject is stored without an environment prefix; the worker adds `[DEV]` / `[STAGE]` when it sends.
-- `organization_id`, `source_type` and `source_id` record what caused the message (e.g. `OrganizationInvitation` and its ID).
-- Creating or resending an organization invitation through the v1 API queues one `system_email` with the invitation link, in the same transaction as the invitation. Revoking queues nothing. The API response, including `meta.invitation_url`, is unchanged.
-
-Code adds messages with `App\Services\MessageQueue::push()`, inside the transaction of the change that causes them.
-
-### Sending (`php artisan messages:send`)
-
-The worker sends due messages (`pending`, `available_at` passed), oldest first, through Laravel Mail and the `MAIL_*` settings. It's built for a cron job every minute:
-
-- `--limit=50`: most messages per run. `--max-time=50`: stop starting new messages after this many seconds, so runs don't overlap much. `--once`: one batch (up to 10) and stop.
-- Overlapping runs are safe: a message is claimed with a conditional update, so only one run sends it.
-- A failed send is retried after 1, 5 and 30 minutes, then marked `failed` (4 attempts). `last_error` keeps a short reason with links and email addresses removed.
-- Messages left in `sending` for more than 10 minutes (a crashed run) go back to `pending`.
-- It logs counts and message IDs only, never recipients, links or payloads.
-- On Hostinger it runs from Laravel's scheduler, driven by one hPanel cron job: see [Message Worker (Cron)](hostinger.md#message-worker-cron). `GET /status` shows the queue and whether the worker is running (`data.messages`).
-- The body comes from the message's templates (below).
-
-### Email Templates (`resources/views/messages`)
-
-Each email has an HTML and a plain-text template. Pane picks the first that exists: `messages/{type}/{purpose}`, then `messages/{type}/default`, then `messages/default`; the text version has the same name plus `-text`. Today there are `system_email/invitation`, `marketing_email/default` (with an unsubscribe placeholder until opt-out exists) and the shared `default`. All HTML templates extend `messages/layout` (sender name from `MAIL_FROM_NAME`, a footer, and a small "DEV/STAGE environment" banner on those environments).
-
-- HTML templates escape every payload value (`{{ }}`, never `{!! !!}`, which a test enforces). Text templates print values as they are, so links with `&` keep working; they aren't rendered as HTML.
-- Only `http(s)` links are offered as links (`invitation_url`, or `url`).
-- Templates never touch the subject: the worker adds `[DEV]` / `[STAGE]` once.
-- `php artisan messages:preview system_email invitation` writes `storage/app/message-previews/system_email-invitation.html` and `.txt` with sample data, without sending anything (`--output=` to choose the directory).
-
-To add a template, create `resources/views/messages/{type}/{purpose}.blade.php` and `{purpose}-text.blade.php`; no code change is needed.
-
-`PANE_ENVIRONMENT` (`dev`, `stage` or `prod`) adds `[DEV]` / `[STAGE]` to every email subject on dev and stage, once; production gets none. Deployed installs run with `APP_ENV=production` even on dev and stage, so set `PANE_ENVIRONMENT` there. When it's unset, `APP_ENV` is used (`dev`/`development`, `stage`/`staging`).
+- Creating or resending an organization invitation through the v1 API sends one email with the invitation link. Revoking sends none. The API response, including `meta.invitation_url`, is the same either way.
+- If the send fails, the invitation stays: the failure is logged (invitation id and exception class only, never the address or link) and the caller still gets the link to pass on.
+- `php artisan latte:bootstrap-organization` also sends its first invitation through Laravel Mail directly.
 
 ## URLs And Trusted Hosts
 

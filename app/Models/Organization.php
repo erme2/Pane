@@ -14,7 +14,6 @@ use Illuminate\Support\Str;
  * @property string $slug
  * @property string $status
  * @property int $database_limit
- * @property int $active_database_connections
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -50,7 +49,6 @@ class Organization extends Model
 
     protected $casts = [
         'database_limit' => 'integer',
-        'active_database_connections' => 'integer',
         'details' => 'array',
         'settings' => 'array',
     ];
@@ -92,11 +90,6 @@ class Organization extends Model
         return $this->status === self::STATUS_ACTIVE;
     }
 
-    public function isOverDatabaseLimit(): bool
-    {
-        return $this->active_database_connections > $this->database_limit;
-    }
-
     public function versionTag(): string
     {
         return hash('sha256', implode('|', [
@@ -105,7 +98,6 @@ class Organization extends Model
             $this->slug,
             $this->status,
             $this->database_limit,
-            $this->active_database_connections,
             $this->updated_at?->toJSON(),
         ]));
     }

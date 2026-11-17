@@ -51,7 +51,7 @@ class MapReadApiTest extends TestCase
 
         $this->resetMenu();
         $this->application = $this->latteApplication();
-        $this->organization = $this->application->organization()->firstOrFail();
+        $this->organization = $this->organizationFor($this->application);
     }
 
     protected function tearDown(): void
@@ -210,7 +210,6 @@ class MapReadApiTest extends TestCase
 
     private function latteApplication(): ApplicationRegistration
     {
-        ApplicationRegistration::query()->delete();
         OrganizationMembership::query()->delete();
         Organization::query()->delete();
         User::query()->delete();

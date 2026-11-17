@@ -55,13 +55,8 @@ commits). Never paste secret values into the release notes, tickets or logs.
 ## 4. Pane Health
 
 - [ ] `./bash/hostinger-preflight.sh` passes on the host (it checks the
-  production keys, safety settings, managed-credential key syntax and database
+  production keys, safety settings and database
   connectivity without printing values).
-- [ ] `php artisan managed-credentials:check` passes, and `GET /status`
-  reports `managed_credentials` as usable with nothing on a missing key.
-- [ ] `GET /status` reports the message worker as `ok` (see
-  [Message Worker (Cron)](hostinger.md#message-worker-cron)).
-
 ## 5. Release Checks
 
 - [ ] Tests: Pane `php artisan test` and Latte `npm test` pass on the released
@@ -73,15 +68,14 @@ commits). Never paste secret values into the release notes, tickets or logs.
   notes with the reason.
 - [ ] Migrations reviewed: every migration since the previous release was read,
   and anything destructive or slow is called out in the release notes.
-- [ ] Secrets generated or rotated: `APP_KEY`, managed-credential keys, WorkOS
+- [ ] Secrets generated or rotated: `APP_KEY`, WorkOS
   keys, database password and `PANE_STATUS_PASSWORD` are unique to this
   environment and not placeholders; the protected GitHub Environment secrets
   match the password-manager copy.
 - [ ] Backups confirmed: a database backup was taken before the release's
   migrations and can be restored (rollback steps are tracked by Pane #99).
 - [ ] Smoke checks passed: the deploy's Pane smoke checks (`/`,
-  `/docs/openapi.json`, `/api/v1/release`, `/api/v1/session`,
-  `/api/v1/installation/applications`) and Latte's smoke checks passed, and the
+  `/docs/openapi.json`, `/api/v1/release`, `/api/v1/session`) and Latte's smoke checks passed, and the
   versions reported by `GET /api/v1/release` and `/latte-release.json` match the
   release pair in the notes.
 
@@ -98,11 +92,8 @@ commits). Never paste secret values into the release notes, tickets or logs.
 | `TRUSTED_HOSTS` | Extra Pane hostnames only; may be empty. |
 | `SESSION_SECURE_COOKIE` | `true` |
 | `PANE_STATUS_PASSWORD` | Strong random password. |
-| `PANE_ENVIRONMENT` | `dev` or `stage` on non-production installs; `prod` or unset on production. |
 | `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Production database; real password. |
 | `DB_TABLE_PREFIX` | The installation's system-table prefix. |
-| `PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID`, `PANE_MANAGED_CREDENTIAL_KEYS` | Active key present in the key set; separate from `APP_KEY`. |
-| `PANE_MANAGED_DB_EGRESS_ALLOW` | Only approved hosts (usually `localhost` on Hostinger). |
 | `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_PROVIDER`, `WORKOS_ORGANIZATION_ID`, `WORKOS_CONNECTION_ID` | This environment's WorkOS values, not placeholders. |
 | `FRONTEND_URL` | Latte production origin. |
 | `LATTE_REDIRECT_URIS` | Exact Latte return URLs. |

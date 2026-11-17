@@ -49,20 +49,4 @@ return [
         'extra_frontend_origins' => env('PANE_EXTRA_FRONTEND_ORIGINS'),
     ],
 
-    'managed_credentials' => [
-        'active_key_id' => env('PANE_MANAGED_CREDENTIAL_ACTIVE_KEY_ID'),
-        'keys' => env('PANE_MANAGED_CREDENTIAL_KEYS'),
-    ],
-
-    'managed_databases' => [
-        'egress_allow' => env('PANE_MANAGED_DB_EGRESS_ALLOW'),
-        'connect_timeout' => env('PANE_MANAGED_DB_CONNECT_TIMEOUT'),
-        'query_timeout' => env('PANE_MANAGED_DB_QUERY_TIMEOUT'),
-    ],
-
-    'messages' => [
-        // dev, stage or prod: adds [DEV] / [STAGE] to email subjects. Falls back to APP_ENV.
-        'environment' => env('PANE_ENVIRONMENT'),
-    ],
-
 ];

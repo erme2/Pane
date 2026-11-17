@@ -12,12 +12,10 @@ class MigrationIndexNameTest extends TestCase
         $migrationPaths = [
             'database/migrations/2026_07_26_170000_create_organization_tenancy_tables.php',
             'database/migrations/2026_07_30_090000_create_organization_invitations_table.php',
-            'database/migrations/2026_08_06_090000_create_managed_credential_secrets_table.php',
         ];
         $indexNames = [
             'org_members_org_user_unique',
             'org_invites_org_email_status_index',
-            'managed_secrets_org_purpose_status_index',
         ];
 
         foreach ($migrationPaths as $path) {
@@ -42,10 +40,6 @@ class MigrationIndexNameTest extends TestCase
         self::assertStringContainsString(
             "'org_invites_org_email_status_index'",
             file_get_contents($root.'/'.$migrationPaths[1])
-        );
-        self::assertStringContainsString(
-            "'managed_secrets_org_purpose_status_index'",
-            file_get_contents($root.'/'.$migrationPaths[2])
         );
     }
 }

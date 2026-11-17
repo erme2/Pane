@@ -7,8 +7,6 @@ use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
-use App\Services\OrganizationTenancyService;
-use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -20,7 +18,6 @@ class ExtraFrontendsTest extends TestCase
     {
         parent::setUp();
 
-        ApplicationRegistration::query()->delete();
         OrganizationMembership::query()->delete();
         Organization::query()->delete();
         User::query()->delete();
@@ -80,15 +77,7 @@ class ExtraFrontendsTest extends TestCase
 
     public function test_cors_allows_every_active_frontend_and_no_other_origin(): void
     {
-        $organization = app(OrganizationTenancyService::class)->createOrganization('Other', 'other-'.Str::uuid());
-        ApplicationRegistration::query()->create([
-            'name' => 'Registered App',
-            'kind' => ApplicationRegistration::KIND_LATTE,
-            'organization_id' => $organization->organization_id,
-            'trusted_origin' => 'https://registered.example.test',
-            'redirect_uris' => ['https://registered.example.test/auth/callback'],
-            'status' => ApplicationRegistration::STATUS_ACTIVE,
-        ]);
+        config()->set('services.latte.extra_frontend_origins', self::ADMIN_ORIGIN.';https://registered.example.test');
 
         foreach (['https://app.example.test', self::ADMIN_ORIGIN, 'https://registered.example.test'] as $origin) {
             $this->preflight($origin)
@@ -138,30 +127,7 @@ class ExtraFrontendsTest extends TestCase
         );
     }
 
-    public function test_session_is_not_shared_with_frontends_of_another_organization(): void
-    {
-        $organization = app(OrganizationTenancyService::class)->createOrganization('Other', 'other-'.Str::uuid());
-        ApplicationRegistration::query()->create([
-            'name' => 'Other App',
-            'kind' => ApplicationRegistration::KIND_LATTE,
-            'organization_id' => $organization->organization_id,
-            'trusted_origin' => 'https://other.example.test',
-            'redirect_uris' => ['https://other.example.test/auth/callback'],
-            'status' => ApplicationRegistration::STATUS_ACTIVE,
-        ]);
-
-        $this->withCsrfToken()->actingAs($this->makePaneUser(2));
-
-        $this
-            ->withV1ApplicationSession()
-            ->withSession(['workos_session_id' => 'session_123'])
-            ->withHeader('Origin', 'https://other.example.test')
-            ->deleteJson('/api/v1/session')
-            ->assertForbidden()
-            ->assertJsonPath('error.code', 'application_not_allowed');
-    }
-
-    public function test_removing_a_frontend_from_config_disables_it_and_adding_it_back_restores_it(): void
+    public function test_removing_a_frontend_from_config_stops_it_resolving_and_adding_it_back_restores_it(): void
     {
         $registry = app(ApplicationRegistryService::class);
         $application = $registry->activeApplicationForOrigin(self::ADMIN_ORIGIN);
@@ -184,20 +150,8 @@ class ExtraFrontendsTest extends TestCase
         $restored = $registry->activeApplicationForOrigin(self::ADMIN_ORIGIN);
         $this->assertNotNull($restored);
         $this->assertSame($application->application_id, $restored->application_id);
-        $this->assertNotSame($sessionVersion, $restored->session_version);
+        $this->assertSame($sessionVersion, $restored->session_version);
         $this->assertSame([self::ADMIN_ORIGIN.'/auth/callback'], $restored->redirect_uris);
-    }
-
-    public function test_frontend_disabled_through_the_api_stays_disabled_while_still_configured(): void
-    {
-        $registry = app(ApplicationRegistryService::class);
-        $application = $registry->activeApplicationForOrigin(self::ADMIN_ORIGIN);
-        $this->assertNotNull($application);
-
-        $registry->disable($this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID), $application);
-
-        $this->assertNull($registry->activeApplicationForOrigin(self::ADMIN_ORIGIN));
-        $this->assertNull($registry->activeApplicationForId($application->application_id));
     }
 
     // With a single configured origin the CORS library always echoes that origin, so check the

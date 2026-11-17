@@ -3,7 +3,7 @@
 namespace Tests\Feature\Maps\Integration;
 
 use Illuminate\Support\Facades\DB;
-use Tests\Support\RealManagedDatabase;
+use Tests\Support\RealDatabaseServer;
 use Tests\TestCase;
 
 /**
@@ -13,17 +13,17 @@ use Tests\TestCase;
  */
 class RealPrefixUnprefixedTablesTest extends TestCase
 {
-    private RealManagedDatabase $server;
+    private RealDatabaseServer $server;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        if (! RealManagedDatabase::configured()) {
+        if (! RealDatabaseServer::configured()) {
             $this->markTestSkipped('Set PANE_IT_DB_HOST (and PANE_IT_DB_ENGINE, _PORT, _ROOT_PASSWORD) to run against a real database.');
         }
 
-        $this->server = new RealManagedDatabase;
+        $this->server = new RealDatabaseServer;
         config(['database.connections.unprefixed_real' => [
             'driver' => $this->server->engine,
             'host' => $this->server->host,

@@ -208,7 +208,6 @@ class OrganizationTenancyTest extends TestCase
         $organization = $this->tenancy->createOrganization('Acme Inc', 'Acme Inc!');
 
         $this->assertSame('acme-inc', $organization->slug);
-        $this->assertSame(0, $organization->active_database_connections);
         $this->expectException(QueryException::class);
 
         $this->tenancy->createOrganization('Acme Duplicate', 'acme inc');

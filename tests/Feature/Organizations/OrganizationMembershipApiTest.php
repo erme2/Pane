@@ -24,7 +24,6 @@ class OrganizationMembershipApiTest extends TestCase
         parent::setUp();
 
         OrganizationInvitation::query()->delete();
-        ApplicationRegistration::query()->delete();
         OrganizationMembership::query()->delete();
         Organization::query()->delete();
         User::query()->delete();
@@ -274,7 +273,7 @@ class OrganizationMembershipApiTest extends TestCase
         config()->set('services.latte.redirect_uris', ['https://latte.test/dashboard']);
 
         $application = $this->applications->configuredLatteApplication();
-        $organization = $application->organization()->firstOrFail();
+        $organization = $this->organizationFor($application);
 
         return [$application, $organization];
     }

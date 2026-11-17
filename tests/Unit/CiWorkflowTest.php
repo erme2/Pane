@@ -21,7 +21,7 @@ class CiWorkflowTest extends TestCase
         $this->assertStringContainsString("if: \${{ github.event_name == 'pull_request' }}\n        run: composer audit --locked --no-interaction", $workflow);
     }
 
-    public function test_pr_workflow_runs_managed_database_integration_tests_on_mysql_and_mariadb(): void
+    public function test_pr_workflow_runs_real_database_integration_tests_on_mysql_and_mariadb(): void
     {
         $workflow = file_get_contents(dirname(__DIR__, 2).'/.github/workflows/pr-tests.yml');
 
@@ -31,7 +31,7 @@ class CiWorkflowTest extends TestCase
         $this->assertStringContainsString('image: mariadb:11.4', $workflow);
         $this->assertStringContainsString('PANE_IT_DB_HOST: 127.0.0.1', $workflow);
         // Fails instead of passing quietly if the tests can't find the server.
-        $this->assertStringContainsString("--filter='RealManagedDatabaseTest|RealPrefixUnprefixedTablesTest|RealMapDiscoveryTest' --fail-on-skipped", $workflow);
+        $this->assertStringContainsString("--filter='RealPrefixUnprefixedTablesTest' --fail-on-skipped", $workflow);
     }
 
     public function test_tag_workflow_tags_merged_prs_after_tests_one_at_a_time(): void

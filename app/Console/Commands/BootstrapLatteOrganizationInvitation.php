@@ -51,8 +51,8 @@ class BootstrapLatteOrganizationInvitation extends Command
             return self::FAILURE;
         }
 
-        $application = $applications->configuredLatteApplication()->refresh();
-        $organization = $application->organization;
+        $application = $applications->configuredLatteApplication();
+        $organization = $applications->fixedOrganizationFor($application);
 
         if (! $organization instanceof Organization) {
             $this->error('The configured Latte application is not bound to an organization.');
@@ -139,7 +139,7 @@ class BootstrapLatteOrganizationInvitation extends Command
 
     private function invitationRedirectUri(ApplicationRegistration $application): string
     {
-        $redirectUri = ($application->redirect_uris ?? [])[0] ?? null;
+        $redirectUri = $application->redirect_uris[0] ?? null;
 
         if (is_string($redirectUri) && $redirectUri !== '') {
             return $redirectUri;

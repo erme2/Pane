@@ -39,11 +39,11 @@ Use this when cached configuration, routes, or views are stale during local deve
 
 Checks the Hostinger production runtime before the first alpha release. It
 verifies PHP, Composer, required PHP extensions, production environment safety
-settings, writable Laravel directories, managed-credential key configuration,
+settings, writable Laravel directories,
 database connectivity, and Composer production platform requirements.
 
 The script reports only key names and pass/fail state. It must not print
-`APP_KEY`, WorkOS secrets, database credentials, managed-credential keys, or
+`APP_KEY`, WorkOS secrets, database credentials, or
 other secret values.
 
 ```bash

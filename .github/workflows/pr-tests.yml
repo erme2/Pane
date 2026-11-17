@@ -56,8 +56,7 @@ jobs:
       - name: Run test suite
         run: ./bash/test.sh -o no -f no
 
-  # Managed connections against real servers: TLS, privileges, timeouts and
-  # the connection lifecycle (see docs/testing.md#managed-database-integration-tests).
+  # The table-prefix migration against real MySQL and MariaDB servers (see docs/testing.md).
   integration:
     name: integration (${{ matrix.engine }})
     runs-on: ubuntu-latest
@@ -133,4 +132,4 @@ jobs:
           PANE_IT_DB_HOST: 127.0.0.1
           PANE_IT_DB_PORT: 3306
           PANE_IT_DB_ROOT_PASSWORD: root
-        run: php artisan test --env=testing --filter='RealManagedDatabaseTest|RealPrefixUnprefixedTablesTest|RealMapDiscoveryTest' --fail-on-skipped
+        run: php artisan test --env=testing --filter='RealPrefixUnprefixedTablesTest' --fail-on-skipped

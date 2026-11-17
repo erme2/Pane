@@ -2,121 +2,51 @@
 
 namespace App\Models;
 
-use App\Support\PaneTable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 
 /**
- * @property string $application_id
- * @property string|null $organization_id
- * @property string $name
- * @property string $kind
- * @property string $trusted_origin
- * @property string|null $active_trusted_origin
- * @property string $session_version
- * @property array<int, string> $redirect_uris
- * @property string $status
- * @property array<string, mixed>|null $details
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * A frontend this Pane trusts, built in memory from FRONTEND_URL + PANE_EXTRA_FRONTEND_ORIGINS.
+ * It has no table: removing a frontend from the env stops it resolving, which ends its sessions.
  */
-class ApplicationRegistration extends Model
+final class ApplicationRegistration
 {
     public const string KIND_LATTE = 'latte';
 
-    public const string KIND_BURRO = 'burro';
-
-    public const array KINDS = [
-        self::KIND_LATTE,
-        self::KIND_BURRO,
-    ];
-
     public const string STATUS_ACTIVE = 'active';
 
-    public const string STATUS_DISABLED = 'disabled';
+    public readonly string $session_version;
 
-    public const array STATUSES = [
-        self::STATUS_ACTIVE,
-        self::STATUS_DISABLED,
-    ];
+    public readonly string $kind;
 
-    protected $primaryKey = 'application_id';
-
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-
-    protected $fillable = [
-        'application_id',
-        'organization_id',
-        'name',
-        'kind',
-        'trusted_origin',
-        'active_trusted_origin',
-        'session_version',
-        'redirect_uris',
-        'status',
-        'details',
-    ];
-
-    protected $casts = [
-        'redirect_uris' => 'array',
-        'details' => 'array',
-    ];
-
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-
-        $this->table = PaneTable::name(PaneTable::APPLICATIONS);
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (ApplicationRegistration $application): void {
-            if (blank($application->application_id)) {
-                $application->application_id = (string) Str::uuid();
-            }
-
-            if (blank($application->session_version)) {
-                $application->rotateSessionVersion();
-            }
-        });
-
-        static::saving(function (ApplicationRegistration $application): void {
-            $application->active_trusted_origin = $application->isActive()
-                ? $application->trusted_origin
-                : null;
-        });
-    }
+    public readonly string $status;
 
     /**
-     * @return BelongsTo<Organization, $this>
+     * @param  array<int, string>  $redirect_uris
      */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class, 'organization_id', 'organization_id');
+    public function __construct(
+        public readonly string $application_id,
+        public readonly ?string $organization_id,
+        public readonly string $name,
+        public readonly string $trusted_origin,
+        public readonly array $redirect_uris,
+    ) {
+        $this->session_version = Uuid::uuid5($application_id, 'session')->toString();
+        $this->kind = self::KIND_LATTE;
+        $this->status = self::STATUS_ACTIVE;
     }
 
-    public function rotateSessionVersion(): void
+    public function getKey(): string
     {
-        $this->session_version = (string) Str::uuid();
+        return $this->application_id;
     }
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return true;
     }
 
     public function isLatte(): bool
     {
-        return $this->kind === self::KIND_LATTE;
-    }
-
-    public function isBurro(): bool
-    {
-        return $this->kind === self::KIND_BURRO;
+        return true;
     }
 }

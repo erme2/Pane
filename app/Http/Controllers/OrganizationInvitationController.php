@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
 use App\Models\User;
+use App\Services\ApplicationRegistryService;
 use App\Services\OrganizationInvitationService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,10 @@ use InvalidArgumentException;
 
 class OrganizationInvitationController extends Controller
 {
-    public function __construct(private readonly OrganizationInvitationService $invitations) {}
+    public function __construct(
+        private readonly OrganizationInvitationService $invitations,
+        private readonly ApplicationRegistryService $applications,
+    ) {}
 
     public function list(Request $request, string $organizationId): JsonResponse
     {
@@ -325,14 +329,13 @@ class OrganizationInvitationController extends Controller
         }
 
         $targetId = $request->input('target_application_id');
-        $target = is_string($targetId) && Str::isUuid($targetId)
-            ? ApplicationRegistration::query()
-                ->whereKey($targetId)
-                ->where('kind', ApplicationRegistration::KIND_LATTE)
-                ->where('organization_id', $organization->getKey())
-                ->where('status', ApplicationRegistration::STATUS_ACTIVE)
-                ->first()
+        $target = is_string($targetId)
+            ? $this->applications->activeApplicationForId($targetId)
             : null;
+
+        if ($target instanceof ApplicationRegistration && $target->organization_id !== (string) $organization->getKey()) {
+            $target = null;
+        }
 
         return $target instanceof ApplicationRegistration
             ? $target
@@ -514,7 +517,7 @@ class OrganizationInvitationController extends Controller
 
     private function invitationRedirectUri(ApplicationRegistration $application): string
     {
-        $redirectUri = ($application->redirect_uris ?? [])[0] ?? null;
+        $redirectUri = $application->redirect_uris[0] ?? null;
 
         if (is_string($redirectUri) && $redirectUri !== '') {
             return $redirectUri;

@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     public const array TABLES = [
-        'organizations', 'organization_memberships', 'organization_invitations', 'applications',
-        'managed_credential_secrets', 'managed_connections', 'audit_events', 'messages',
+        'organizations', 'organization_memberships', 'organization_invitations',
+        'audit_events',
         'admin_invitations', 'installation_locks', 'setting_defaults', 'setting_overrides',
         'maps_sources', 'maps_tables', 'maps_fields', 'maps_versions',
         'map_tables', 'map_fields', 'map_field_types', 'map_field_validations', 'map_validation_types',

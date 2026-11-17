@@ -356,28 +356,6 @@ class WorkOsAuthController extends Controller
             return $application;
         }
 
-        if ($application->isBurro()) {
-            if (! $user instanceof User || ! $user->isPaneAdministrator()) {
-                return $this->versionedErrorResponse(
-                    $request,
-                    'permission_denied',
-                    'Only active Pane administrators can access Burro.',
-                    Response::HTTP_FORBIDDEN
-                );
-            }
-
-            $requestId = $this->requestId($request);
-
-            return response()->json([
-                'data' => [
-                    'mode' => 'burro_installation',
-                    'user' => $this->userResource($user),
-                    'application' => $this->applicationResource($application),
-                ],
-                'meta' => ['request_id' => $requestId],
-            ])->header('X-Request-Id', $requestId);
-        }
-
         $organization = $this->applications->fixedOrganizationFor($application);
 
         if (! $organization instanceof Organization || ! $organization->isActive()) {
@@ -633,7 +611,7 @@ class WorkOsAuthController extends Controller
             );
         }
 
-        if (! in_array($normalizedRedirectTo, $application->redirect_uris ?? [], true)) {
+        if (! in_array($normalizedRedirectTo, $application->redirect_uris, true)) {
             return $this->versionedErrorResponse(
                 $request,
                 'redirect_not_allowed',
@@ -671,10 +649,8 @@ class WorkOsAuthController extends Controller
             'kind' => $application->kind,
             'name' => $application->name,
             'trusted_origin' => $application->trusted_origin,
-            'redirect_uris' => array_values($application->redirect_uris ?? []),
+            'redirect_uris' => array_values($application->redirect_uris),
             'status' => $application->status,
-            'created_at' => $application->created_at?->toJSON() ?: now()->toJSON(),
-            'updated_at' => $application->updated_at?->toJSON() ?: now()->toJSON(),
         ];
 
         if (! $sessionLatte) {
@@ -928,14 +904,6 @@ class WorkOsAuthController extends Controller
             $user = $this->existingVersionedUser($authentication);
 
             $this->assertVersionedUserCanActivate($user);
-
-            if ($application->isBurro()) {
-                if (! $user->isPaneAdministrator()) {
-                    throw new InvalidArgumentException('Only active Pane administrators can access Burro.');
-                }
-
-                return $this->syncExistingVersionedUser($user, $authentication);
-            }
 
             $organization = $this->applications->fixedOrganizationFor($application);
 

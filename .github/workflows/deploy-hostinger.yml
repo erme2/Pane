@@ -282,7 +282,7 @@ jobs:
           ' <<< "$release_payload"
           session_status="$(curl --silent --show-error --output /tmp/pane-session.json --write-out '%{http_code}' -H 'Accept: application/json' "$PANE_PRODUCTION_URL/api/v1/session")"
           test "$session_status" = "401"
-          installation_status="$(curl --silent --show-error --output /tmp/pane-installation.json --write-out '%{http_code}' -H 'Accept: application/json' "$PANE_PRODUCTION_URL/api/v1/installation/applications")"
+          installation_status="$(curl --silent --show-error --output /tmp/pane-installation.json --write-out '%{http_code}' -H 'Accept: application/json' "$PANE_PRODUCTION_URL/api/v1/installation/organizations")"
           test "$installation_status" = "401"
 
       - name: Deployment summary

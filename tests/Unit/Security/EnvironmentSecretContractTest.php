@@ -52,6 +52,5 @@ class EnvironmentSecretContractTest extends TestCase
         self::assertStringNotContainsString('DB_PASSWORD=${', $script);
         self::assertStringNotContainsString('WORKOS_API_KEY=${', $script);
         self::assertStringNotContainsString('APP_KEY=${', $script);
-        self::assertStringNotContainsString('PANE_MANAGED_CREDENTIAL_KEYS=${', $script);
     }
 }

@@ -25,7 +25,6 @@ class ReleaseGateDocumentationTest extends TestCase
         self::assertStringContainsString('`https://latte.erme2.com/auth/callback`', $doc);
         self::assertStringContainsString('`SESSION_SECURE_COOKIE=true`', $doc);
         self::assertStringContainsString('`paneBaseUrl` set to the Pane', $doc);
-        self::assertStringContainsString('php artisan managed-credentials:check', $doc);
 
         foreach (['Tests:', 'Static analysis:', 'Dependency and security audit:', 'Migrations reviewed:', 'Secrets generated or rotated:', 'Backups confirmed:', 'Smoke checks passed:'] as $check) {
             self::assertStringContainsString('- [ ] '.$check, $doc);

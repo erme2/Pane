@@ -11,9 +11,10 @@ organization and uses Pane as its only data-access layer. A separate Burro
 application is planned as the private Pane-administrator console.
 
 The current code is a transitional metadata-driven CRUD implementation over one
-default database. The target introduces invite-only multi-tenancy, managed
-MySQL/MariaDB connections, system-catalog discovery, membership-owned rows,
-connection grants, impersonation, and auditing. Read
+default database. The target (see `plans/2026-11-16-pane-simple-cpanel.yaml` in
+Yaup) is a simple control panel over the install's own database: maps, roles,
+membership-owned rows and auditing. Managed connections, discovery, the
+application registry and the message queue were removed in Pane#181. Read
 [Pane Architecture](docs/architecture.md) before making structural changes.
 
 Pane remains focused on three qualities:

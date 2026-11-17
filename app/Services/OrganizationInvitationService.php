@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\AuditEvent;
-use App\Models\Message;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMembership;
@@ -11,10 +10,14 @@ use App\Models\User;
 use App\Support\SettingsRegistry;
 use Closure;
 use DomainException;
+use Illuminate\Mail\Message as MailMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Throwable;
 
 class OrganizationInvitationService
 {
@@ -26,12 +29,11 @@ class OrganizationInvitationService
         private readonly AuditEventService $audit,
         private readonly SettingsService $settings,
         private readonly OrganizationTenancyService $tenancy,
-        private readonly MessageQueue $messages,
     ) {}
 
     /**
      * @param  (Closure(string): string)|null  $invitationUrl  builds the link from the token; when given,
-     *                                                         an invitation email is queued in the same transaction
+     *                                                         the invitation email is sent right after the transaction commits
      * @param  string|null  $targetApplicationId  the frontend the link opens, recorded in the audit event
      * @return array{invitation: OrganizationInvitation, token: string}
      */
@@ -46,7 +48,7 @@ class OrganizationInvitationService
         $email = $this->normalizeEmail($email);
         $this->assertRole($role);
 
-        return DB::transaction(function () use ($actor, $organization, $email, $role, $invitationUrl, $targetApplicationId): array {
+        $result = DB::transaction(function () use ($actor, $organization, $email, $role, $targetApplicationId): array {
             $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $this->assertEmailDoesNotBelongToActiveMembership($organization, $email);
             $this->revokePendingInvitationsForEmail($organization, $email);
@@ -68,13 +70,15 @@ class OrganizationInvitationService
                 ], $targetApplicationId),
             ]);
 
-            $this->queueInvitationEmail($organization, $invitation, $token, $invitationUrl);
-
             return [
                 'invitation' => $invitation,
                 'token' => $token,
             ];
         });
+
+        $this->sendInvitationEmail($organization, $result['invitation'], $result['token'], $invitationUrl);
+
+        return $result;
     }
 
     /**
@@ -142,7 +146,7 @@ class OrganizationInvitationService
         ?Closure $invitationUrl = null,
         ?string $targetApplicationId = null
     ): array {
-        return DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion, $invitationUrl, $targetApplicationId): array {
+        $result = DB::transaction(function () use ($actor, $organization, $invitation, $expectedVersion, $targetApplicationId): array {
             $organization = $this->lockedOrganizationForAdministrator($actor, $organization);
             $locked = $this->lockedInvitation($organization, $invitation);
             $this->assertExpectedVersion($locked, $expectedVersion);
@@ -175,13 +179,15 @@ class OrganizationInvitationService
                 ], $targetApplicationId),
             ]);
 
-            $this->queueInvitationEmail($organization, $replacement, $token, $invitationUrl);
-
             return [
                 'invitation' => $replacement,
                 'token' => $token,
             ];
         });
+
+        $this->sendInvitationEmail($organization, $result['invitation'], $result['token'], $invitationUrl);
+
+        return $result;
     }
 
     public function revokeOrganizationInvitation(
@@ -412,28 +418,32 @@ class OrganizationInvitationService
     }
 
     /**
+     * Sends the invitation email directly through Mail once the invitation is committed. A failed send
+     * is logged and never undoes the invitation: the caller still gets the invitation and its link.
+     *
      * @param  (Closure(string): string)|null  $invitationUrl
      */
-    private function queueInvitationEmail(Organization $organization, OrganizationInvitation $invitation, #[\SensitiveParameter] string $token, ?Closure $invitationUrl): void
+    private function sendInvitationEmail(Organization $organization, OrganizationInvitation $invitation, #[\SensitiveParameter] string $token, ?Closure $invitationUrl): void
     {
         if ($invitationUrl === null) {
             return;
         }
 
-        $this->messages->push(
-            Message::TYPE_SYSTEM_EMAIL,
-            $invitation->email,
-            "You're invited to {$organization->name}",
-            [
-                'invitation_url' => $invitationUrl($token),
-                'organization_name' => $organization->name,
-                'role' => $invitation->role,
-                'expires_at' => $invitation->expires_at->toJSON(),
-            ],
-            Message::PURPOSE_INVITATION,
-            $organization,
-            $invitation,
-        );
+        $url = $invitationUrl($token);
+        $body = "You're invited to {$organization->name} as {$invitation->role}.\n\n"
+            ."Open this link to sign in:\n{$url}\n\n"
+            .'This invitation expires on '.$invitation->expires_at->utc()->format('j F Y, H:i')." UTC.\n";
+
+        try {
+            Mail::raw($body, function (MailMessage $message) use ($invitation, $organization): void {
+                $message->to($invitation->email)->subject("You're invited to {$organization->name}");
+            });
+        } catch (Throwable $exception) {
+            Log::warning('Organization invitation created, but the email could not be sent.', [
+                'organization_invitation_id' => $invitation->getKey(),
+                'exception' => $exception::class,
+            ]);
+        }
     }
 
     /**
