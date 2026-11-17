@@ -6,7 +6,8 @@ use Ramsey\Uuid\Uuid;
 
 /**
  * A frontend this Pane trusts, built in memory from FRONTEND_URL + PANE_EXTRA_FRONTEND_ORIGINS.
- * It has no table: removing a frontend from the env stops it resolving, which ends its sessions.
+ * It has no table: removing a frontend from the env stops it resolving. The session version includes
+ * PANE_SESSION_EPOCH, so changing the epoch revokes every existing session binding (bump it when re-adding a frontend).
  */
 final class ApplicationRegistration
 {
@@ -30,7 +31,7 @@ final class ApplicationRegistration
         public readonly string $trusted_origin,
         public readonly array $redirect_uris,
     ) {
-        $this->session_version = Uuid::uuid5($application_id, 'session')->toString();
+        $this->session_version = Uuid::uuid5($application_id, 'session:'.(string) config('services.latte.session_epoch', ''))->toString();
         $this->kind = self::KIND_LATTE;
         $this->status = self::STATUS_ACTIVE;
     }

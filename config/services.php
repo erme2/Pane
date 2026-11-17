@@ -47,6 +47,7 @@ return [
         'frontend_url' => env('FRONTEND_URL', 'https://latte.localhost'),
         'redirect_uris' => env('LATTE_REDIRECT_URIS'),
         'extra_frontend_origins' => env('PANE_EXTRA_FRONTEND_ORIGINS'),
+        'session_epoch' => env('PANE_SESSION_EPOCH', ''),
     ],
 
 ];

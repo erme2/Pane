@@ -154,6 +154,27 @@ class ExtraFrontendsTest extends TestCase
         $this->assertSame([self::ADMIN_ORIGIN.'/auth/callback'], $restored->redirect_uris);
     }
 
+    public function test_changing_the_session_epoch_revokes_bindings_made_before_a_frontend_was_removed(): void
+    {
+        $registry = app(ApplicationRegistryService::class);
+        $application = $registry->activeApplicationForOrigin(self::ADMIN_ORIGIN);
+        $this->assertNotNull($application);
+        $id = $application->application_id;
+        $version = $application->session_version;
+
+        $this->assertNotNull($registry->activeApplicationForSession($id, $version));
+
+        config()->set('services.latte.extra_frontend_origins', null);
+        $this->assertNull($registry->activeApplicationForSession($id, $version));
+
+        config()->set('services.latte.extra_frontend_origins', self::ADMIN_ORIGIN);
+        config()->set('services.latte.session_epoch', 'after-re-adding');
+
+        $this->assertNull($registry->activeApplicationForSession($id, $version));
+        $this->assertNull($registry->activeApplicationForSessionRequest($id, $version, self::ADMIN_ORIGIN));
+        $this->assertNotSame($version, $registry->activeApplicationForOrigin(self::ADMIN_ORIGIN)?->session_version);
+    }
+
     // With a single configured origin the CORS library always echoes that origin, so check the
     // requested one is not granted rather than that the header is missing.
     private function assertOriginNotAllowed(string $origin): void

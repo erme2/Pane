@@ -15,7 +15,7 @@ Pane trusts the frontends listed in its environment, and nothing else. There is 
 
 - `FRONTEND_URL` is the main frontend origin. `LATTE_REDIRECT_URIS` lists the redirect URIs it may use after sign-in.
 - `PANE_EXTRA_FRONTEND_ORIGINS` adds more frontends: entries separated by `;`, each `origin` or `origin|redirect_uri,redirect_uri`. Without redirect URIs a frontend gets `<origin>/auth/callback`.
-- Every frontend gets a stable id derived from its origin and `LATTE_APPLICATION_ID`, so ids and sessions survive redeploys. A frontend removed from the env stops resolving, which ends its sessions.
+- Every frontend gets a stable id derived from its origin and `LATTE_APPLICATION_ID`, so ids and sessions survive redeploys. A frontend removed from the env stops resolving. Removal alone does not revoke its sessions: they would work again if the origin were re-added. Change `PANE_SESSION_EPOCH` (any string) when re-adding a frontend, or to sign every frontend out; it is part of the session version.
 
 ## Outgoing Email
 
@@ -78,7 +78,7 @@ php artisan key:generate --force
 - `LATTE_REDIRECT_URIS` is a comma-separated list of exact, normalized Latte return URLs that v1 login intents may use.
 - `WORKOS_REDIRECT_URI` should point to Latte's callback route in the Latte/Pane browser flow, for example `https://latte.localhost/auth/callback`.
 - `WORKOS_RETURN_TO` optionally overrides the WorkOS logout return URL. When it is unset, Pane sends users back to the normalized `FRONTEND_URL` root, for example `https://latte.localhost/`.
-- `PANE_EXTRA_FRONTEND_ORIGINS` lists extra frontends this installation trusts besides `FRONTEND_URL`, all in the same configured organization. Entries are separated by `;`, each `origin` or `origin|redirect_uri,redirect_uri`, for example `https://admin.dev.sweegly.co.uk|https://admin.dev.sweegly.co.uk/auth/callback,https://admin.dev.sweegly.co.uk/dashboard`. Without redirect URIs an entry gets `<origin>/auth/callback`. These frontends use the `WORKOS_REDIRECT_URI` path on their own origin and log out to their own root, so add both to WorkOS. Removing an entry disables that frontend and ends its sessions. See [Extra frontends](workos-latte-auth.md#extra-frontends).
+- `PANE_EXTRA_FRONTEND_ORIGINS` lists extra frontends this installation trusts besides `FRONTEND_URL`, all in the same configured organization. Entries are separated by `;`, each `origin` or `origin|redirect_uri,redirect_uri`, for example `https://admin.dev.sweegly.co.uk|https://admin.dev.sweegly.co.uk/auth/callback,https://admin.dev.sweegly.co.uk/dashboard`. Without redirect URIs an entry gets `<origin>/auth/callback`. These frontends use the `WORKOS_REDIRECT_URI` path on their own origin and log out to their own root, so add both to WorkOS. Removing an entry disables that frontend; change `PANE_SESSION_EPOCH` when re-adding it so old sessions stay revoked. See [Extra frontends](workos-latte-auth.md#extra-frontends).
 - `GET /` redirects public visitors to the built-in `GET /docs` OpenAPI documentation page.
 - `PANE_STATUS_USERNAME` and `PANE_STATUS_PASSWORD` protect `GET /status` with HTTP Basic auth. Production must set `PANE_STATUS_PASSWORD`; the page sends no-store cache headers.
 
