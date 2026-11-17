@@ -4,11 +4,14 @@ namespace Tests\Feature\crud;
 
 use App\Exceptions\SystemException;
 use App\Helpers\DefaultsHelper;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Response;
 use Tests\TestCase;
 
 class _04DeleteTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();
