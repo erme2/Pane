@@ -7289,6 +7289,11 @@
                                         },
                                         "request_id": {
                                             "$ref": "#/components/schemas/Uuid"
+                                        },
+                                        "logout_url": {
+                                            "type": "string",
+                                            "format": "uri",
+                                            "description": "Present on membership_required when the WorkOS session id is known. Following it ends the WorkOS session so the next sign-in shows the account choice."
                                         }
                                     },
                                     "additionalProperties": false

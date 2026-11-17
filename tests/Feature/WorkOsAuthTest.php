@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ApplicationRegistryService;
 use App\Services\OrganizationInvitationService;
 use App\Services\OrganizationTenancyService;
+use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
@@ -437,6 +438,15 @@ class WorkOsAuthTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'membership_required')
             ->assertJsonPath('error.message', 'An active organization membership or invitation is required.');
+
+        $logoutUrl = (string) $response->json('error.logout_url');
+
+        $this->assertStringStartsWith('https://api.workos.com/user_management/sessions/logout?', $logoutUrl);
+        $this->assertStringContainsString('session_id=session_123', $logoutUrl);
+        $this->assertSame(
+            app(WorkOsService::class)->logoutUrl('session_123', $application),
+            $logoutUrl
+        );
 
         $this->assertFalse(User::query()->where('email', 'uninvited@example.com')->exists());
     }
