@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ManagedConnectionController;
 use App\Http\Controllers\MapDiscoveryController;
+use App\Http\Controllers\MapReadController;
 use App\Http\Controllers\OrganizationApplicationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationInvitationController;
@@ -74,6 +75,10 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('organizations.memberships.update');
         Route::get('/organizations/{organizationId}/maps/discovery', [MapDiscoveryController::class, 'show'])
             ->name('organizations.maps.discovery');
+        Route::get('/organizations/{organizationId}/maps', [MapReadController::class, 'show'])
+            ->name('organizations.maps.show');
+        Route::get('/organizations/{organizationId}/maps/{source}/{table}', [MapReadController::class, 'table'])
+            ->name('organizations.maps.table');
         Route::get('/organizations/{organizationId}/connections', [ManagedConnectionController::class, 'list'])
             ->name('organizations.connections.index');
         Route::post('/organizations/{organizationId}/connections', [ManagedConnectionController::class, 'store'])

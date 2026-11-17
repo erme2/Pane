@@ -172,8 +172,22 @@ one of the maps' own tables. This is worked out on every save, never stored
 system map or its fields, including moving an app map onto a system table.
 Pane refuses to boot when `APP_TABLE_PREFIX` and `DB_TABLE_PREFIX` overlap.
 The legacy `map_*` rows were imported once as version 1 by "system import";
-the legacy tables stay until #74. Menu, functions, settings, policies and the
-bundle format belong to their own tickets.
+the legacy tables stay until #74.
+
+Two more system tables feed the read API (Pane#178). They are system maps too
+and are read through `App\Services\MapReader`:
+
+- `maps_functions`: one row per switchable Latte function (`records`,
+  `members`, `dashboard`) with `enabled`. Seeded: records and members on,
+  dashboard off;
+- `maps_menu`: one row per menu item (`key`, `label`, `icon`, a `table` or
+  `function` target, `parent_key`, `position`) and a `version`, which Pane#157
+  sets to the same value on every row at each menu save. The read API reports
+  the highest one. Seeded: one item per function. The API leaves out items
+  whose function is off, whose table isn't mapped or isn't visible to the
+  caller, or whose parent is left out.
+
+Settings, policies and the bundle format belong to their own tickets.
 
 ### Editing and protection
 
