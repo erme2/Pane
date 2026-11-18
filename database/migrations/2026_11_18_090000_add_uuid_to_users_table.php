@@ -20,12 +20,12 @@ return new class extends Migration
             $table->char('uuid', 36)->nullable()->unique()->after('user_id');
         });
 
-        DB::table($this->getUsersTableName())->whereNull('uuid')->orderBy('user_id')
-            ->each(function (object $user): void {
+        DB::table($this->getUsersTableName())->whereNull('uuid')
+            ->eachById(function (object $user): void {
                 DB::table($this->getUsersTableName())
                     ->where('user_id', $user->user_id)
                     ->update(['uuid' => (string) Str::uuid()]);
-            }, 100);
+            }, 100, 'user_id');
     }
 
     public function down(): void
