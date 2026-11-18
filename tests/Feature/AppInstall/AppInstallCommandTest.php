@@ -128,22 +128,16 @@ class AppInstallCommandTest extends TestCase
     {
         $this->artisan('app:install', ['path' => $this->folder])->assertSuccessful();
         $source = MapSource::query()->where('name', 'install')->firstOrFail();
-        $inserted = ! MapTable::query()
-            ->where('map_source_id', $source->map_source_id)
-            ->where('name', 'users')
-            ->exists();
-        if ($inserted) {
-            DB::table((new MapTable)->getTable())->insert([
-                'map_source_id' => $source->map_source_id,
-                'name' => 'users',
-                'sql_name' => 'pane_users',
-                'version' => 1,
-            ]);
-        }
+        DB::table((new MapTable)->getTable())->insert([
+            'map_source_id' => $source->map_source_id,
+            'name' => 'fixt_system',
+            'sql_name' => 'pane_fixt_system',
+            'version' => 1,
+        ]);
 
         try {
             $collide = $this->listsMap();
-            $collide['name'] = 'users';
+            $collide['name'] = 'fixt_system';
             $collide['sql_name'] = 'fixt_items';
             $this->maps(['tables' => [$collide]]);
             $this->migration('20261117100002_create_items.sql', 'items');
@@ -156,13 +150,10 @@ class AppInstallCommandTest extends TestCase
             $this->assertFalse(Schema::hasTable('fixt_items'));
             $this->assertSame($versions, DB::table('fixt_schema_migrations')->count());
         } finally {
-            if ($inserted) {
-                DB::table((new MapTable)->getTable())
-                    ->where('map_source_id', $source->map_source_id)
-                    ->where('name', 'users')
-                    ->where('sql_name', 'pane_users')
-                    ->delete();
-            }
+            DB::table((new MapTable)->getTable())
+                ->where('map_source_id', $source->map_source_id)
+                ->where('name', 'fixt_system')
+                ->delete();
         }
     }
 
