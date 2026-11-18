@@ -3,6 +3,7 @@
 namespace Tests\Feature\AppInstall;
 
 use App\Models\Maps\MapField;
+use App\Models\Maps\MapSource;
 use App\Models\Maps\MapTable;
 use App\Models\Maps\MapVersion;
 use Illuminate\Support\Facades\DB;
@@ -121,6 +122,36 @@ class AppInstallCommandTest extends TestCase
             ->assertFailed();
 
         $this->assertFalse(Schema::hasTable('fixt_lists'));
+    }
+
+    public function test_a_name_that_collides_with_an_existing_system_map_is_refused_before_any_write(): void
+    {
+        $this->artisan('app:install', ['path' => $this->folder])->assertSuccessful();
+        $source = MapSource::query()->where('name', 'install')->firstOrFail();
+        DB::table((new MapTable)->getTable())->insert([
+            'map_source_id' => $source->map_source_id,
+            'name' => 'users',
+            'sql_name' => 'pane_users',
+            'version' => 1,
+        ]);
+
+        try {
+            $collide = $this->listsMap();
+            $collide['name'] = 'users';
+            $collide['sql_name'] = 'fixt_items';
+            $this->maps(['tables' => [$collide]]);
+            $this->migration('20261117100002_create_items.sql', 'items');
+            $versions = DB::table('fixt_schema_migrations')->count();
+
+            $this->artisan('app:install', ['path' => $this->folder])
+                ->expectsOutputToContain('system map')
+                ->assertFailed();
+
+            $this->assertFalse(Schema::hasTable('fixt_items'));
+            $this->assertSame($versions, DB::table('fixt_schema_migrations')->count());
+        } finally {
+            DB::table((new MapTable)->getTable())->where('name', 'users')->where('sql_name', 'pane_users')->delete();
+        }
     }
 
     public function test_a_map_outside_the_app_prefix_is_refused(): void

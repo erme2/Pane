@@ -7,6 +7,7 @@ use App\Exceptions\Maps\InvalidMapException;
 use App\Exceptions\Maps\MapNotFoundException;
 use App\Exceptions\Maps\SystemMapProtectedException;
 use App\Models\Maps\MapSource;
+use App\Models\Maps\MapTable;
 use App\Support\Maps\MapProtection;
 use App\Support\Maps\MapRules;
 use App\Support\Maps\TablePrefixes;
@@ -193,6 +194,13 @@ class AppInstaller
                 }
                 if ($sqlName !== null && ! str_starts_with($sqlName, $prefix)) {
                     throw new AppInstallException("The maps file \"$file\" maps \"$sqlName\", which is outside APP_TABLE_PREFIX \"$prefix\".");
+                }
+                $existing = MapTable::query()
+                    ->whereIn('map_source_id', MapSource::query()->where('name', self::SOURCE)->select('map_source_id'))
+                    ->where('name', $table['name'])
+                    ->first();
+                if ($existing !== null && $existing->isSystem()) {
+                    throw new AppInstallException("The maps file \"$file\" reuses the name \"{$table['name']}\" of a system map, which can't be changed.");
                 }
                 if (isset($names[$table['name']])) {
                     throw new AppInstallException("The map name \"{$table['name']}\" is used twice.");
