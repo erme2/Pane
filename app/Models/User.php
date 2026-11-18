@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * Class User
  * This is the user model, it is here because it is the default model for the authentication
  * system that comes with Laravel. I am not sure what we will do with it yet.
  *
+ * @property string $uuid
  * @property string $name
  * @property string $email
  * @property string $password
@@ -44,6 +46,22 @@ class User extends Authenticatable
         parent::__construct($attributes);
 
         $this->table = PaneTable::mapName(AbstractMapper::TABLES['users']);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if (! filled($user->getAttribute('uuid'))) {
+                $user->setAttribute('uuid', (string) Str::uuid());
+            }
+        });
+
+        // The UUID is the user's stable identity in row ownership: it never changes.
+        static::updating(function (User $user): void {
+            if ($user->isDirty('uuid')) {
+                $user->setAttribute('uuid', $user->getOriginal('uuid'));
+            }
+        });
     }
 
     /**

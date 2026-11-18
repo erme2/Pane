@@ -365,7 +365,8 @@ class WorkOsAuthController extends Controller
 
     private function versionedUserId(User $user): string
     {
-        return (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'pane:user:'.$user->getKey());
+        return (string) ($user->getAttribute('uuid')
+            ?: Uuid::uuid5(Uuid::NAMESPACE_URL, 'pane:user:'.$user->getKey()));
     }
 
     private function activeSessionApplication(Request $request): ApplicationRegistration|JsonResponse
