@@ -376,7 +376,9 @@ returns `403 permission_denied`.
 
 Row conditions (`DataRowCondition`) are an admin-defined list combined with
 AND: `{field, op, value}` with `op` one of `=`, `!=`, `<`, `<=`, `>`, `>=`,
-`in` and `is_null`, and `value` a literal or `$membership_id` / `$user_id`.
+`in` and `is_null`, and `value` a literal or `$user_uuid`, the caller's stable user UUID (`$membership_id` and `$user_id`
+are aliases of it). The same UUID is the session's `data.user.id` and the owner
+value Pane stores on create.
 Pane applies them as parameterized `WHERE` clauses to reads, updates and
 deletes. A condition's `applies_to` is `members` (the default, skipped for
 organization administrators) or `everyone`. A create or update that would leave
