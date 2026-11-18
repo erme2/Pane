@@ -74,6 +74,12 @@ use that app's documented hostname, for example `https://latte.localhost`.
 
 Pane keeps isolated unit tests under `tests/Unit` and database-backed integration or request tests under `tests/Feature`. See [Testing](docs/testing.md) for the suite contract, testing environment, and database refresh workflow.
 
+## Installing an app's data folder
+
+`php artisan app:install <path>` runs an app's migrations and maps under
+`APP_TABLE_PREFIX`. See [App Install](docs/app-install.md) for the folder layout
+and the maps file format.
+
 ## Phase-one API contract
 
 The exact versioned routes, verification order, envelopes, statuses, error
