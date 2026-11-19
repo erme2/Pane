@@ -19,6 +19,7 @@ class InvitationMail extends Mailable
     public function __construct(
         public readonly string $invitationUrl,
         public readonly string $role,
+        public readonly string $inviterName,
         public readonly string $expiresAt,
     ) {}
 
@@ -34,6 +35,7 @@ class InvitationMail extends Mailable
             with: [
                 'invitationUrl' => $this->invitationUrl,
                 'role' => $this->role,
+                'inviterName' => $this->inviterName,
                 'expiresAt' => $this->expiresAt,
             ],
         );

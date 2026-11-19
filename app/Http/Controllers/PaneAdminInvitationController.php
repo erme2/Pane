@@ -113,7 +113,7 @@ class PaneAdminInvitationController extends Controller
         $invitation = $result['invitation'];
         $requestId = $this->requestId($request);
         $invitationUrl = $this->invitationUrl((string) $result['token']);
-        $emailSent = $this->sendInvitationEmail($invitation, $invitationUrl);
+        $emailSent = $this->sendInvitationEmail($actor, $invitation, $invitationUrl);
 
         return response()->json([
             'data' => $this->resource($invitation),
@@ -310,12 +310,13 @@ class PaneAdminInvitationController extends Controller
      * Emails the sign-up link. The invitation already exists when this runs, so a mail failure
      * is reported in the response (email_sent) and the link can still be shared by hand.
      */
-    private function sendInvitationEmail(PaneAdminInvitation $invitation, string $invitationUrl): bool
+    private function sendInvitationEmail(User $actor, PaneAdminInvitation $invitation, string $invitationUrl): bool
     {
         try {
             Mail::to($invitation->email)->send(new InvitationMail(
                 invitationUrl: $invitationUrl,
                 role: 'admin',
+                inviterName: (string) ($actor->name ?: $actor->email),
                 expiresAt: $invitation->expires_at->toDateTimeString(),
             ));
         } catch (Throwable $exception) {

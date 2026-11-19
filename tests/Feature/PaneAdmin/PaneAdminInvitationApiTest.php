@@ -40,10 +40,11 @@ class PaneAdminInvitationApiTest extends TestCase
 
         $invitationUrl = (string) $create->json('meta.invitation_url');
 
-        Mail::assertSent(InvitationMail::class, function (InvitationMail $mail) use ($invitationUrl): bool {
+        Mail::assertSent(InvitationMail::class, function (InvitationMail $mail) use ($invitationUrl, $actor): bool {
             return $mail->hasTo('mailed.admin@example.com')
                 && $mail->invitationUrl === $invitationUrl
-                && $mail->role === 'admin';
+                && $mail->role === 'admin'
+                && $mail->inviterName === $actor->name;
         });
     }
 
