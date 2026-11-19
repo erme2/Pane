@@ -48,6 +48,7 @@ flowchart LR
 | Versioned auth and session | `app/Http/Controllers/Auth/WorkOsAuthController.php`, `app/Services/WorkOsService.php` | OAuth state, code exchange, user sync, Laravel session, logout URL |
 | Administrator invitations | `app/Http/Controllers/PaneAdminInvitationController.php`, `app/Services/PaneAdminLifecycleService.php`, `app/Models/PaneAdminInvitation.php` | Invite, list and revoke administrators; first administrator through `pane:bootstrap-admin` |
 | Maps read API | `app/Http/Controllers/MapReadController.php`, `app/Services/MapReader.php` | `GET /api/v1/maps` and `GET /api/v1/maps/{source}/{table}` |
+| Maps admin API | `app/Http/Controllers/MapAdminController.php`, `app/Services/MapAdminService.php` | Edit table maps, the menu and the function switches, audited, never DDL |
 | Maps storage | `app/Services/MapStore.php`, `app/Models/Maps`, `app/Support/Maps` | Versioned maps, validation rules, system-map protection |
 | App install | `app/Console/Commands/AppInstall.php`, `app/Services/AppInstaller.php` | Runs an app's data folder: migrations, then maps ([app-install.md](app-install.md)) |
 | Legacy CRUD | `app/Http/Controllers/Controller.php`, `app/Stories`, `app/Actions`, `app/Mappers`, `app/Helpers` | The Story/Action/Mapper route `/{story}/{subject}`, driven by the legacy `map_*` tables |
@@ -100,8 +101,9 @@ read API; all are edited only through `App\Services\MapStore`:
   database) exists;
 - `maps_tables` and `maps_fields`: one row per mapped table and field. Types and
   validation rules are closed lists stored by name (`App\Support\Maps\MapRules`);
-  `ui`, `default`, `validations` and `computed` are JSON on their row. Computed
-  fields are stored only;
+  `ui`, `access`, `default`, `validations` and `computed` are JSON on their row.
+  `access` is the members rule that opens a table to its members through the CRUD
+  route (docs/crud-authentication.md). Computed fields are stored only;
 - `maps_versions`: every save adds a version with the full snapshot, the diff
   against the previous one, the author and, for a restore, the version it copied.
   A save can pass the version it read, and a stale one is a conflict;

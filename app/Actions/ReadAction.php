@@ -26,6 +26,7 @@ class ReadAction extends AbstractAction
         $mapper = $this->getMapper($subject);
         $model = $this->getModel($subject);
         $keyName = $model->getPrimaryKey($subject);
+        $scope = $this->memberScope($plot);
 
         // if we have a key, we are looking for a specific record
         if ($key) {
@@ -39,26 +40,31 @@ class ReadAction extends AbstractAction
                 throw new ValidationException($errors->toArray());
             } else {
                 try {
-                    $record = $model->find($key);
+                    $record = $this->scopedQuery($model, $plot)->find($key);
                     if ($record) {
                         $plot->data[] = $mapper->extractFromModel($record);
+                    } elseif ($scope !== null) {
+                        // Same answer for a row that is missing and a row the user isn't a member of.
+                        throw $scope->forbidden();
                     } else {
                         $plot->setStatus(Response::HTTP_NOT_FOUND);
                     }
+                } catch (SystemException $e) {
+                    throw $e;
                 } catch (\Exception $e) {
                     throw new SystemException($e->getMessage());
                 }
             }
         } else {
             $pagination = $this->getPaginationData($plot, $subject);
-            $query = $model
+            $query = $this->scopedQuery($model, $plot)
                 ->limit($pagination['limit'])
                 ->offset($pagination['offset'])
                 ->orderBy($pagination['sort'], $pagination['order']);
             foreach ($query->get() as $record) {
                 $plot->data[] = $mapper->extractFromModel($record);
             }
-            $pagination['total'] = $model->count();
+            $pagination['total'] = $this->scopedQuery($model, $plot)->count();
             $pagination['pages'] = ceil($pagination['total'] / $pagination['limit']);
             $plot->setPagination($pagination);
         }

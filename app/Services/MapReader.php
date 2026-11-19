@@ -19,6 +19,12 @@ class MapReader
 {
     private const PUBLIC_VALIDATION_RULES = ['max', 'min', 'email'];
 
+    /** The strong ETag of a read answer; the edit routes' If-Match is checked against it. */
+    public static function etag(string $type, int $version, mixed $attributes): string
+    {
+        return '"'.hash('sha256', $type.$version.json_encode($attributes, JSON_THROW_ON_ERROR)).'"';
+    }
+
     /**
      * @return array{version: int, menu: list<array<string, mixed>>, functions: list<array<string, mixed>>, settings: list<array<string, mixed>>, tables: list<array<string, mixed>>}
      */

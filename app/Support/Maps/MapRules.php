@@ -24,7 +24,7 @@ class MapRules
      * numbered by position in the order given).
      *
      * @param  array<string, mixed>  $map
-     * @return array{name: string, sql_name: string|null, description: string|null, ui: array<mixed>|null, fields: list<array<string, mixed>>}
+     * @return array{name: string, sql_name: string|null, description: string|null, ui: array<mixed>|null, access: array<mixed>|null, fields: list<array<string, mixed>>}
      *
      * @throws InvalidMapException
      */
@@ -47,6 +47,8 @@ class MapRules
         if (isset($map['ui']) && ! is_array($map['ui'])) {
             $errors['ui'] = 'Must be an object or null.';
         }
+
+        $access = self::normalizeAccess($map['access'] ?? null, $map['fields'] ?? [], $errors);
 
         $fields = $map['fields'] ?? [];
         if (! is_array($fields) || ! array_is_list($fields)) {
@@ -141,8 +143,50 @@ class MapRules
             'sql_name' => $map['sql_name'] ?? null,
             'description' => $map['description'] ?? null,
             'ui' => $map['ui'] ?? null,
+            'access' => $access,
             'fields' => $normalized,
         ];
+    }
+
+    /**
+     * The members rule (Pane#185): a "members" object with the members `table`,
+     * the `key` field of this table, and the `members_key` and `members_user`
+     * fields of the members table. The members table's own map is checked where
+     * all maps are known (AppInstaller) and again, fail-closed, on every request.
+     *
+     * @param  array<string, string>  $errors
+     * @return array{members: array{table: string, key: string, members_key: string, members_user: string}}|null
+     */
+    private static function normalizeAccess(mixed $access, mixed $fields, array &$errors): ?array
+    {
+        if ($access === null) {
+            return null;
+        }
+        $members = is_array($access) ? ($access['members'] ?? null) : null;
+        if (! is_array($members) || array_diff(array_keys($access), ['members']) !== []) {
+            $errors['access'] = 'Must be an object with a "members" rule, or null.';
+
+            return null;
+        }
+
+        $parts = ['table', 'key', 'members_key', 'members_user'];
+        $rule = [];
+        foreach ($parts as $part) {
+            if (! isset($members[$part]) || ! is_string($members[$part]) || ! preg_match(self::NAME, $members[$part])) {
+                $errors["access.members.$part"] = 'Use 1-64 lowercase letters, digits or underscores, starting with a letter.';
+            } else {
+                $rule[$part] = $members[$part];
+            }
+        }
+        if (array_diff(array_keys($members), $parts) !== []) {
+            $errors['access.members'] = 'Only '.implode(', ', $parts).' are allowed.';
+        }
+        $names = array_column(is_array($fields) ? array_filter($fields, 'is_array') : [], 'name');
+        if (isset($rule['key']) && ! in_array($rule['key'], $names, true)) {
+            $errors['access.members.key'] = 'Must be a field of this table.';
+        }
+
+        return count($rule) === 4 ? ['members' => $rule] : null;
     }
 
     /**

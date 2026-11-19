@@ -34,10 +34,25 @@ Pane currently treats `user_type_id = 1` as the administrator user type.
 | User state | Normal CRUD reads | Normal CRUD mutations | System/meta subjects |
 | --- | --- | --- | --- |
 | Unauthenticated | `401 Unauthorized` | `401 Unauthorized` | `401 Unauthorized` |
-| Authenticated non-admin | Allowed | `403 Forbidden` | `403 Forbidden` |
+| Authenticated non-admin | Allowed (only own rows on a members-rule table) | `403 Forbidden`, except on a members-rule table (own rows) | `403 Forbidden` |
 | Authenticated administrator | Allowed | Allowed | Allowed by the authorization layer |
 
 Normal CRUD subjects are application tables such as `test_table`. Mutating operations are `POST`, `PUT`, and `DELETE`.
+
+## Members rule (one hop)
+
+A table map can carry an `access` rule that opens the table to signed-in members (Pane#185). The rule names a members table and the columns that connect a row to it:
+
+```json
+"access": {"members": {"table": "list_members", "key": "list_id", "members_key": "list_id", "members_user": "user_uuid"}}
+```
+
+- `key` is a field of the table; `members_key` and `members_user` are fields of the members table, which must be mapped itself. `members_user` holds the user's `uuid`. Maps are read from `maps_tables` / `maps_fields` (the new layer); the legacy `map_*` tables only serve system subjects.
+- A user reads, updates and deletes only the rows whose `key` value has a row in the members table with their `uuid`. A list read returns just those rows. A key the user doesn't belong to (or that doesn't exist) answers `403`.
+- `POST` on a table whose `key` is its own primary key (a new list) is allowed for any signed-in user when the members table has a rule of its own: the creator's members row is added in the same transaction. The members table's other columns need defaults.
+- `POST` on any other rule table (items, members) needs the user to already belong to the `key` value in the body; a `PUT` that moves a row to another key needs the same. So nobody can add themselves to someone else's list, but a member can add another user to theirs.
+- Administrators keep access to everything. System subjects stay administrator-only. A rule whose members table or columns are not in the maps answers `500` (fail closed). `app:install` refuses such a rule before it writes anything.
+- One hop only. Column names come from checked maps and values go through bound parameters. The CRUD route doesn't support a field whose `sql_name` differs from its `name` yet.
 
 ## System and Meta Subjects
 

@@ -33,7 +33,11 @@ class DeleteAction extends AbstractAction
                 if ($errors->any()) {
                     throw new ValidationException($errors->toArray());
                 } else {
-                    $record = $model->find($key);
+                    $record = $this->scopedQuery($model, $plot)->find($key);
+                    $scope = $this->memberScope($plot);
+                    if ($record === null && $scope !== null) {
+                        throw $scope->forbidden();
+                    }
                     if ($record) {
                         $record->delete();
                         $plot->setStatus(Response::HTTP_NO_CONTENT);
@@ -43,7 +47,7 @@ class DeleteAction extends AbstractAction
                     }
                 }
                 // we need to catch ValidationException separately to rethrow it, so that it can be handled appropriately by the caller.
-            } catch (ValidationException $e) {
+            } catch (ValidationException|SystemException $e) {
                 throw $e;
             } catch (\Exception $e) {
                 throw new SystemException($e->getMessage());

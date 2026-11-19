@@ -52,7 +52,7 @@ class MapReadController extends Controller
     private function respond(Request $request, string $type, array $attributes, int $version): JsonResponse
     {
         $requestId = $this->requestId($request);
-        $etag = '"'.hash('sha256', $type.$version.json_encode($attributes, JSON_THROW_ON_ERROR)).'"';
+        $etag = MapReader::etag($type, $version, $attributes);
 
         return response()->json([
             'data' => ['type' => $type, 'attributes' => $attributes],

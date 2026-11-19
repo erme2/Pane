@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\MapAdminController;
 use App\Http\Controllers\MapReadController;
 use App\Http\Controllers\PaneAdminInvitationController;
 use App\Http\Controllers\ReleaseMetadataController;
@@ -53,6 +54,15 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
         Route::delete('/users/{userId}', [UserAnonymisationController::class, 'destroy'])
             ->name('users.anonymise');
         Route::get('/maps', [MapReadController::class, 'show'])->name('maps.show');
+        // Maps admin API (Pane#157). The fixed `menu` and `functions` routes come before `{source}/{table}`.
+        Route::get('/maps/menu', [MapAdminController::class, 'menu'])->name('maps.menu.show');
+        Route::put('/maps/menu', [MapAdminController::class, 'saveMenu'])->name('maps.menu.save');
+        Route::get('/maps/menu/versions', [MapAdminController::class, 'menuVersions'])->name('maps.menu.versions');
+        Route::post('/maps/menu/versions/{version}/restore', [MapAdminController::class, 'restoreMenu'])->name('maps.menu.restore');
+        Route::patch('/maps/functions/{key}', [MapAdminController::class, 'switchFunction'])->name('maps.functions.switch');
+        Route::put('/maps/{source}/{table}', [MapAdminController::class, 'saveTable'])->name('maps.table.save');
+        Route::get('/maps/{source}/{table}/versions', [MapAdminController::class, 'tableVersions'])->name('maps.table.versions');
+        Route::post('/maps/{source}/{table}/versions/{version}/restore', [MapAdminController::class, 'restoreTable'])->name('maps.table.restore');
         Route::get('/maps/{source}/{table}', [MapReadController::class, 'table'])->name('maps.table');
     });
 });

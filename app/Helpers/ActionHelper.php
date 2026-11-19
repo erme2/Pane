@@ -6,6 +6,8 @@ use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
 use App\Stories\StoryPlot;
+use App\Support\Maps\MemberScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
 
 /**
@@ -40,6 +42,29 @@ trait ActionHelper
         $class->setKeyName($class->getPrimaryKey($subject));
 
         return $class;
+    }
+
+    /**
+     * The members rule the controller set for this request, if any (Pane#185).
+     */
+    public function memberScope(StoryPlot $plot): ?MemberScope
+    {
+        $scope = $plot->options['member_scope'] ?? null;
+
+        return $scope instanceof MemberScope ? $scope : null;
+    }
+
+    /**
+     * A query on the model that only reaches the rows the user may access.
+     *
+     * @return Builder<AbstractModel>
+     */
+    public function scopedQuery(AbstractModel $model, StoryPlot $plot): Builder
+    {
+        $query = $model->newQuery();
+        $scope = $this->memberScope($plot);
+
+        return $scope === null ? $query : $scope->restrict($query);
     }
 
     /**
