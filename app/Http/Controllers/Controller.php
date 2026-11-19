@@ -7,6 +7,8 @@ use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\User;
+use App\Services\AppMaps;
+use App\Support\Maps\MemberScope;
 use App\Support\ReleaseMetadata;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -158,20 +160,27 @@ HTML;
      */
     public function runStory(Request $request, string $story, string $subject, $key = null): Response
     {
-        $this->authorizeStory($request, $story, $subject);
+        $scope = $this->authorizeStory($request, $story, $subject);
 
         $story = $this->loadStory($request, $story);
+        if ($scope !== null) {
+            $story->plot->options['member_scope'] = $scope;
+        }
 
         return $this->success($story->run($subject, $key));
     }
 
     /**
+     * Administrators reach every subject. Anyone else is refused on system
+     * subjects, and on writes unless the subject's map has a members rule
+     * (Pane#185): then the returned scope limits them to the rows they belong to.
+     *
      * @throws SystemException
      */
-    private function authorizeStory(Request $request, string $story, string $subject): void
+    private function authorizeStory(Request $request, string $story, string $subject): ?MemberScope
     {
         if (strtolower($story) !== 'crud') {
-            return;
+            return null;
         }
 
         $user = $request->user();
@@ -181,8 +190,15 @@ HTML;
             throw new SystemException("Forbidden CRUD subject ($subject)", Response::HTTP_FORBIDDEN);
         }
 
-        if (in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT, Request::METHOD_DELETE], true) && ! $isAdministrator) {
+        if ($isAdministrator) {
+            return null;
+        }
+
+        $scope = $user instanceof User ? app(AppMaps::class)->memberScope($subject, $user) : null;
+        if ($scope === null && in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT, Request::METHOD_DELETE], true)) {
             throw new SystemException("Forbidden CRUD mutation ($subject)", Response::HTTP_FORBIDDEN);
         }
+
+        return $scope;
     }
 }

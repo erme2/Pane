@@ -111,6 +111,19 @@ class AppInstallCommandTest extends TestCase
         $this->assertSame(0, MapTable::query()->where('name', 'fixt_lists_map')->count());
     }
 
+    public function test_a_members_rule_on_an_unmapped_table_is_refused_before_anything_is_written(): void
+    {
+        $ruled = $this->listsMap();
+        $ruled['access'] = ['members' => ['table' => 'nobody', 'key' => 'id', 'members_key' => 'id', 'members_user' => 'user_uuid']];
+        $this->maps(['tables' => [$ruled]]);
+
+        $this->artisan('app:install', ['path' => $this->folder])
+            ->expectsOutputToContain('members rule on "nobody"')
+            ->assertFailed();
+
+        $this->assertFalse(Schema::hasTable('fixt_lists'));
+    }
+
     public function test_a_system_map_is_refused_before_anything_is_written(): void
     {
         $system = $this->listsMap();
