@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class Controller extends BaseController
 {
@@ -182,6 +183,9 @@ HTML;
         if (strtolower($story) !== 'crud') {
             return null;
         }
+
+        // The mapper resolves tables with Str::snake(), so authorise on that same name.
+        $subject = Str::snake($subject);
 
         $user = $request->user();
         $isAdministrator = (int) $user?->user_type_id === User::PANE_ADMINISTRATOR_USER_TYPE_ID;

@@ -131,6 +131,17 @@ class MembersAccessTest extends TestCase
         $this->assertSame(1, DB::table('mbr_list_items')->count());
     }
 
+    public function test_alternate_subject_spellings_get_the_same_scope(): void
+    {
+        $listId = $this->listFor($this->owner, 'Groceries');
+        DB::table('mbr_list_items')->insert(['list_id' => $listId, 'label' => 'Milk']);
+        $this->actingAs($this->other);
+
+        $this->getJson('/crud/listItems?sort=list_item_id')->assertOk()->assertJsonCount(0, 'data');
+        $this->withCsrfToken()->postJson('/crud/listItems', ['list_id' => $listId, 'label' => 'Eggs'])->assertForbidden();
+        $this->assertSame(1, DB::table('mbr_list_items')->count());
+    }
+
     public function test_a_user_cannot_add_themselves_to_someone_elses_list(): void
     {
         $listId = $this->listFor($this->owner, 'Groceries');
