@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\InvitationMail;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
 use App\Services\PaneAdminLifecycleService;
@@ -10,8 +11,11 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Throwable;
 
 class PaneAdminInvitationController extends Controller
 {
@@ -108,12 +112,15 @@ class PaneAdminInvitationController extends Controller
         /** @var PaneAdminInvitation $invitation */
         $invitation = $result['invitation'];
         $requestId = $this->requestId($request);
+        $invitationUrl = $this->invitationUrl((string) $result['token']);
+        $emailSent = $this->sendInvitationEmail($actor, $invitation, $invitationUrl);
 
         return response()->json([
             'data' => $this->resource($invitation),
             'meta' => [
                 'request_id' => $requestId,
-                'invitation_url' => $this->invitationUrl((string) $result['token']),
+                'invitation_url' => $invitationUrl,
+                'email_sent' => $emailSent,
             ],
         ], Response::HTTP_CREATED)
             ->header('X-Request-Id', $requestId)
@@ -297,6 +304,31 @@ class PaneAdminInvitationController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Emails the sign-up link. The invitation already exists when this runs, so a mail failure
+     * is reported in the response (email_sent) and the link can still be shared by hand.
+     */
+    private function sendInvitationEmail(User $actor, PaneAdminInvitation $invitation, string $invitationUrl): bool
+    {
+        try {
+            Mail::to($invitation->email)->send(new InvitationMail(
+                invitationUrl: $invitationUrl,
+                role: 'admin',
+                inviterName: (string) ($actor->name ?: $actor->email),
+                expiresAt: $invitation->expires_at->toDateTimeString(),
+            ));
+        } catch (Throwable $exception) {
+            Log::warning('Pane administrator invitation email failed', [
+                'invitation_id' => $invitation->getKey(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     private function invitationUrl(string $token): string

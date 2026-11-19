@@ -2,9 +2,13 @@
 
 namespace Tests\Feature\PaneAdmin;
 
+use App\Mail\InvitationMail;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Tests\TestCase;
 
 class PaneAdminInvitationApiTest extends TestCase
@@ -15,6 +19,54 @@ class PaneAdminInvitationApiTest extends TestCase
 
         PaneAdminInvitation::query()->delete();
         User::query()->delete();
+    }
+
+    public function test_creating_an_administrator_invitation_emails_the_sign_up_link(): void
+    {
+        Mail::fake();
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $create = $this
+            ->withV1ApplicationSession()
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->postJson('/api/v1/installation/pane-admin-invitations', [
+                'email' => 'mailed.admin@example.com',
+            ]);
+
+        $create
+            ->assertCreated()
+            ->assertJsonPath('meta.email_sent', true);
+
+        $invitationUrl = (string) $create->json('meta.invitation_url');
+
+        Mail::assertSent(InvitationMail::class, function (InvitationMail $mail) use ($invitationUrl, $actor): bool {
+            return $mail->hasTo('mailed.admin@example.com')
+                && $mail->invitationUrl === $invitationUrl
+                && $mail->role === 'admin'
+                && $mail->inviterName === $actor->name;
+        });
+    }
+
+    public function test_a_mail_failure_keeps_the_invitation_and_reports_it(): void
+    {
+        Mail::shouldReceive('to')->once()->andThrow(new RuntimeException('smtp down'));
+        Log::shouldReceive('warning')->once();
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $create = $this
+            ->withV1ApplicationSession()
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->postJson('/api/v1/installation/pane-admin-invitations', [
+                'email' => 'unsent.admin@example.com',
+            ]);
+
+        $create
+            ->assertCreated()
+            ->assertJsonPath('meta.email_sent', false)
+            ->assertJsonPath('data.attributes.status', PaneAdminInvitation::STATUS_PENDING);
+
     }
 
     public function test_pane_admin_can_create_list_and_revoke_invitations_through_v1_api(): void

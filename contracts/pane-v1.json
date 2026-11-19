@@ -3319,6 +3319,10 @@
                     "invitation_url": {
                         "type": "string",
                         "format": "uri"
+                    },
+                    "email_sent": {
+                      "type": "boolean",
+                      "description": "Whether the invitation email was accepted for delivery. The invitation exists either way."
                     }
                 },
                 "additionalProperties": false

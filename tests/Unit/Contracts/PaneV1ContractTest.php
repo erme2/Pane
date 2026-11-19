@@ -539,6 +539,7 @@ class PaneV1ContractTest extends TestCase
             $this->contract['components']['responses']['PaneAdminInvitationCreated']['content']['application/json']['schema']['properties']['meta']['$ref'],
         );
         $this->assertArrayHasKey('invitation_url', $schemas['InvitationCreateMeta']['properties']);
+        $this->assertArrayHasKey('email_sent', $schemas['InvitationCreateMeta']['properties']);
         $this->assertArrayNotHasKey('invitation_token', $schemas['InvitationCreateMeta']['properties']);
     }
 
