@@ -115,20 +115,23 @@ class MapStore
      */
     public function restoreTable(string $source, string $table, int $version, string $author, ?int $expectedVersion = null): MapVersion
     {
-        $tableModel = $this->table($source, $table);
-        $old = MapVersion::query()
-            ->where('subject_type', MapVersion::SUBJECT_TABLE)
-            ->where('subject_id', $tableModel->map_table_id)
-            ->where('version', $version)
-            ->first();
-        if ($old === null) {
-            throw new MapNotFoundException("Version $version of the map \"$source/$table\" does not exist.");
-        }
+        $old = $this->tableVersion($source, $table, $version);
 
         $snapshot = $old->snapshot;
         unset($snapshot['source']);
 
         return $this->saveTable($source, $snapshot, $author, $expectedVersion, restoredFrom: $version);
+    }
+
+    /** @throws MapNotFoundException */
+    public function tableVersion(string $source, string $table, int $version): MapVersion
+    {
+        return MapVersion::query()
+            ->where('subject_type', MapVersion::SUBJECT_TABLE)
+            ->where('subject_id', $this->table($source, $table)->map_table_id)
+            ->where('version', $version)
+            ->first()
+            ?? throw new MapNotFoundException("Version $version of the map \"$source/$table\" does not exist.");
     }
 
     /**
