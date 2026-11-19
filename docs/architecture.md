@@ -32,7 +32,8 @@ flowchart LR
   database and frontends. Installs never communicate. There is no organization
   model: users are `admin` or `user` (Pane#182).
 - **Invite-only access.** WorkOS proves identity; Pane decides who may sign in.
-  Today only administrator invitations exist (below).
+  Administrators and users have separate invitations (below); open sign-up is a
+  deploy setting (`PANE_SIGNUP_OPEN`).
 - **Frontends** are trusted from the environment only (`FRONTEND_URL` and
   `PANE_EXTRA_FRONTEND_ORIGINS`, see [environment.md](environment.md)); there is
   no application table (Pane#181).
@@ -51,6 +52,7 @@ flowchart LR
 | Maps storage | `app/Services/MapStore.php`, `app/Models/Maps`, `app/Support/Maps` | Versioned maps, validation rules, system-map protection |
 | App install | `app/Console/Commands/AppInstall.php`, `app/Services/AppInstaller.php` | Runs an app's data folder: migrations, then maps ([app-install.md](app-install.md)) |
 | Legacy CRUD | `app/Http/Controllers/Controller.php`, `app/Stories`, `app/Actions`, `app/Mappers`, `app/Helpers` | The Story/Action/Mapper route `/{story}/{subject}`, driven by the legacy `map_*` tables |
+| User invitations | `app/Http/Controllers/UserInvitationController.php`, `app/Services/UserInvitationService.php`, `app/Models/UserInvitation.php` | Invite, list and revoke standard users; acceptance runs in the WorkOS callback |
 | Settings | `app/Services/SettingsService.php`, `app/Support/SettingsRegistry.php`, `app/Models/SettingOverride.php` | Typed settings (one today: administrator invitation expiry); no HTTP settings API |
 | Audit | `app/Services/AuditEventService.php`, `app/Models/AuditEvent.php` | Append-only audit events; no read route |
 | Release metadata | `app/Http/Controllers/ReleaseMetadataController.php`, `app/Support/ReleaseMetadata.php` | `GET /api/v1/release` |

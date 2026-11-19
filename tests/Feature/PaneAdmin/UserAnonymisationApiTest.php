@@ -5,9 +5,11 @@ namespace Tests\Feature\PaneAdmin;
 use App\Models\AuditEvent;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
+use App\Models\UserInvitation;
 use App\Services\AuditEventService;
 use App\Services\PaneAdminLifecycleService;
 use App\Services\UserAnonymisationService;
+use App\Services\UserInvitationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,7 @@ class UserAnonymisationApiTest extends TestCase
         parent::setUp();
 
         PaneAdminInvitation::query()->delete();
+        UserInvitation::query()->delete();
         User::query()->delete();
 
         config()->set('services.workos.api_key', 'sk_test_123');
@@ -60,6 +63,21 @@ class UserAnonymisationApiTest extends TestCase
         $this->assertFalse($anonymised->isPaneAdministrator());
         $this->assertNull($anonymised->workos_id);
         $this->assertNull(User::query()->where('email', self::MEMBER_EMAIL)->first());
+    }
+
+    public function test_anonymising_a_member_redacts_and_revokes_their_user_invitations(): void
+    {
+        Http::fake(['api.workos.com/user_management/users/*' => Http::response(null, 204)]);
+        $admin = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $member = $this->makeMember();
+        $pending = app(UserInvitationService::class)->invite($admin, 'pending.member@example.com')['invitation'];
+        $pending->forceFill(['email' => self::MEMBER_EMAIL])->save();
+
+        $this->withCsrfToken()->actingAs($admin);
+        $this->deleteUser($member)->assertNoContent();
+
+        $this->assertSame(UserInvitation::STATUS_REVOKED, $pending->fresh()->status);
+        $this->assertStringNotContainsString(self::MEMBER_EMAIL, (string) $pending->fresh()->email);
     }
 
     public function test_admin_can_anonymise_a_member_and_email_leaves_invitations_and_audit(): void
