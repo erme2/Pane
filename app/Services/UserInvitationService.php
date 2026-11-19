@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\InvitationVersionConflict;
 use App\Models\AuditEvent;
 use App\Models\User;
 use App\Models\UserInvitation;
@@ -75,15 +76,25 @@ class UserInvitationService
         });
     }
 
-    public function revoke(User $actor, UserInvitation $invitation): UserInvitation
+    /**
+     * @param  (\Closure(UserInvitation): bool)|null  $stillCurrent  checked against the locked row,
+     *                                                               so a concurrent change is never missed
+     *
+     * @throws InvitationVersionConflict when the locked row fails $stillCurrent
+     */
+    public function revoke(User $actor, UserInvitation $invitation, ?\Closure $stillCurrent = null): UserInvitation
     {
         $this->assertPaneAdministrator($actor);
 
-        return DB::transaction(function () use ($actor, $invitation): UserInvitation {
+        return DB::transaction(function () use ($actor, $invitation, $stillCurrent): UserInvitation {
             $locked = UserInvitation::query()
                 ->whereKey($invitation->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ($stillCurrent !== null && ! $stillCurrent($locked)) {
+                throw new InvitationVersionConflict('The invitation changed before it could be revoked.');
+            }
 
             if (! $locked->isPending()) {
                 return $locked;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\InvitationVersionConflict;
 use App\Models\User;
 use App\Models\UserInvitation;
 use App\Services\UserInvitationService;
@@ -150,9 +151,21 @@ class UserInvitationController extends Controller
             return $precondition;
         }
 
+        $ifMatch = (string) $request->header('If-Match');
+
         try {
-            $this->invitations->revoke($actor, $invitation);
+            // The ETag is checked again against the locked row, so an acceptance that commits
+            // after the read above cannot be revoked with the old ETag.
+            $this->invitations->revoke(
+                $actor,
+                $invitation,
+                fn (UserInvitation $locked): bool => hash_equals($this->etag($locked), $ifMatch),
+            );
         } catch (DomainException $exception) {
+            if ($exception instanceof InvitationVersionConflict) {
+                return $this->v1Error($request, 'version_conflict', 'The resource version does not match the If-Match header.', Response::HTTP_PRECONDITION_FAILED);
+            }
+
             return $this->v1Error($request, 'permission_denied', $exception->getMessage(), Response::HTTP_FORBIDDEN);
         }
 
