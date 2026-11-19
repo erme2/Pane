@@ -97,6 +97,18 @@ class UserAnonymisationApiTest extends TestCase
         ], AuditEvent::query()->where('action', 'installation.admin.invite')->limit(1)->pluck('action')->all());
     }
 
+    public function test_an_inactive_user_with_a_live_session_is_refused_on_the_next_request(): void
+    {
+        $member = $this->makeMember();
+        $member->forceFill(['is_active' => false])->save();
+        $this->actingAs($member->fresh());
+
+        $this->withV1ApplicationSession()
+            ->withHeader('Origin', 'https://latte.localhost')
+            ->getJson('/api/v1/maps')
+            ->assertUnauthorized();
+    }
+
     public function test_another_user_cannot_anonymise_a_member(): void
     {
         Http::fake();

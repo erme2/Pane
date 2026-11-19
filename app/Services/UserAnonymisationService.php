@@ -48,18 +48,23 @@ class UserAnonymisationService
             return $current;
         }
 
-        $this->assertNotLastActiveAdministrator($current);
-
-        // WorkOS goes first and is safe to repeat: if the database step then fails, the stored
-        // WorkOS id is still there and a retry finds the WorkOS user already gone.
-        $this->deleteWorkOsUser($current);
-
         return DB::transaction(function () use ($actor, $current): User {
+            // Lock every active administrator row first, so two overlapping erasures take turns
+            // and the last-administrator check below sees the other one's result. The lock is held
+            // across the WorkOS call on purpose: the check must cover the identity deletion.
+            $this->lockActiveAdministrators();
+
             $locked = User::query()->whereKey($current->getKey())->lockForUpdate()->firstOrFail();
 
             if ($this->isAnonymised($locked)) {
                 return $locked;
             }
+
+            $this->assertNotLastActiveAdministrator($locked);
+
+            // WorkOS goes first and is safe to repeat: if the database step then fails, the stored
+            // WorkOS id is still there and a retry finds the WorkOS user already gone.
+            $this->deleteWorkOsUser($locked);
 
             $email = strtolower(trim((string) $locked->email));
 
@@ -91,6 +96,16 @@ class UserAnonymisationService
         }
 
         throw new DomainException('Only the user or an active Pane administrator can anonymise a user.');
+    }
+
+    private function lockActiveAdministrators(): void
+    {
+        User::query()
+            ->where('user_type_id', User::PANE_ADMINISTRATOR_USER_TYPE_ID)
+            ->where('is_active', true)
+            ->orderBy('user_id')
+            ->lockForUpdate()
+            ->get(['user_id']);
     }
 
     private function assertNotLastActiveAdministrator(User $user): void
