@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
+use App\Services\AppMaps;
 use App\Support\PaneTable;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,12 @@ trait CoreHelper
      */
     public function getSqlTableName(string $tableName): string
     {
+        $maps = app(AppMaps::class);
+        $map = $maps->table(Str::snake($tableName));
+        if ($map !== null) {
+            return $maps->sqlName($map);
+        }
+
         $name = PaneTable::mapName(AbstractMapper::TABLES['tables']);
         try {
             $table = DB::table($name)

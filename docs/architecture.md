@@ -98,8 +98,9 @@ read API; all are edited only through `App\Services\MapStore`:
   database) exists;
 - `maps_tables` and `maps_fields`: one row per mapped table and field. Types and
   validation rules are closed lists stored by name (`App\Support\Maps\MapRules`);
-  `ui`, `default`, `validations` and `computed` are JSON on their row. Computed
-  fields are stored only;
+  `ui`, `access`, `default`, `validations` and `computed` are JSON on their row.
+  `access` is the members rule that opens a table to its members through the CRUD
+  route (docs/crud-authentication.md). Computed fields are stored only;
 - `maps_versions`: every save adds a version with the full snapshot, the diff
   against the previous one, the author and, for a restore, the version it copied.
   A save can pass the version it read, and a stale one is a conflict;

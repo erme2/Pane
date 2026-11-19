@@ -210,7 +210,44 @@ class AppInstaller
             }
         }
 
+        $this->checkAccessRules($tables);
+
         return $tables;
+    }
+
+    /**
+     * A members rule must point at a mapped table with the two columns it names
+     * (Pane#185): a table in these files, or one already mapped.
+     *
+     * @param  list<array<string, mixed>>  $tables
+     *
+     * @throws AppInstallException
+     */
+    private function checkAccessRules(array $tables): void
+    {
+        $fieldsByTable = [];
+        foreach ($tables as $table) {
+            $fieldsByTable[$table['name']] = array_column($table['fields'], 'name');
+        }
+        foreach ($tables as $table) {
+            $rule = $table['access']['members'] ?? null;
+            if ($rule === null) {
+                continue;
+            }
+            $members = $rule['table'];
+            $fields = $fieldsByTable[$members] ?? MapTable::query()
+                ->whereIn('map_source_id', MapSource::query()->where('name', self::SOURCE)->select('map_source_id'))
+                ->where('name', $members)
+                ->first()?->fields()->pluck('name')->all();
+            if ($fields === null) {
+                throw new AppInstallException("The map \"{$table['name']}\" has a members rule on \"$members\", which is not mapped.");
+            }
+            foreach (['members_key', 'members_user'] as $part) {
+                if (! in_array($rule[$part], $fields, true)) {
+                    throw new AppInstallException("The map \"{$table['name']}\" has a members rule that names \"{$rule[$part]}\", which is not a field of \"$members\".");
+                }
+            }
+        }
     }
 
     /**

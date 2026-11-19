@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $sql_name
  * @property string|null $description
  * @property array<mixed>|null $ui
+ * @property array<mixed>|null $access
  * @property int $version
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -30,9 +31,9 @@ class MapTable extends Model
 {
     protected $primaryKey = 'map_table_id';
 
-    protected $fillable = ['map_source_id', 'name', 'sql_name', 'description', 'ui', 'version'];
+    protected $fillable = ['map_source_id', 'name', 'sql_name', 'description', 'ui', 'access', 'version'];
 
-    protected $casts = ['ui' => 'array', 'version' => 'integer'];
+    protected $casts = ['ui' => 'array', 'access' => 'array', 'version' => 'integer'];
 
     public function __construct(array $attributes = [])
     {

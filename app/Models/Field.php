@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Mappers\AbstractMapper;
+use App\Services\AppMaps;
 use App\Support\PaneTable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,9 @@ class Field extends Model
 
     protected $primaryKey = 'field_id';
 
+    /** @var list<object>|null validations of a field that comes from the new maps */
+    private ?array $mapValidations = null;
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -39,6 +43,10 @@ class Field extends Model
      */
     public function getValidationFields(): Collection
     {
+        if ($this->mapValidations !== null) {
+            return new Collection($this->mapValidations);
+        }
+
         return $this->hasMany(FieldValidation::class, 'field_id', 'field_id')
             ->where('field_id', $this->field_id)
             ->get();
@@ -50,6 +58,12 @@ class Field extends Model
      */
     public function getFields(string $table): Collection
     {
+        $maps = app(AppMaps::class);
+        $map = $maps->table($table);
+        if ($map !== null) {
+            return $maps->fields($map);
+        }
+
         $query = $this
             ->select([
                 $this->table.'.field_id',
@@ -73,6 +87,18 @@ class Field extends Model
             ->where($this->tablesTable.'.name', $table);
 
         return $query->get();
+    }
+
+    /**
+     * Gives a field built from the new maps its validations, which no legacy table holds.
+     *
+     * @param  list<object>  $validations
+     */
+    public function withMapValidations(array $validations): static
+    {
+        $this->mapValidations = $validations;
+
+        return $this;
     }
 
     /**
