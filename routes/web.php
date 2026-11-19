@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\MapReadController;
 use App\Http\Controllers\PaneAdminInvitationController;
 use App\Http\Controllers\ReleaseMetadataController;
+use App\Http\Controllers\UserAnonymisationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,6 +43,8 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('installation.pane-admin-invitations.store');
         Route::delete('/installation/pane-admin-invitations/{invitationId}', [PaneAdminInvitationController::class, 'destroy'])
             ->name('installation.pane-admin-invitations.destroy');
+        Route::delete('/users/{userId}', [UserAnonymisationController::class, 'destroy'])
+            ->name('users.anonymise');
         Route::get('/maps', [MapReadController::class, 'show'])->name('maps.show');
         Route::get('/maps/{source}/{table}', [MapReadController::class, 'table'])->name('maps.table');
     });

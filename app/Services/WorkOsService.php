@@ -56,6 +56,23 @@ class WorkOsService
             ->json();
     }
 
+    /**
+     * Delete a WorkOS user. A user WorkOS no longer knows (404) counts as deleted, so a
+     * retry after a partial failure is safe.
+     *
+     * @throws RequestException
+     */
+    public function deleteUser(string $workOsUserId): void
+    {
+        $response = Http::acceptJson()
+            ->withToken($this->apiKey())
+            ->delete(self::API_BASE_URL.'/user_management/users/'.rawurlencode($workOsUserId));
+
+        if ($response->status() !== 404) {
+            $response->throw();
+        }
+    }
+
     public function logoutUrl(string $sessionId, ?ApplicationRegistration $application = null): string
     {
         $returnTo = $this->logoutReturnTo($application);
