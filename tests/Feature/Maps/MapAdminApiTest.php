@@ -9,6 +9,8 @@ use App\Models\Maps\MapTable;
 use App\Models\Maps\MapVersion;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
+use App\Services\AuditEventService;
+use App\Services\MapAdminService;
 use App\Services\MapStore;
 use App\Support\PaneTable;
 use Illuminate\Support\Facades\DB;
@@ -270,6 +272,10 @@ class MapAdminApiTest extends TestCase
             'unmapped table' => [[['key' => 'a', 'label' => 'A', 'target' => $table]], 'items.0.target.table'],
             'unknown function' => [[['key' => 'a', 'label' => 'A', 'target' => ['type' => 'function', 'function' => 'nope']]], 'items.0.target.function'],
             'missing parent' => [[['key' => 'a', 'label' => 'A', 'target' => $function, 'parent' => 'z']], 'items.0.parent'],
+            'missing parent after a valid root' => [[
+                ['key' => 'a', 'label' => 'A', 'target' => $function],
+                ['key' => 'b', 'label' => 'B', 'target' => $function, 'parent' => 'missing'],
+            ], 'items.1.parent'],
             'two levels' => [[
                 ['key' => 'a', 'label' => 'A', 'target' => $function],
                 ['key' => 'b', 'label' => 'B', 'target' => $function, 'parent' => 'a'],
@@ -284,6 +290,33 @@ class MapAdminApiTest extends TestCase
         }
         $this->assertSame(1, (int) DB::table(PaneTable::name(PaneTable::MAPS_MENU))->max('version'));
         $this->assertSame(3, DB::table(PaneTable::name(PaneTable::MAPS_MENU))->count());
+    }
+
+    public function test_a_failed_audit_write_rolls_back_a_table_map_save_and_restore(): void
+    {
+        $this->create()->assertCreated();
+        $audit = $this->mock(AuditEventService::class, function ($mock): void {
+            $mock->shouldReceive('record')->andThrow(new \RuntimeException('audit down'));
+        });
+        $service = new MapAdminService(app(MapStore::class), $audit);
+        $map = $this->listsMap();
+        $map['description'] = 'Changed';
+
+        try {
+            $service->saveTable($this->admin, 'install', 'sweegly_lists', $map, 1, null);
+            $this->fail('The audit failure should surface.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('audit down', $e->getMessage());
+        }
+        $this->assertSame(1, (int) MapTable::query()->where('name', 'sweegly_lists')->value('version'));
+
+        try {
+            $service->restoreTable($this->admin, 'install', 'sweegly_lists', 1, 1, null);
+            $this->fail('The audit failure should surface.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('audit down', $e->getMessage());
+        }
+        $this->assertSame(1, (int) MapTable::query()->where('name', 'sweegly_lists')->value('version'));
     }
 
     public function test_a_function_is_switched_with_if_match_and_audited_but_not_versioned(): void

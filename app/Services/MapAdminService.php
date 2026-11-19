@@ -66,10 +66,12 @@ class MapAdminService
         $normalized = MapRules::normalizeTable($map);
         $this->checkColumns($normalized);
 
-        $version = $this->store->saveTable($source, $normalized, $this->author($actor), $expectedVersion ?? 0);
-        $this->auditEdit($actor, 'maps.table.save', $requestId, ['source' => $source, 'table' => $table], $version->version - 1, $version->version);
+        return DB::transaction(function () use ($actor, $source, $table, $normalized, $expectedVersion, $requestId): MapVersion {
+            $version = $this->store->saveTable($source, $normalized, $this->author($actor), $expectedVersion ?? 0);
+            $this->auditEdit($actor, 'maps.table.save', $requestId, ['source' => $source, 'table' => $table], $version->version - 1, $version->version);
 
-        return $version;
+            return $version;
+        });
     }
 
     /**
@@ -90,10 +92,12 @@ class MapAdminService
         unset($snapshot['source']);
         $this->checkColumns(MapRules::normalizeTable($snapshot));
 
-        $new = $this->store->restoreTable($source, $table, $version, $this->author($actor), $expectedVersion);
-        $this->auditEdit($actor, 'maps.table.restore', $requestId, ['source' => $source, 'table' => $table, 'restored_version' => $version], $new->version - 1, $new->version);
+        return DB::transaction(function () use ($actor, $source, $table, $version, $expectedVersion, $requestId): MapVersion {
+            $new = $this->store->restoreTable($source, $table, $version, $this->author($actor), $expectedVersion);
+            $this->auditEdit($actor, 'maps.table.restore', $requestId, ['source' => $source, 'table' => $table, 'restored_version' => $version], $new->version - 1, $new->version);
 
-        return $new;
+            return $new;
+        });
     }
 
     /** @throws MapNotFoundException */
@@ -306,7 +310,8 @@ class MapAdminService
             }
             $parent = $item['parent'] ?? null;
             if ($parent !== null) {
-                $parentItem = is_string($parent) ? $items[array_search($parent, $keys, true)] ?? null : null;
+                $parentIndex = is_string($parent) ? array_search($parent, $keys, true) : false;
+                $parentItem = $parentIndex === false ? null : $items[$parentIndex];
                 if (! is_array($parentItem) || $parent === $key) {
                     $errors["$path.parent"] = 'Must be the key of another item in the menu.';
                 } elseif (($parentItem['parent'] ?? null) !== null) {
