@@ -71,7 +71,6 @@ class PaneV1ContractTest extends TestCase
             array_search('organization_owned_resource', $order, true),
             array_search('active_membership_and_role', $order, true),
         );
-        $this->assertStringContainsString('impersonation target', $this->documentation);
     }
 
     public function test_authentication_csrf_and_session_routes_are_versioned(): void
@@ -128,8 +127,8 @@ class PaneV1ContractTest extends TestCase
         );
         $this->assertFalse($providerError['additionalProperties']);
 
-        $this->assertStringContainsString('Provider rejection callbacks send `error`, optional `error_description`, and', $this->documentation);
-        $this->assertStringContainsString('the forwarded `state` when present', $this->documentation);
+        $this->assertStringContainsString('a rejected provider callback', $this->documentation);
+        $this->assertStringContainsString('without provider details', $this->documentation);
     }
 
     public function test_every_operation_has_an_id_and_declares_responses(): void
@@ -284,7 +283,6 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame(0, $attributes['properties']['database_limit']['minimum']);
         $this->assertSame(0, $attributes['properties']['active_database_connections']['minimum']);
         $this->assertSame('boolean', $attributes['properties']['over_database_limit']['type']);
-        $this->assertStringContainsString('over quota; new connection creation', $this->documentation);
     }
 
     public function test_organization_invitation_operations_use_delivery_url_responses(): void
@@ -337,7 +335,6 @@ class PaneV1ContractTest extends TestCase
             $resend['requestBody']['content']['application/json']['schema']['$ref'],
         );
         $this->assertSame(['validation_failed'], $this->contract['x-pane-operation-errors']['resendOrganizationInvitation']['422']);
-        $this->assertStringContainsString('optional `target_application_id`', $this->documentation);
     }
 
     public function test_maps_read_routes_serve_latte_bootstrap_and_table_maps(): void
@@ -399,7 +396,7 @@ class PaneV1ContractTest extends TestCase
         $this->assertArrayNotHasKey('sql_name', $schemas['TableMapResource']['properties']['attributes']['properties']);
 
         $this->assertSame(['resource_not_found'], $this->contract['x-pane-operation-errors']['getTableMap']['404']);
-        $this->assertStringContainsString('/organizations/{organization_id}/maps', $this->documentation);
+        $this->assertStringContainsString('`GET /api/v1/maps`', $this->documentation);
     }
 
     public function test_maps_discovery_reports_unmapped_missing_and_changed_parts(): void
@@ -430,8 +427,6 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame(['sql_field', 'sql_type', 'nullable'], $schemas['MapDiscoveryUnmappedTable']['properties']['fields']['items']['required']);
         $this->assertSame(['type', 'nullable'], $schemas['MapDiscoveryChanged']['properties']['reasons']['items']['enum']);
         $this->assertSame(MapRules::FIELD_TYPES, $schemas['MapDiscoveryChanged']['properties']['map_type']['enum']);
-        $this->assertStringContainsString('/organizations/{organization_id}/maps/discovery', $this->documentation);
-        $this->assertStringContainsString('pane:maps:discover', $this->documentation);
     }
 
     public function test_data_routes_serve_mapped_tables_by_stable_name_under_policies(): void
@@ -507,9 +502,6 @@ class PaneV1ContractTest extends TestCase
         $this->assertSame(['status' => 404, 'code' => 'resource_not_found'], $access['outcomes']['row_not_visible']);
         $this->assertSame(['status' => 403, 'code' => 'permission_denied'], $access['outcomes']['write_not_allowed_by_policy']);
         $this->assertSame(['data_row.created', 'data_row.updated', 'data_row.deleted'], $access['audit']);
-
-        $this->assertStringContainsString('### Data rows by table name', $this->documentation);
-        $this->assertStringContainsString('/organizations/{organization_id}/data/{source}/tables/{table}/rows', $this->documentation);
     }
 
     public function test_application_and_invitation_responses_are_discriminated(): void
@@ -574,7 +566,7 @@ class PaneV1ContractTest extends TestCase
 
         $this->assertArrayNotHasKey('expires_in_seconds', $schemas['PaneAdminInvitationCreate']['properties']);
         $this->assertArrayNotHasKey('expires_in_seconds', $schemas['OrganizationInvitationCreate']['properties']);
-        $this->assertStringContainsString('never accepts a caller-selected expiry', $this->documentation);
+        $this->assertStringContainsString('a caller never chooses it', $this->documentation);
     }
 
     public function test_auth_callback_exposes_safe_validation_rejection_code(): void
@@ -606,11 +598,9 @@ class PaneV1ContractTest extends TestCase
         $this->assertArrayNotHasKey('details', $error['properties']);
         $this->assertStringNotContainsString('optional invitation intent', $this->documentation);
         $this->assertStringNotContainsString('New invitation activation is implemented only in v1', $this->documentation);
-        $this->assertStringContainsString('Malformed callback input and', $this->documentation);
-        $this->assertStringContainsString('invalid state also return `400 invalid_request`', $this->documentation);
-        $this->assertStringContainsString('returns `422 validation_failed`', $this->documentation);
-        $this->assertStringContainsString('rejection responses omit', $this->documentation);
-        $this->assertStringContainsString('`error.details`', $this->documentation);
+        $this->assertStringContainsString('malformed input or an invalid state returns', $this->documentation);
+        $this->assertStringContainsString('`400 invalid_request` without provider details', $this->documentation);
+        $this->assertStringContainsString('`422 validation_failed`', $this->documentation);
     }
 
     public function test_errors_use_exact_statuses_and_operation_specific_codes(): void

@@ -1,6 +1,22 @@
 # 2026-11-13: Product installs and the description layer
 
-Status: accepted (product owner, 2026-11-13)
+Status: accepted (product owner, 2026-11-13), **superseded in part** by the
+owner's decisions of 2026-11-16 and 2026-11-18
+(`plans/2026-11-16-pane-simple-cpanel.yaml` and
+`plans/2026-11-18-sweegly-mvp-roadmap.yaml` in Yaup; Pane#188).
+
+What no longer holds: organizations, memberships and the application registry
+(answers 3, 14, 17 and the organization-based parts of 4 and 32; Pane#181 and
+Pane#182: one install is the organization, users are `admin` or `user`); external
+sources, named queries and the client query language (answers 5, 10 and 16, now
+parked); groups (answer 17); YAML bundle export and import and the separate
+`sweegly-data` repository (answers 7, 15, 18, 19, 28: an app's migrations and
+maps now live in a `data/` folder run by `php artisan app:install`); the
+`/data/{source}/...` route family (answer 11: the map-driven Story/Action/Mapper
+CRUD route replaces it). What still holds: maps are separate from the real
+tables, migrations create tables, editing a map never touches a table, system maps
+are protected, and the map model of answers 37 to 46. The current architecture is
+in [architecture.md](../architecture.md).
 
 Pane and Latte are the REST API and control panel for every app the product
 owner builds (Sweegly first). Both stay one generic codebase. Each app and

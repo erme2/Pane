@@ -30,7 +30,7 @@ The WorkOS application must include `WORKOS_REDIRECT_URI` in its allowed redirec
 
 ## Extra Frontends
 
-One Pane installation can serve several frontends for the same organization, for example a product app on `https://dev.sweegly.co.uk` (the `FRONTEND_URL` application) and its Latte admin console on `https://admin.dev.sweegly.co.uk`:
+One Pane installation can serve several frontends for the same install, for example a product app on `https://dev.sweegly.co.uk` (the `FRONTEND_URL` application) and its Latte admin console on `https://admin.dev.sweegly.co.uk`:
 
 ```dotenv
 FRONTEND_URL=https://dev.sweegly.co.uk
@@ -39,31 +39,23 @@ WORKOS_REDIRECT_URI=https://dev.sweegly.co.uk/auth/callback
 PANE_EXTRA_FRONTEND_ORIGINS=https://admin.dev.sweegly.co.uk|https://admin.dev.sweegly.co.uk/auth/callback,https://admin.dev.sweegly.co.uk/dashboard
 ```
 
-Each extra frontend is resolved from the environment (no table) in the configured organization, with its own `redirect_to` allowlist. Pane accepts CORS and v1 requests from it, sends its WorkOS callback to the `WORKOS_REDIRECT_URI` path on its own origin (here `https://admin.dev.sweegly.co.uk/auth/callback`), and returns its logout to its own root. Add that callback to the WorkOS Redirects tab and the root as a Sign-out redirect.
+Each extra frontend is resolved from the environment (no table) in this install, with its own `redirect_to` allowlist. Pane accepts CORS and v1 requests from it, sends its WorkOS callback to the `WORKOS_REDIRECT_URI` path on its own origin (here `https://admin.dev.sweegly.co.uk/auth/callback`), and returns its logout to its own root. Add that callback to the WorkOS Redirects tab and the root as a Sign-out redirect.
 
-Frontends of the same organization share one Pane session: signing in on one signs the user in on the others, and each request runs as the frontend it came from. Pane's membership roles still decide what a user may do, so an admin-only frontend should check the session's membership role and send other users to the product app. Removing an entry from `PANE_EXTRA_FRONTEND_ORIGINS` stops that frontend resolving, which ends its sessions; adding it back restores it with the same id.
+Frontends of the same install share one Pane session: signing in on one signs the user in on the others, and each request runs as the frontend it came from. Pane's roles (`admin` or `user`) still decide what a user may do, so an admin-only frontend should check the session's `role` and send other users to the product app. Removing an entry from `PANE_EXTRA_FRONTEND_ORIGINS` stops that frontend resolving, which ends its sessions; adding it back restores it with the same id.
 
-Organization invitation links point to the frontend that created the invitation, unless the request picks another configured frontend with `target_application_id` (its id is derived from its origin and `LATTE_APPLICATION_ID`). This lets an admin console invite guests straight into the product app.
+## Bootstrap the First Administrator
 
-## Bootstrap the First Latte Invite
-
-Pane owns the configured Latte application and organization. Before the first
-real user can sign in, initialize that organization and create the first
-organization administrator invitation from the server side:
+Pane is invite-only, so before the first real user can sign in, create the first
+administrator from the server side:
 
 ```bash
-php artisan latte:bootstrap-organization first.admin@example.com
+php artisan pane:bootstrap-admin first.admin@example.com --name="First Admin"
 ```
 
-The command creates or reuses the configured Latte application/organization,
-temporarily uses the invited email as the bootstrap organization administrator
-actor, revokes any previous pending invite for the same email, and prints a
-fresh invitation URL. The temporary actor is removed after the invitation is
-created, so it does not appear in the member list. Pass `--send` to send the
-invite through Laravel's configured mailer as well. Use the printed URL in the
-browser and sign in to WorkOS with the invited email address.
-If you omit the email argument, the command prompts for the first administrator
-email interactively.
+The command creates the administrator account for that email (it fails when another
+administrator already exists, and repeating it for the same email is safe). Sign in through a frontend with WorkOS using the same
+email address; later administrators are invited through
+`POST /api/v1/installation/pane-admin-invitations` (see [api-v1.md](api-v1.md)).
 
 ## Browser Login Flow
 
@@ -127,7 +119,7 @@ email interactively.
 
 9. Pane syncs the WorkOS user into the local `users` table, logs the user in with Laravel Auth, regenerates the session, clears `workos_state`, stores non-bearer WorkOS session metadata, and forgets the `pane_workos_state` cookie. Pane does not persist WorkOS access or refresh tokens after the code exchange.
 
-10. Pane returns the authenticated user and organization ID to Latte. Latte stores that small user snapshot in browser `sessionStorage`; it does not receive WorkOS access or refresh tokens.
+10. Pane returns the authenticated user (id, email, name and role) to Latte. Latte stores that small user snapshot in browser `sessionStorage`; it does not receive WorkOS access or refresh tokens.
 
 ## Ownership Rules
 

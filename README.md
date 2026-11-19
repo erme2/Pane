@@ -141,7 +141,7 @@ Routes:
 4. `GET /auth/callback` handles the WorkOS callback for legacy Pane-owned redirects.
 5. `GET /auth/user` returns the user attached to the authenticated Pane session.
 
-Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Latte receives only the user snapshot and organization ID.
+Pane does not store WorkOS access or refresh tokens in the Laravel session after login. Latte receives only the user snapshot (id, email, name and role).
 
 For the full Latte and Pane callback sequence, see [WorkOS and Latte Authentication](docs/workos-latte-auth.md).
 
