@@ -51,6 +51,14 @@ Pane's Laravel session cookie.
 | `DELETE /api/v1/users/{user_id}` | session | Anonymise a user for personal-data deletion: the user themselves or an admin (below) |
 | `GET /api/v1/maps` | session | The maps bootstrap (below) |
 | `GET /api/v1/maps/{source}/{table}` | admin | One table map |
+| `PUT /api/v1/maps/{source}/{table}` | admin | Create or replace a table map (maps admin API, below) |
+| `GET /api/v1/maps/{source}/{table}/versions` | admin | The table map's history |
+| `POST /api/v1/maps/{source}/{table}/versions/{version}/restore` | admin | Save an old version again as a new one |
+| `GET /api/v1/maps/menu` | admin | The whole menu, with its `ETag` |
+| `PUT /api/v1/maps/menu` | admin | Replace the whole menu |
+| `GET /api/v1/maps/menu/versions` | admin | The menu's history |
+| `POST /api/v1/maps/menu/versions/{version}/restore` | admin | Save an old menu version again as a new one |
+| `PATCH /api/v1/maps/functions/{key}` | admin | Switch one function on or off |
 
 Outside `/api/v1`:
 
@@ -136,7 +144,41 @@ are left out, and a table map answers `404 resource_not_found`, like an unmapped
 one.
 
 Maps get into an install with `php artisan app:install`
-([app-install.md](app-install.md)); there is no route that writes them yet.
+([app-install.md](app-install.md)) or through the admin API below.
+
+#### Maps admin API
+
+Only `admin` users may call these routes; a `user` gets `403 permission_denied`.
+Editing a map never creates, alters or drops a table: table structure comes from
+migrations, and no route here runs DDL. System maps (Pane's own tables) answer
+`409 system_map_protected`, even for administrators. Every edit, restore and switch
+writes an `audit_events` row (`maps.table.save`, `maps.table.restore`,
+`maps.menu.save`, `maps.menu.restore`, `maps.function.switch`) with the actor, the
+subject and the from and to versions; the full diff stays in `maps_versions`.
+
+- **Table map.** `PUT /api/v1/maps/{source}/{table}` replaces the whole map:
+  `description`, `ui` and `fields` (each with `name`, `type`, `validations`, `ui`,
+  ...), validated like `MapStore` does. The table and every non-computed field must
+  exist in the database (`422 validation_failed`, with a `fields` object of path to
+  message). To change an existing map send `If-Match` with the `ETag` of
+  `GET /api/v1/maps/{source}/{table}`; to create the map of a table that is not mapped
+  yet send `If-None-Match: *` (`201`). The `name` in the body, when present, must match
+  the path. There is no delete: a map can only be emptied of fields.
+- **History.** `GET .../versions` lists `version`, `author`, `restored_from`, `diff` and
+  `created_at`, newest first. `POST .../versions/{version}/restore` needs `If-Match` with
+  the current `ETag` and saves that snapshot as a new version.
+- **Menu.** `GET /api/v1/maps/menu` returns `{version, items}` with the `ETag`
+  `"menu-<version>"`. `PUT` replaces all items (`key`, `label`, optional `icon`, `target`,
+  optional `parent`, `position`) with `If-Match`; the list can't be empty, keys are
+  unique, a `table` target must be a mapped table, a `function` target a known function,
+  and only one level of nesting is allowed. The menu is versioned as the subject `menu`,
+  with the same history and restore routes.
+- **Functions.** `PATCH /api/v1/maps/functions/{key}` with `{"enabled": true|false}`
+  and `If-Match` set to `"<key>-on"` or `"<key>-off"` (the state the caller saw; the
+  response carries the new `ETag`). Switches are audited but not versioned.
+
+Error codes: `400 invalid_request` (malformed `If-Match`), `404 resource_not_found`,
+`412 version_conflict`, `428 precondition_required`.
 
 ### Legacy CRUD route
 
@@ -204,7 +246,5 @@ Production messages never contain SQL, credentials, hosts, paths or traces.
 Each item has its own ticket and is added here when it lands:
 
 - invitations for users and the sign-up setting (Pane#183);
-- the maps admin API: edit a map's fields, validation and views with `If-Match`,
-  audit and history, never tables (Pane#157);
 - map-driven CRUD with access through a members table (Pane#185, Pane#194);
 - native-client sign-in (Pane#130).

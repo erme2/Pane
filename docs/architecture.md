@@ -47,6 +47,7 @@ flowchart LR
 | Versioned auth and session | `app/Http/Controllers/Auth/WorkOsAuthController.php`, `app/Services/WorkOsService.php` | OAuth state, code exchange, user sync, Laravel session, logout URL |
 | Administrator invitations | `app/Http/Controllers/PaneAdminInvitationController.php`, `app/Services/PaneAdminLifecycleService.php`, `app/Models/PaneAdminInvitation.php` | Invite, list and revoke administrators; first administrator through `pane:bootstrap-admin` |
 | Maps read API | `app/Http/Controllers/MapReadController.php`, `app/Services/MapReader.php` | `GET /api/v1/maps` and `GET /api/v1/maps/{source}/{table}` |
+| Maps admin API | `app/Http/Controllers/MapAdminController.php`, `app/Services/MapAdminService.php` | Edit table maps, the menu and the function switches, audited, never DDL |
 | Maps storage | `app/Services/MapStore.php`, `app/Models/Maps`, `app/Support/Maps` | Versioned maps, validation rules, system-map protection |
 | App install | `app/Console/Commands/AppInstall.php`, `app/Services/AppInstaller.php` | Runs an app's data folder: migrations, then maps ([app-install.md](app-install.md)) |
 | Legacy CRUD | `app/Http/Controllers/Controller.php`, `app/Stories`, `app/Actions`, `app/Mappers`, `app/Helpers` | The Story/Action/Mapper route `/{story}/{subject}`, driven by the legacy `map_*` tables |
