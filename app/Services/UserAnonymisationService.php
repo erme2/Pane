@@ -6,6 +6,7 @@ use App\Exceptions\UserAnonymisationException;
 use App\Models\AuditEvent;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
+use App\Models\UserInvitation;
 use DomainException;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Support\Facades\DB;
@@ -159,6 +160,19 @@ class UserAnonymisationService
 
     private function redactInvitations(User $user, string $email): void
     {
+        UserInvitation::query()
+            ->where(function ($query) use ($user, $email): void {
+                $query->whereRaw('LOWER(email) = ?', [$email])
+                    ->orWhere('accepted_by_user_id', $user->getKey());
+            })
+            ->each(function (UserInvitation $invitation): void {
+                $invitation->forceFill([
+                    'email' => 'anon-'.Str::lower(Str::random(16)).'@'.self::ANONYMISED_DOMAIN,
+                    'status' => $invitation->isPending() ? UserInvitation::STATUS_REVOKED : $invitation->status,
+                    'revoked_at' => $invitation->isPending() ? now() : $invitation->revoked_at,
+                ])->save();
+            });
+
         PaneAdminInvitation::query()
             ->where(function ($query) use ($user, $email): void {
                 $query->whereRaw('LOWER(email) = ?', [$email])

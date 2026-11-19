@@ -979,6 +979,154 @@
                 "summary": "Revoke Pane Admin Invitation"
             }
         },
+        "/installation/user-invitations": {
+            "get": {
+                "operationId": "listUserInvitations",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageCursor"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageLimit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginOptional"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/InvitationCollection"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidRequestOrInvalidCursor"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDenied"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "List User Invitations"
+            },
+            "post": {
+                "operationId": "createUserInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginRequired"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaneAdminInvitationCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/PaneAdminInvitationCreated"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Error409OperationConflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Error422ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "Create User Invitation"
+            }
+        },
+        "/installation/user-invitations/{invitation_id}": {
+            "delete": {
+                "operationId": "revokeUserInvitation",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/RequestId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/InvitationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/XsrfToken"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IfMatch"
+                    },
+                    {
+                        "$ref": "#/components/parameters/OriginRequired"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Invitation revoked",
+                        "headers": {
+                            "X-Request-Id": {
+                                "$ref": "#/components/headers/RequestId"
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Error400InvalidRequestOrInvalidIdentifier"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Error401AuthenticationRequiredOrSessionExpired"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Error403ApplicationNotAllowedOrPermissionDeniedOrCsrfFailed"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "412": {
+                        "$ref": "#/components/responses/VersionConflict"
+                    },
+                    "428": {
+                        "$ref": "#/components/responses/PreconditionRequired"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/DependencyUnavailable"
+                    }
+                },
+                "summary": "Revoke User Invitation"
+            }
+        },
         "/installation/audit-events": {
             "get": {
                 "operationId": "listInstallationAuditEvents",
@@ -4022,7 +4170,10 @@
                                         "type": "null"
                                     },
                                     "role": {
-                                        "const": "pane_administrator"
+                                        "enum": [
+                                            "pane_administrator",
+                                            "user"
+                                        ]
                                     }
                                 },
                                 "additionalProperties": false
@@ -9966,6 +10117,82 @@
                 "membership_required",
                 "permission_denied",
                 "impersonation_required",
+                "csrf_failed"
+            ],
+            "404": [
+                "resource_not_found"
+            ],
+            "412": [
+                "version_conflict"
+            ],
+            "428": [
+                "precondition_required"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "listUserInvitations": {
+            "400": [
+                "invalid_request",
+                "invalid_cursor"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "createUserInvitation": {
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
+                "csrf_failed"
+            ],
+            "409": [
+                "operation_conflict"
+            ],
+            "422": [
+                "validation_failed"
+            ],
+            "429": [
+                "rate_limited"
+            ],
+            "500": [
+                "internal_error"
+            ],
+            "503": [
+                "dependency_unavailable"
+            ]
+        },
+        "revokeUserInvitation": {
+            "400": [
+                "invalid_request",
+                "invalid_identifier"
+            ],
+            "401": [
+                "authentication_required",
+                "session_expired"
+            ],
+            "403": [
+                "application_not_allowed",
+                "permission_denied",
                 "csrf_failed"
             ],
             "404": [

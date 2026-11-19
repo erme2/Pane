@@ -48,6 +48,9 @@ Pane's Laravel session cookie.
 | `GET /api/v1/installation/pane-admin-invitations` | admin | List administrator invitations (cursor paging) |
 | `POST /api/v1/installation/pane-admin-invitations` | admin | Invite an administrator by `email`; `201` with a one-time `meta.invitation_url` |
 | `DELETE /api/v1/installation/pane-admin-invitations/{invitation_id}` | admin | Revoke an invitation; needs `If-Match` with the invitation's `ETag` |
+| `GET /api/v1/installation/user-invitations` | admin | List user invitations (cursor paging) |
+| `POST /api/v1/installation/user-invitations` | admin | Invite a user by `email`; `201` with a one-time `meta.invitation_url` |
+| `DELETE /api/v1/installation/user-invitations/{invitation_id}` | admin | Revoke a user invitation; needs `If-Match` with the invitation's `ETag` |
 | `DELETE /api/v1/users/{user_id}` | session | Anonymise a user for personal-data deletion: the user themselves or an admin (below) |
 | `GET /api/v1/maps` | session | The maps bootstrap (below) |
 | `GET /api/v1/maps/{source}/{table}` | admin | One table map |
@@ -87,6 +90,26 @@ days); a caller never chooses it, and the response shows the resolved
 reads never carry a token. Creation and revocation are audited. The first
 administrator is created from the server with
 `php artisan pane:bootstrap-admin <email>`.
+
+### User invitations
+
+Same shape and rules as administrator invitations, with `role: user`, in their
+own table (`user_invitations`) and routes. Only administrators call them; a
+standard user gets `403 permission_denied`. Inviting an email that already belongs
+to an active user is `409 operation_conflict`. Expiry uses the same setting as
+administrator invitations. The invitation URL carries the same `invitation_token`;
+Pane looks the token up among user invitations first, then administrator ones.
+Accepting a user invitation creates a standard user (or reactivates an existing
+standard user) and never changes an administrator: an invitation for an
+administrator's email is refused with `invitation_invalid`.
+
+### Open sign-up
+
+`pane.signup.open` (environment `PANE_SIGNUP_OPEN`, default `false`) is a deploy
+setting, not an API. When it is on, the callback creates a standard user for an
+unknown email that WorkOS verified, with no invitation. When it is off, an unknown
+email gets `membership_required`. Administrators are invitation-only either way,
+and a deactivated user stays refused.
 
 ### Anonymising a user
 
@@ -203,7 +226,6 @@ Production messages never contain SQL, credentials, hosts, paths or traces.
 
 Each item has its own ticket and is added here when it lands:
 
-- invitations for users and the sign-up setting (Pane#183);
 - the maps admin API: edit a map's fields, validation and views with `If-Match`,
   audit and history, never tables (Pane#157);
 - map-driven CRUD with access through a members table (Pane#185, Pane#194);

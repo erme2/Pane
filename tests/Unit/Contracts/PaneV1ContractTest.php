@@ -524,8 +524,8 @@ class PaneV1ContractTest extends TestCase
 
         $this->assertCount(2, $schemas['InvitationResource']['oneOf']);
         $this->assertSame(
-            'pane_administrator',
-            $schemas['InvitationResource']['oneOf'][0]['properties']['attributes']['properties']['role']['const'],
+            ['pane_administrator', 'user'],
+            $schemas['InvitationResource']['oneOf'][0]['properties']['attributes']['properties']['role']['enum'],
         );
         $this->assertSame(
             ['organization_administrator', 'organization_user'],

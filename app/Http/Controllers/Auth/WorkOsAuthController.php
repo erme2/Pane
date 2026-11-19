@@ -7,6 +7,7 @@ use App\Models\ApplicationRegistration;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
 use App\Services\PaneAdminLifecycleService;
+use App\Services\UserInvitationService;
 use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,7 @@ class WorkOsAuthController extends Controller
     public function __construct(
         private readonly WorkOsService $workOs,
         private readonly PaneAdminLifecycleService $administrators,
+        private readonly UserInvitationService $userInvitations,
         private readonly ApplicationRegistryService $applications,
     ) {}
 
@@ -825,6 +827,11 @@ class WorkOsAuthController extends Controller
         array $workOsUser,
         array $authentication
     ): User {
+        // The token hash is unique per table, so it is either a user invitation or an administrator one.
+        if ($this->userInvitations->exists($tokenHash)) {
+            return $this->userInvitations->acceptHash($tokenHash, $workOsUser, $authentication);
+        }
+
         return $this->administrators->acceptPaneAdministratorInvitationHash(
             $tokenHash,
             $workOsUser,
@@ -855,10 +862,30 @@ class WorkOsAuthController extends Controller
             ->first();
 
         if (! $user instanceof User) {
-            throw new InvalidArgumentException('An active account or invitation is required.');
+            return $this->newOpenSignUpUser($workOsUser, $email);
         }
 
         return $user;
+    }
+
+    /**
+     * An unknown email becomes a standard user only when open sign-up is on (`pane.signup.open`, set by
+     * the deploy) and WorkOS verified the email. Administrators always need an invitation.
+     *
+     * @param  array<string, mixed>  $workOsUser
+     */
+    private function newOpenSignUpUser(array $workOsUser, string $email): User
+    {
+        if (! config('pane.signup.open') || ($workOsUser['email_verified'] ?? false) !== true) {
+            throw new InvalidArgumentException('An active account or invitation is required.');
+        }
+
+        return new User([
+            'user_type_id' => User::STANDARD_USER_TYPE_ID,
+            'email' => $email,
+            'password' => Hash::make(Str::random(40)),
+            'is_active' => true,
+        ]);
     }
 
     /**
@@ -922,10 +949,14 @@ class WorkOsAuthController extends Controller
     private function invitationErrorCode(InvalidArgumentException $exception): string
     {
         return match ($exception->getMessage()) {
-            'Pane administrator invitation has expired.' => 'invitation_expired',
-            'Pane administrator invitation was revoked.' => 'invitation_revoked',
-            'Pane administrator invitation was already accepted.' => 'invitation_already_accepted',
-            'Pane administrator invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
+            'Pane administrator invitation has expired.',
+            'User invitation has expired.' => 'invitation_expired',
+            'Pane administrator invitation was revoked.',
+            'User invitation was revoked.' => 'invitation_revoked',
+            'Pane administrator invitation was already accepted.',
+            'User invitation was already accepted.' => 'invitation_already_accepted',
+            'Pane administrator invitation email does not match the WorkOS identity.',
+            'User invitation email does not match the WorkOS identity.' => 'invitation_email_mismatch',
             'An active account or invitation is required.' => 'membership_required',
             'Only active Pane administrators can access Burro.' => 'permission_denied',
             'Pane account is inactive.' => 'permission_denied',
