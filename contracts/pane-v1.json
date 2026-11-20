@@ -3418,6 +3418,16 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "application_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "Application ID of this install's Latte application (primary front end)."
+                    },
+                    "application_ids": {
+                      "type": "object",
+                      "description": "Application ID for each trusted front-end origin.",
+                      "additionalProperties": {"type": "string", "format": "uuid"}
                     }
                 },
                 "additionalProperties": false
