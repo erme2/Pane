@@ -177,16 +177,38 @@ class SweeglyCrudTest extends TestCase
         $this->assertSame(0, DB::table('fixt_list_items')->count());
     }
 
-    public function test_unknown_columns_are_never_written(): void
+    public function test_unknown_columns_are_rejected_and_nothing_is_written(): void
     {
         $this->actingAs($this->owner);
 
-        $this->withCsrfToken()->postJson('/crud/lists', ['name' => 'Groceries', 'created_by_membership_id' => $this->owner->uuid, 'colour' => 'red', 'deleted_at' => '2026-01-01'])
-            ->assertStatus(Response::HTTP_CREATED);
+        $this->withCsrfToken()->postJson('/crud/lists', ['name' => 'Groceries', 'created_by_membership_id' => $this->owner->uuid, 'colour' => 'red'])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->withCsrfToken()->postJson('/crud/lists', ['name' => 'Groceries', 'created_by_membership_id' => $this->owner->uuid, 'deleted_at' => '2026-01-01'])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->assertSame(0, DB::table('fixt_lists')->count());
 
-        $row = DB::table('fixt_lists')->first();
-        $this->assertNull($row->deleted_at);
-        $this->assertObjectNotHasProperty('colour', $row);
+        $listId = $this->listFor($this->owner, 'Groceries');
+        $this->withCsrfToken()->putJson("/crud/lists/$listId", ['name' => 'Renamed', 'created_by_membership_id' => $this->owner->uuid, 'colour' => 'red'])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->assertSame('Groceries', DB::table('fixt_lists')->where('id', $listId)->value('name'));
+    }
+
+    public function test_lists_filter_by_mapped_fields(): void
+    {
+        $listId = $this->listFor($this->owner, 'Groceries');
+        foreach (['Apples' => 1, 'Bread' => 2, 'Cheese' => 2] as $text => $position) {
+            DB::table('fixt_list_items')->insert(['list_id' => $listId, 'text' => $text, 'position' => $position]);
+        }
+        $otherListId = $this->listFor($this->other, 'Not mine');
+        DB::table('fixt_list_items')->insert(['list_id' => $otherListId, 'text' => 'Hidden', 'position' => 2]);
+        $this->actingAs($this->owner);
+
+        $response = $this->getJson('/crud/list_items?filter[position]=2&sort=text');
+        $response->assertOk()->assertJsonCount(2, 'data')->assertJsonPath('pagination.total', 2)
+            ->assertJsonPath('data.0.text', 'Bread')->assertJsonPath('data.1.text', 'Cheese');
+        $this->getJson('/crud/list_items?filter[text]=Apples')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.text', 'Apples');
+        $this->getJson('/crud/list_items?filter[text]=Hidden')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/crud/list_items?filter[nope]=1')->assertStatus(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_an_administrator_manages_categories_and_products(): void

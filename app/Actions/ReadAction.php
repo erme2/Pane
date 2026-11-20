@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\PaginationHelper;
 use App\Stories\StoryPlot;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -57,18 +58,59 @@ class ReadAction extends AbstractAction
             }
         } else {
             $pagination = $this->getPaginationData($plot, $subject);
-            $query = $this->scopedQuery($model, $plot)
+            $filters = $this->getFilters($plot, $subject);
+            $query = $this->applyFilters($this->scopedQuery($model, $plot), $filters)
                 ->limit($pagination['limit'])
                 ->offset($pagination['offset'])
                 ->orderBy($pagination['sort'], $pagination['order']);
             foreach ($query->get() as $record) {
                 $plot->data[] = $mapper->extractFromModel($record);
             }
-            $pagination['total'] = $this->scopedQuery($model, $plot)->count();
+            $pagination['total'] = $this->applyFilters($this->scopedQuery($model, $plot), $filters)->count();
             $pagination['pages'] = ceil($pagination['total'] / $pagination['limit']);
             $plot->setPagination($pagination);
         }
 
         return $plot;
+    }
+
+    /**
+     * The `filter[<field>]=<value>` query parameters: equality on mapped fields.
+     * A filter on a field the map doesn't declare (or a password) is a 400.
+     *
+     * @return array<string, scalar>
+     *
+     * @throws ValidationException
+     */
+    private function getFilters(StoryPlot $plot, string $subject): array
+    {
+        $filters = $plot->requestData['data']['filter'] ?? [];
+        if (! is_array($filters)) {
+            throw new ValidationException(['filter' => ['The filter must be filter[field]=value']]);
+        }
+        $types = $this->getMapper($subject)->getFields($subject)->pluck('type', 'name')->all();
+        $allowed = array_keys(array_filter($types, fn ($type) => $type !== 'password'));
+        $errors = [];
+        foreach ($filters as $name => $value) {
+            if (! in_array($name, $allowed, true)) {
+                $errors["filter.$name"] = ['Unknown filter field'];
+            } elseif (! is_scalar($value)) {
+                $errors["filter.$name"] = ['The filter value must be a single value'];
+            }
+        }
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        return $filters;
+    }
+
+    private function applyFilters(Builder $query, array $filters): Builder
+    {
+        foreach ($filters as $name => $value) {
+            $query->where($name, '=', $value);
+        }
+
+        return $query;
     }
 }
