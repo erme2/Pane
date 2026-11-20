@@ -45,6 +45,15 @@ class ReleaseMetadataTest extends TestCase
         $this->assertNotSame('', $response->json('data.attributes.ref'));
     }
 
+    public function test_release_metadata_endpoint_includes_the_install_application_id(): void
+    {
+        Config::set('services.latte.application_id', '326f1263-800a-5db7-8e63-4489072f2668');
+
+        $this->getJson('/api/v1/release')
+            ->assertOk()
+            ->assertJsonPath('data.attributes.application_id', '326f1263-800a-5db7-8e63-4489072f2668');
+    }
+
     public function test_release_metadata_endpoint_returns_github_or_override_build_metadata_only(): void
     {
         Config::set('app.name', 'pane');
