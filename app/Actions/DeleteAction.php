@@ -33,7 +33,7 @@ class DeleteAction extends AbstractAction
                 if ($errors->any()) {
                     throw new ValidationException($errors->toArray());
                 } else {
-                    $record = $this->scopedQuery($model, $plot)->find($key);
+                    $record = $this->scopedQuery($model, $plot, true)->find($key);
                     $scope = $this->memberScope($plot);
                     if ($record === null && $scope !== null) {
                         throw $scope->forbidden();
