@@ -77,13 +77,15 @@ Prefer the narrowest suite that proves the behavior:
 
 `tests/Feature/Maps/Integration` runs the Pane#164 table move (one `RENAME TABLE`, data and foreign keys kept) on a real MySQL or MariaDB server.
 
+`tests/Feature/crud/Integration/SweeglyCrudTest.php` is the step 2 gate (Pane#194): it installs the fixture data folder in `tests/Fixtures/sweegly-data` (a copy of the Sweegly migrations for lists, list_members, list_items, products and categories, plus a maps file) with `app:install`, then runs create, read, list (pagination, sort, order), update and delete over the CRUD route as an administrator and as users, the members access rule, and the map validations. Keep the fixture in step with Sweegly's `data/` folder when its tables change.
+
 They skip unless `PANE_IT_DB_HOST` is set. CI runs them on every PR in the `integration` job, once on MySQL 8.4 and once on MariaDB 11.4, with `--fail-on-skipped`. To run them locally:
 
 ```bash
 docker run -d --rm --name pane-it-mysql -e MYSQL_ROOT_PASSWORD=root -p 33061:3306 mysql:8.4
 ./bash/test.sh -o no -f no   # once, to prepare the SQLite database
 PANE_IT_DB_ENGINE=mysql PANE_IT_DB_HOST=127.0.0.1 PANE_IT_DB_PORT=33061 PANE_IT_DB_ROOT_PASSWORD=root \
-  php artisan test --env=testing --filter='RealPrefixUnprefixedTablesTest'
+  php artisan test --env=testing --filter='RealPrefixUnprefixedTablesTest|SweeglyCrudTest'
 ```
 
 Use `mariadb:11.4` and `PANE_IT_DB_ENGINE=mariadb` for MariaDB. Each test creates its own database and drops it afterwards.

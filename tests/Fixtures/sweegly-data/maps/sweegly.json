@@ -1,0 +1,61 @@
+{
+  "source": "install",
+  "tables": [
+    {
+      "name": "lists",
+      "sql_name": "fixt_lists",
+      "description": "Shopping lists",
+      "access": { "members": { "table": "list_members", "key": "id", "members_key": "list_id", "members_user": "membership_id" } },
+      "fields": [
+        { "name": "id", "type": "number", "primary": true },
+        { "name": "name", "type": "string", "validations": [{ "rule": "max", "value": 100 }] },
+        { "name": "created_by_membership_id", "type": "string", "validations": [{ "rule": "max", "value": 36 }] }
+      ]
+    },
+    {
+      "name": "list_members",
+      "sql_name": "fixt_list_members",
+      "description": "Who is on a list",
+      "access": { "members": { "table": "list_members", "key": "list_id", "members_key": "list_id", "members_user": "membership_id" } },
+      "fields": [
+        { "name": "id", "type": "number", "primary": true },
+        { "name": "list_id", "type": "number" },
+        { "name": "membership_id", "type": "string", "validations": [{ "rule": "max", "value": 36 }] }
+      ]
+    },
+    {
+      "name": "list_items",
+      "sql_name": "fixt_list_items",
+      "description": "Items on a list",
+      "access": { "members": { "table": "list_members", "key": "list_id", "members_key": "list_id", "members_user": "membership_id" } },
+      "fields": [
+        { "name": "id", "type": "number", "primary": true },
+        { "name": "list_id", "type": "number" },
+        { "name": "text", "type": "string", "sortable": true, "validations": [{ "rule": "max", "value": 200 }] },
+        { "name": "position", "type": "number", "nullable": true },
+        { "name": "note", "type": "string", "nullable": true, "validations": [{ "rule": "max", "value": 500 }] }
+      ]
+    },
+    {
+      "name": "categories",
+      "sql_name": "fixt_categories",
+      "description": "Product categories",
+      "fields": [
+        { "name": "id", "type": "number", "primary": true },
+        { "name": "name", "type": "string", "validations": [{ "rule": "max", "value": 100 }] },
+        { "name": "position", "type": "number", "nullable": true }
+      ]
+    },
+    {
+      "name": "products",
+      "sql_name": "fixt_products",
+      "description": "Products",
+      "fields": [
+        { "name": "id", "type": "number", "primary": true },
+        { "name": "name", "type": "string", "sortable": true, "validations": [{ "rule": "max", "value": 200 }] },
+        { "name": "brand", "type": "string", "nullable": true, "validations": [{ "rule": "max", "value": 100 }] },
+        { "name": "category_id", "type": "number", "nullable": true }
+      ]
+    }
+  ]
+}
