@@ -59,12 +59,12 @@ trait ActionHelper
      *
      * @return Builder<AbstractModel>
      */
-    public function scopedQuery(AbstractModel $model, StoryPlot $plot): Builder
+    public function scopedQuery(AbstractModel $model, StoryPlot $plot, bool $write = false): Builder
     {
         $query = $model->newQuery();
         $scope = $this->memberScope($plot);
 
-        return $scope === null ? $query : $scope->restrict($query);
+        return $scope === null ? $query : $scope->restrict($query, $write);
     }
 
     /**

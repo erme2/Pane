@@ -155,7 +155,7 @@ class MapRules
      * all maps are known (AppInstaller) and again, fail-closed, on every request.
      *
      * @param  array<string, string>  $errors
-     * @return array{members: array{table: string, key: string, members_key: string, members_user: string}}|null
+     * @return array{members: array{table: string, key: string, members_key: string, members_user: string, role?: array{field: string, read: string, edit: string}}}|null
      */
     private static function normalizeAccess(mixed $access, mixed $fields, array &$errors): ?array
     {
@@ -171,6 +171,10 @@ class MapRules
 
         $parts = ['table', 'key', 'members_key', 'members_user'];
         $rule = [];
+        $role = null;
+        if (array_key_exists('role', $members)) {
+            $role = self::normalizeRole($members['role'], $errors);
+        }
         foreach ($parts as $part) {
             if (! isset($members[$part]) || ! is_string($members[$part]) || ! preg_match(self::NAME, $members[$part])) {
                 $errors["access.members.$part"] = 'Use 1-64 lowercase letters, digits or underscores, starting with a letter.';
@@ -178,15 +182,48 @@ class MapRules
                 $rule[$part] = $members[$part];
             }
         }
-        if (array_diff(array_keys($members), $parts) !== []) {
-            $errors['access.members'] = 'Only '.implode(', ', $parts).' are allowed.';
+        if (array_diff(array_keys($members), [...$parts, 'role']) !== []) {
+            $errors['access.members'] = 'Only '.implode(', ', [...$parts, 'role']).' are allowed.';
         }
         $names = array_column(is_array($fields) ? array_filter($fields, 'is_array') : [], 'name');
         if (isset($rule['key']) && ! in_array($rule['key'], $names, true)) {
             $errors['access.members.key'] = 'Must be a field of this table.';
         }
 
-        return count($rule) === 4 ? ['members' => $rule] : null;
+        if (count($rule) !== 4 || ($errors['access.members.role'] ?? null) !== null) {
+            return null;
+        }
+        if ($role !== null) {
+            $rule['role'] = $role;
+        }
+
+        return ['members' => $rule];
+    }
+
+    /**
+     * The optional role of a members rule (Pane#195): the members field that holds
+     * the role and the two values that mean "read" and "edit". Any other value
+     * gives no access.
+     *
+     * @param  array<string, string>  $errors
+     * @return array{field: string, read: string, edit: string}|null
+     */
+    private static function normalizeRole(mixed $role, array &$errors): ?array
+    {
+        $valid = is_array($role) && array_keys($role) !== [] && array_diff(array_keys($role), ['field', 'read', 'edit']) === [];
+        if ($valid) {
+            foreach (['field', 'read', 'edit'] as $part) {
+                $valid = $valid && isset($role[$part]) && is_string($role[$part]) && $role[$part] !== '' && strlen($role[$part]) <= 64;
+            }
+            $valid = $valid && preg_match(self::NAME, $role['field']) && $role['read'] !== $role['edit'];
+        }
+        if (! $valid) {
+            $errors['access.members.role'] = 'Must be an object with a field name and different "read" and "edit" values (1-64 characters each).';
+
+            return null;
+        }
+
+        return ['field' => $role['field'], 'read' => $role['read'], 'edit' => $role['edit']];
     }
 
     /**

@@ -27,7 +27,30 @@ final class MemberScope
         private readonly string $membersKey,
         private readonly string $membersUser,
         private readonly string $userUuid,
+        /** Members column that holds the role (Pane#195), or null when every member has full access. */
+        private readonly ?string $membersRole = null,
+        /** Role value that lets a member read only. */
+        private readonly ?string $readValue = null,
+        /** Role value that lets a member read and write. */
+        private readonly ?string $editValue = null,
     ) {}
+
+    /**
+     * Narrows a members query to the rows that count: any member for a read, and
+     * with a role rule only the members whose role allows it (an unknown role
+     * value gives no access).
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     */
+    private function forRole($query, bool $write): void
+    {
+        if ($this->membersRole === null) {
+            return;
+        }
+        $write
+            ? $query->where($this->membersRole, $this->editValue)
+            : $query->whereIn($this->membersRole, [$this->readValue, $this->editValue]);
+    }
 
     /**
      * @template TModel of Model
@@ -35,24 +58,32 @@ final class MemberScope
      * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
-    public function restrict(Builder $query): Builder
+    public function restrict(Builder $query, bool $write = false): Builder
     {
         return $query->whereIn(
             $this->keyField,
-            fn ($sub) => $sub->from($this->membersTable)->select($this->membersKey)->where($this->membersUser, $this->userUuid)
+            function ($sub) use ($write): void {
+                $sub->from($this->membersTable)->select($this->membersKey)->where($this->membersUser, $this->userUuid);
+                $this->forRole($sub, $write);
+            }
         );
     }
 
-    public function isMemberOf(mixed $key): bool
+    /**
+     * @param  bool  $write  true when the user needs rights to write, not just to read
+     */
+    public function isMemberOf(mixed $key, bool $write = false): bool
     {
         if (! is_scalar($key) || $key === '') {
             return false;
         }
 
-        return DB::table($this->membersTable)
+        $query = DB::table($this->membersTable)
             ->where($this->membersKey, $key)
-            ->where($this->membersUser, $this->userUuid)
-            ->exists();
+            ->where($this->membersUser, $this->userUuid);
+        $this->forRole($query, $write);
+
+        return $query->exists();
     }
 
     /**
@@ -63,7 +94,7 @@ final class MemberScope
         DB::table($this->membersTable)->insert([
             $this->membersKey => $key,
             $this->membersUser => $this->userUuid,
-        ]);
+        ] + ($this->membersRole === null ? [] : [$this->membersRole => $this->editValue]));
     }
 
     /**
@@ -83,7 +114,7 @@ final class MemberScope
 
             return;
         }
-        if (! $this->isMemberOf($data[$this->keyField] ?? null)) {
+        if (! $this->isMemberOf($data[$this->keyField] ?? null, true)) {
             throw $this->forbidden('You are not a member of that row');
         }
     }
@@ -101,7 +132,7 @@ final class MemberScope
         if ($this->keyIsPrimary || ! array_key_exists($this->keyField, $data)) {
             return;
         }
-        if ((string) $data[$this->keyField] !== (string) $current && ! $this->isMemberOf($data[$this->keyField])) {
+        if ((string) $data[$this->keyField] !== (string) $current && ! $this->isMemberOf($data[$this->keyField], true)) {
             throw $this->forbidden('You are not a member of that row');
         }
     }

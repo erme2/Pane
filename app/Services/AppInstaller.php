@@ -242,9 +242,13 @@ class AppInstaller
             if ($fields === null) {
                 throw new AppInstallException("The map \"{$table['name']}\" has a members rule on \"$members\", which is not mapped.");
             }
-            foreach (['members_key', 'members_user'] as $part) {
-                if (! in_array($rule[$part], $fields, true)) {
-                    throw new AppInstallException("The map \"{$table['name']}\" has a members rule that names \"{$rule[$part]}\", which is not a field of \"$members\".");
+            $named = ['members_key' => $rule['members_key'], 'members_user' => $rule['members_user']];
+            if (isset($rule['role'])) {
+                $named['role'] = $rule['role']['field'];
+            }
+            foreach ($named as $name) {
+                if (! in_array($name, $fields, true)) {
+                    throw new AppInstallException("The map \"{$table['name']}\" has a members rule that names \"{$name}\", which is not a field of \"$members\".");
                 }
             }
         }

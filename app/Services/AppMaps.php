@@ -94,7 +94,9 @@ class AppMaps
         $key = $this->column($map, $rule['key'] ?? '');
         $membersKey = $this->column($members, $rule['members_key'] ?? '');
         $membersUser = $this->column($members, $rule['members_user'] ?? '');
-        if ($key === null || $membersKey === null || $membersUser === null) {
+        $roleRule = $rule['role'] ?? null;
+        $membersRole = is_array($roleRule) ? $this->column($members, $roleRule['field'] ?? '') : null;
+        if ($key === null || $membersKey === null || $membersUser === null || (is_array($roleRule) && $membersRole === null)) {
             throw $this->misconfigured($subject, 'a column of its rule is not in the maps');
         }
         if (! filled($user->uuid)) {
@@ -109,6 +111,9 @@ class AppMaps
             membersKey: $membersKey->sql_name ?? $membersKey->name,
             membersUser: $membersUser->sql_name ?? $membersUser->name,
             userUuid: (string) $user->uuid,
+            membersRole: $membersRole === null ? null : ($membersRole->sql_name ?? $membersRole->name),
+            readValue: is_array($roleRule) ? (string) $roleRule['read'] : null,
+            editValue: is_array($roleRule) ? (string) $roleRule['edit'] : null,
         );
     }
 

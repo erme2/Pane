@@ -44,7 +44,7 @@ class SaveAction extends AbstractAction
             if (empty($key)) {
                 throw new SystemException('No primary key to update', Response::HTTP_BAD_REQUEST);
             }
-            $record = $this->scopedQuery($model, $plot)->find($key);
+            $record = $this->scopedQuery($model, $plot, true)->find($key);
             if ($record === null && $scope !== null) {
                 // Same answer for a row that is missing and a row the user isn't a member of.
                 throw $scope->forbidden();
