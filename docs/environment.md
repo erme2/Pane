@@ -69,6 +69,7 @@ php artisan key:generate --force
 ## Cache And Filesystem
 
 - `CACHE_DRIVER` and `FILESYSTEM_DISK` configure framework services used by Pane. The example values are local-development defaults.
+- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` and `R2_PUBLIC_URL` configure the `r2` disk, Cloudflare R2 over the S3 API, where image app settings (for example a logo) are uploaded. One bucket and one key set per install, from the deploy secrets (wired in erme2/deploy). `R2_ENDPOINT` is `https://<account id>.r2.cloudflarestorage.com`; `R2_PUBLIC_URL` is the public base URL of the bucket (custom domain or `r2.dev`) that image URLs are built from. Optional: without them everything works except uploads, which fail with a server error. Pane accepts PNG, JPEG and WebP up to 2 MB (never SVG), stores each upload under `settings/<key>/<uuid>.<ext>`, and never deletes old objects.
 
 ## WorkOS And Latte
 

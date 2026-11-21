@@ -5593,7 +5593,7 @@
                     "type",
                     "value"
                 ],
-                "description": "A public setting declared in the maps. The list is empty until settings land (Pane#158).",
+                "description": "A public setting declared in the maps: its default until a value is set, then that value (Pane#158). The settings routes are in docs/api-v1.md.",
                 "properties": {
                     "key": {
                         "type": "string"

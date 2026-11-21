@@ -6,6 +6,7 @@ use App\Http\Controllers\MapAdminController;
 use App\Http\Controllers\MapReadController;
 use App\Http\Controllers\PaneAdminInvitationController;
 use App\Http\Controllers\ReleaseMetadataController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserAnonymisationController;
 use App\Http\Controllers\UserInvitationController;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +65,11 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
         Route::get('/maps/{source}/{table}/versions', [MapAdminController::class, 'tableVersions'])->name('maps.table.versions');
         Route::post('/maps/{source}/{table}/versions/{version}/restore', [MapAdminController::class, 'restoreTable'])->name('maps.table.restore');
         Route::get('/maps/{source}/{table}', [MapReadController::class, 'table'])->name('maps.table');
+        // App settings (Pane#158); the public ones are served inside GET /maps.
+        Route::get('/settings', [SettingsController::class, 'list'])->name('settings.index');
+        Route::get('/settings/{key}', [SettingsController::class, 'show'])->name('settings.show');
+        Route::put('/settings/{key}', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/{key}/upload', [SettingsController::class, 'upload'])->name('settings.upload');
     });
 });
 

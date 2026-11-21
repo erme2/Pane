@@ -110,7 +110,10 @@ read API; all are edited only through `App\Services\MapStore`:
 - `maps_functions`: the switchable Latte functions (`records`, `members`,
   `dashboard`) with `enabled`;
 - `maps_menu`: the menu items (`key`, `label`, `icon`, a table or function
-  target, parent, position) and their version.
+  target, parent, position) and their version;
+- `maps_settings` and `maps_setting_values`: the typed app setting declarations
+  (versioned as the subject `settings` in `maps_versions`) and the value each key
+  has in the install (docs/api-v1.md, "App settings").
 
 A map is a **system map** when its `sql_name` starts with `DB_TABLE_PREFIX` or is
 one of the maps' own tables. This is worked out on every save, never stored
