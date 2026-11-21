@@ -62,6 +62,10 @@ Pane's Laravel session cookie.
 | `GET /api/v1/maps/menu/versions` | admin | The menu's history |
 | `POST /api/v1/maps/menu/versions/{version}/restore` | admin | Save an old menu version again as a new one |
 | `PATCH /api/v1/maps/functions/{key}` | admin | Switch one function on or off |
+| `GET /api/v1/settings` | admin | Every declared app setting with its value and version |
+| `GET /api/v1/settings/{key}` | admin | One setting; the `ETag` is its value version |
+| `PUT /api/v1/settings/{key}` | admin | Set a value (`{"value": ...}`, `If-Match` required); an image key can only be cleared with `null` |
+| `POST /api/v1/settings/{key}/upload` | admin | Upload an image (multipart field `file`, `If-Match` required) |
 
 Outside `/api/v1`:
 
@@ -277,3 +281,22 @@ Each item has its own ticket and is added here when it lands:
 
 - map-driven CRUD with access through a members table (Pane#185, Pane#194);
 - native-client sign-in (Pane#130).
+
+## App settings (Pane#158)
+
+Typed app settings are declared in `maps_settings` (`key`, `type` of `flag`, `text`, `number` or `image`,
+`default`, `public`, `editable_by` of `administrator` or `pane_admin`, `label`, `help`). The whole list is
+replaced as one versioned subject (`settings` in `maps_versions`) with `php artisan settings:declare <file.json>`;
+editing declarations in Latte comes with the maps editors (Pane#157). Values are one per key for the whole
+install (`maps_setting_values`), each with its own version. Pane's own code-registered settings are a separate thing.
+
+- Public settings (`public: true`) are served to every signed-in user in the `settings` list of `GET /api/v1/maps`
+  as `{key, type, value}`; the value is the default until one is set.
+- Reading all settings and writing values is for administrators (403 otherwise); both `editable_by` levels
+  resolve to the install's administrator until organizations come back. `PUT` and the upload answer 412
+  `version_conflict` for a stale `If-Match`, 422 `validation_failed` for a value that does not fit the type
+  (a `flag` is true or false, a `text` at most 2000 characters, a `number` a finite number), and 404 for a key
+  that is not declared. Every change is audited (`settings.value.set`, `settings.declare`) without the value.
+- Image uploads go to the `r2` disk (see [environment.md](environment.md)): PNG, JPEG or WebP, at most 2 MB,
+  type read from the file's content, no SVG. The value stores `path`, `url`, `mime` and `size`. Old objects are kept.
+- `text` values are a plain string for now; the value column is JSON so one text per language can come later.

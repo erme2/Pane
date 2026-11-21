@@ -30,10 +30,14 @@ class PaneTable
 
     public const string MAPS_FUNCTIONS = 'maps_functions';
 
+    public const string MAPS_SETTINGS = 'maps_settings';
+
+    public const string MAPS_SETTING_VALUES = 'maps_setting_values';
+
     /** The maps' own tables: always system maps, whatever the prefix (decision 32). */
     public const array MAPS = [
         self::MAPS_SOURCES, self::MAPS_TABLES, self::MAPS_FIELDS, self::MAPS_VERSIONS,
-        self::MAPS_MENU, self::MAPS_FUNCTIONS,
+        self::MAPS_MENU, self::MAPS_FUNCTIONS, self::MAPS_SETTINGS, self::MAPS_SETTING_VALUES,
     ];
 
     public static function name(string $table): string

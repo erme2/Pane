@@ -19,6 +19,8 @@ class MapReader
 {
     private const PUBLIC_VALIDATION_RULES = ['max', 'min', 'email'];
 
+    public function __construct(private readonly AppSettings $settings) {}
+
     /** The strong ETag of a read answer; the edit routes' If-Match is checked against it. */
     public static function etag(string $type, int $version, mixed $attributes): string
     {
@@ -61,8 +63,7 @@ class MapReader
             'version' => (int) $rows->max('version'),
             'menu' => $menu,
             'functions' => $functions,
-            // Filled by Pane#158.
-            'settings' => [],
+            'settings' => $this->settings->publicSettings(),
             'tables' => $tables,
         ];
     }
