@@ -11,10 +11,10 @@ class ValidationException extends \Exception
      * The main difference from the default Laravel ValidationException is that
      * this exception returns an array of errors instead of a string.
      */
-    public function __construct(array $errors)
+    public function __construct(array $errors, int $status = 400)
     {
         $this->errors = $errors;
-        parent::__construct('Validation failed', 400);
+        parent::__construct('Validation failed', $status);
     }
 
     /**

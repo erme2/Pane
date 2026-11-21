@@ -214,6 +214,13 @@ response envelope. See [crud-authentication.md](crud-authentication.md). No new
 subject or capability is added to it other than through the planned map-driven
 CRUD work.
 
+On the CRUD route a `POST`/`PUT` that names a column the table's map doesn't
+declare is refused with `422` and nothing is written (keys starting with `_` are
+ignored). A list `GET` accepts `filter[<field>]=<value>` (equality on any mapped
+field except passwords, several filters combine with AND); a filter on an
+unknown field is a `400`. Filters apply inside the members access rule, and
+`pagination.total` counts the filtered rows.
+
 ## Success, pagination and concurrency
 
 ```json
