@@ -273,7 +273,7 @@ class AppSettings
         DB::transaction(function () use ($actor, $key, $value, $expectedVersion, $requestId, $declaration): void {
             // declare() locks the declarations, so the declaration read here is the one in force now. The value
             // is checked against it, not against the declaration read before this transaction started.
-            $locked = DB::table(PaneTable::name(PaneTable::MAPS_SETTINGS))->lockForUpdate()->get()->firstWhere('key', $key);
+            $locked = DB::table(PaneTable::name(PaneTable::MAPS_SETTINGS))->lockForUpdate()->get()->first(fn (object $setting): bool => $setting->key === $key);
             if ($locked === null) {
                 throw new MapNotFoundException("The setting \"$key\" is not declared.");
             }
