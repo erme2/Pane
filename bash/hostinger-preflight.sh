@@ -238,8 +238,8 @@ PHP
 umask 077
 cp "${ENV_FILE}" "${TEMP_LARAVEL_ENV_FILE}"
 
-php artisan config:clear --env="${TEMP_LARAVEL_ENV_NAME}" >/dev/null
+php artisan config:clear --env="${TEMP_LARAVEL_ENV_NAME}"
 pass "Laravel can boot with the selected environment file"
 
-composer check-platform-reqs --no-dev >/dev/null
+composer check-platform-reqs --no-dev
 pass "Composer production platform requirements are satisfied"
