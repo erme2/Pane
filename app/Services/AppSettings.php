@@ -270,14 +270,27 @@ class AppSettings
     {
         $key = $declaration['key'];
 
-        DB::transaction(function () use ($actor, $key, $value, $expectedVersion, $requestId): void {
+        DB::transaction(function () use ($actor, $key, $value, $expectedVersion, $requestId, $declaration): void {
+            // declare() locks the declarations, so the declaration read here is the one in force now. The value
+            // is checked against it, not against the declaration read before this transaction started.
+            $locked = DB::table(PaneTable::name(PaneTable::MAPS_SETTINGS))->lockForUpdate()->get()->firstWhere('key', $key);
+            if ($locked === null) {
+                throw new MapNotFoundException("The setting \"$key\" is not declared.");
+            }
+            $currentDeclaration = $this->declarationsFrom([$locked])[0];
+            $this->assertEditable($actor, $currentDeclaration);
+            if ($currentDeclaration['type'] !== $declaration['type']) {
+                throw new InvalidMapException(['type' => 'The setting type changed; reload the setting and try again.']);
+            }
+            $clean = $currentDeclaration['type'] === 'image' ? $value : $this->validate($currentDeclaration, $value);
+
             $table = PaneTable::name(PaneTable::MAPS_SETTING_VALUES);
             $row = DB::table($table)->where('key', $key)->lockForUpdate()->first();
             $current = (int) ($row->version ?? 0);
             if ($current !== $expectedVersion) {
                 throw new MapVersionConflictException($expectedVersion, $current);
             }
-            $payload = ['value' => json_encode($value, JSON_THROW_ON_ERROR), 'version' => $current + 1, 'updated_by' => (string) $actor->uuid, 'updated_at' => now()];
+            $payload = ['value' => json_encode($clean, JSON_THROW_ON_ERROR), 'version' => $current + 1, 'updated_by' => (string) $actor->uuid, 'updated_at' => now()];
             if ($row === null) {
                 DB::table($table)->insert([...$payload, 'key' => $key, 'created_at' => now()]);
             } else {

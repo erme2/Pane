@@ -301,4 +301,33 @@ class AppSettingsApiTest extends TestCase
 
         return $request->json(strtoupper($method), "/api/v1/$path", $body);
     }
+
+    public function test_a_value_write_is_checked_against_the_declaration_in_force_when_it_writes(): void
+    {
+        $settings = app(AppSettings::class);
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $settings->declare([['key' => 'app.feature', 'type' => 'text', 'default' => 'on']], 'test');
+        $table = PaneTable::name(PaneTable::MAPS_SETTINGS);
+        $fired = false;
+
+        // Right after set() reads the old text declaration, another request changes it to a flag.
+        DB::listen(function ($query) use (&$fired, $settings, $table): void {
+            if ($fired || ! str_starts_with(strtolower($query->sql), 'select') || ! str_contains($query->sql, $table)) {
+                return;
+            }
+            $fired = true;
+            $settings->declare([['key' => 'app.feature', 'type' => 'flag', 'default' => false]], 'test');
+        });
+
+        try {
+            $settings->set($actor, 'app.feature', 'disabled', 0, null);
+            $this->fail('The text value must not be written under the flag declaration.');
+        } catch (InvalidMapException) {
+            // Refused against the flag that is in force.
+        }
+
+        $this->assertTrue($fired);
+        $this->assertSame('flag', $settings->find('app.feature')['type']);
+        $this->assertSame(0, $settings->valueVersion('app.feature'));
+    }
 }
