@@ -226,6 +226,36 @@ class AppSettingsApiTest extends TestCase
         $this->assertSame([], Storage::disk(AppSettings::DISK)->allFiles());
     }
 
+    public function test_an_empty_declaration_keeps_the_version_counter(): void
+    {
+        $settings = app(AppSettings::class);
+        $first = $settings->declare([['key' => 'a.b', 'type' => 'flag']], 'test');
+        $cleared = $settings->declare([], 'test');
+        $again = $settings->declare([['key' => 'a.b', 'type' => 'flag']], 'test');
+
+        $this->assertSame($first + 1, $cleared);
+        $this->assertSame($first + 2, $again);
+    }
+
+    public function test_a_type_change_that_does_not_fit_the_stored_value_is_refused(): void
+    {
+        $settings = app(AppSettings::class);
+        $settings->declare([['key' => 'app.feature', 'type' => 'text', 'public' => true]], 'test');
+        $settings->set($this->admin, 'app.feature', 'disabled', 0, null);
+
+        try {
+            $settings->declare([['key' => 'app.feature', 'type' => 'flag', 'default' => false, 'public' => true]], 'test');
+            $this->fail('The incompatible type change was accepted.');
+        } catch (InvalidMapException) {
+            $this->assertSame('text', $settings->find('app.feature')['type']);
+        }
+
+        // A removed key that comes back with another type is checked too.
+        $settings->declare([], 'test');
+        $this->expectException(InvalidMapException::class);
+        $settings->declare([['key' => 'app.feature', 'type' => 'flag']], 'test');
+    }
+
     public function test_settings_declare_command_reads_a_json_file(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'settings');

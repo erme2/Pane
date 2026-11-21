@@ -65,7 +65,9 @@ class AppSettings
         return DB::transaction(function () use ($normalized, $author, $actor, $requestId): int {
             $table = PaneTable::name(PaneTable::MAPS_SETTINGS);
             $rows = DB::table($table)->lockForUpdate()->get();
-            $current = (int) $rows->max('version');
+            // The version comes from the history, so an empty list does not lose the counter.
+            $current = (int) MapVersion::query()->where('subject_type', self::SUBJECT)->where('subject_id', 0)->lockForUpdate()->max('version');
+            $this->assertStoredValuesFit($normalized);
             $before = $this->declarationsFrom($rows->sortBy('position')->values()->all());
 
             $now = now();
@@ -93,6 +95,39 @@ class AppSettings
 
             return $current + 1;
         });
+    }
+
+    /**
+     * Refuses a declaration whose type no longer fits the value already stored for its key
+     * (including a key that was removed and is declared again).
+     *
+     * @param  list<array<string, mixed>>  $normalized
+     *
+     * @throws InvalidMapException
+     */
+    private function assertStoredValuesFit(array $normalized): void
+    {
+        $values = DB::table(PaneTable::name(PaneTable::MAPS_SETTING_VALUES))->get()->keyBy('key');
+        $errors = [];
+        foreach ($normalized as $i => $item) {
+            $row = $values->get($item['key']);
+            if ($row !== null && ! $this->fitsType($item['type'], $this->decode($row->value))) {
+                $errors["settings.$i.type"] = "The stored value of \"{$item['key']}\" does not fit the type \"{$item['type']}\".";
+            }
+        }
+        if ($errors !== []) {
+            throw new InvalidMapException($errors);
+        }
+    }
+
+    private function fitsType(string $type, mixed $value): bool
+    {
+        return match ($type) {
+            'flag' => is_bool($value),
+            'text' => is_string($value),
+            'number' => is_int($value) || is_float($value),
+            default => $value === null || (is_array($value) && isset($value['path'], $value['url'], $value['mime'], $value['size'])),
+        };
     }
 
     /** @return list<array<string, mixed>> */
