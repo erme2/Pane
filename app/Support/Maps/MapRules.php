@@ -155,16 +155,22 @@ class MapRules
      * all maps are known (AppInstaller) and again, fail-closed, on every request.
      *
      * @param  array<string, string>  $errors
-     * @return array{members: array{table: string, key: string, members_key: string, members_user: string, role?: array{field: string, read: string, edit: string}}}|null
+     *                                         The owner rule (Pane#218) is the other kind: an "owner" object with the `key`
+     *                                         field of this table, which holds the owner's user uuid.
+     * @param  array<string, string>  $errors
+     * @return array{members: array{table: string, key: string, members_key: string, members_user: string, role?: array{field: string, read: string, edit: string}}}|array{owner: array{key: string}}|null
      */
     private static function normalizeAccess(mixed $access, mixed $fields, array &$errors): ?array
     {
         if ($access === null) {
             return null;
         }
+        if (is_array($access) && array_keys($access) === ['owner']) {
+            return self::normalizeOwner($access['owner'], $fields, $errors);
+        }
         $members = is_array($access) ? ($access['members'] ?? null) : null;
         if (! is_array($members) || array_diff(array_keys($access), ['members']) !== []) {
-            $errors['access'] = 'Must be an object with a "members" rule, or null.';
+            $errors['access'] = 'Must be an object with one "members" or "owner" rule, or null.';
 
             return null;
         }
@@ -198,6 +204,33 @@ class MapRules
         }
 
         return ['members' => $rule];
+    }
+
+    /**
+     * @param  array<string, string>  $errors
+     * @return array{owner: array{key: string}}|null
+     */
+    private static function normalizeOwner(mixed $owner, mixed $fields, array &$errors): ?array
+    {
+        if (! is_array($owner) || array_keys($owner) !== ['key']) {
+            $errors['access.owner'] = 'Must be an object with a "key" field name only.';
+
+            return null;
+        }
+        $key = $owner['key'];
+        if (! is_string($key) || ! preg_match(self::NAME, $key)) {
+            $errors['access.owner.key'] = 'Use 1-64 lowercase letters, digits or underscores, starting with a letter.';
+
+            return null;
+        }
+        $names = array_column(is_array($fields) ? array_filter($fields, 'is_array') : [], 'name');
+        if (! in_array($key, $names, true)) {
+            $errors['access.owner.key'] = 'Must be a field of this table.';
+
+            return null;
+        }
+
+        return ['owner' => ['key' => $key]];
     }
 
     /**

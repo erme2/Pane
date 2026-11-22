@@ -6,7 +6,7 @@ use App\Exceptions\SystemException;
 use App\Mappers\AbstractMapper;
 use App\Models\AbstractModel;
 use App\Stories\StoryPlot;
-use App\Support\Maps\MemberScope;
+use App\Support\Maps\RowScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
 
@@ -45,13 +45,13 @@ trait ActionHelper
     }
 
     /**
-     * The members rule the controller set for this request, if any (Pane#185).
+     * The access rule (members or owner) the controller set for this request, if any (Pane#185).
      */
-    public function memberScope(StoryPlot $plot): ?MemberScope
+    public function memberScope(StoryPlot $plot): ?RowScope
     {
         $scope = $plot->options['member_scope'] ?? null;
 
-        return $scope instanceof MemberScope ? $scope : null;
+        return $scope instanceof RowScope ? $scope : null;
     }
 
     /**

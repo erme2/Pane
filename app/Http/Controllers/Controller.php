@@ -8,7 +8,7 @@ use App\Helpers\StoryHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\User;
 use App\Services\AppMaps;
-use App\Support\Maps\MemberScope;
+use App\Support\Maps\RowScope;
 use App\Support\ReleaseMetadata;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -172,13 +172,14 @@ HTML;
     }
 
     /**
-     * Administrators reach every subject. Anyone else is refused on system
+     * Administrators reach every subject, except the rows of an owner-rule table
+     * that are not theirs (Pane#218). Anyone else is refused on system
      * subjects, and on writes unless the subject's map has a members rule
      * (Pane#185): then the returned scope limits them to the rows they belong to.
      *
      * @throws SystemException
      */
-    private function authorizeStory(Request $request, string $story, string $subject): ?MemberScope
+    private function authorizeStory(Request $request, string $story, string $subject): ?RowScope
     {
         if (strtolower($story) !== 'crud') {
             return null;
@@ -192,6 +193,12 @@ HTML;
 
         if (in_array($subject, self::PROTECTED_CRUD_SUBJECTS, true) && ! $isAdministrator) {
             throw new SystemException("Forbidden CRUD subject ($subject)", Response::HTTP_FORBIDDEN);
+        }
+
+        // The owner rule holds for administrators too (Pane#218).
+        $owner = $user instanceof User ? app(AppMaps::class)->ownerScope($subject, $user) : null;
+        if ($owner !== null) {
+            return $owner;
         }
 
         if ($isAdministrator) {

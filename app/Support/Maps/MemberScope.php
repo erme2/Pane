@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  * the row's key. One hop; every value goes through parameter bindings and every
  * column name comes from a map that was checked when the request started.
  */
-final class MemberScope
+final class MemberScope implements RowScope
 {
     public function __construct(
         /** Field of the table that holds the key (also its map field name). */
@@ -137,8 +137,8 @@ final class MemberScope
         }
     }
 
-    public function forbidden(string $reason = 'You are not a member of that row'): SystemException
+    public function forbidden(string $reason = ''): SystemException
     {
-        return new SystemException($reason, Response::HTTP_FORBIDDEN);
+        return new SystemException($reason !== '' ? $reason : 'You are not a member of that row', Response::HTTP_FORBIDDEN);
     }
 }

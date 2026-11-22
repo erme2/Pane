@@ -35,7 +35,7 @@ Pane currently treats `user_type_id = 1` as the administrator user type.
 | --- | --- | --- | --- |
 | Unauthenticated | `401 Unauthorized` | `401 Unauthorized` | `401 Unauthorized` |
 | Authenticated non-admin | Allowed (only own rows on a members-rule table) | `403 Forbidden`, except on a members-rule table (own rows) | `403 Forbidden` |
-| Authenticated administrator | Allowed | Allowed | Allowed by the authorization layer |
+| Authenticated administrator | Allowed (only own rows on an owner-rule table) | Allowed (only own rows on an owner-rule table) | Allowed by the authorization layer |
 
 Normal CRUD subjects are application tables such as `test_table`. Mutating operations are `POST`, `PUT`, and `DELETE`.
 
@@ -54,6 +54,20 @@ A table map can carry an `access` rule that opens the table to signed-in members
 - Optional roles (Pane#195): add `"role": {"field": "role", "read": "read", "edit": "edit"}` inside the `members` rule. `field` is a field of the members table; `read` and `edit` are the two values it can hold. A member whose role is `read` can read the rows, in every table that carries the rule, but any write answers `403`; `edit` reads and writes; any other value, or no members row, gives nothing. The creator of a new parent row (a new list) gets the `edit` value. Without `role`, every member can read and write.
 - Administrators keep access to everything. System subjects stay administrator-only. A rule whose members table or columns are not in the maps answers `500` (fail closed). `app:install` refuses such a rule before it writes anything.
 - One hop only. Column names come from checked maps and values go through bound parameters. The CRUD route doesn't support a field whose `sql_name` differs from its `name` yet.
+
+## Owner rule
+
+A table map can instead carry an owner rule (Pane#218), for rows that belong to one user, such as `user_item_preferences`:
+
+```json
+"access": {"owner": {"key": "membership_id"}}
+```
+
+- `key` is a field of the table. It holds the owner's user `uuid`. A table has either a members rule or an owner rule, not both, and `owner` takes no other part.
+- A user reads, updates and deletes only the rows whose `key` value is their own `uuid`. A list read returns just those rows (a `filter` cannot widen it). Another user's row, or one that doesn't exist, answers `403`.
+- `POST` needs the body's `key` field to be the user's own `uuid`, and a `PUT` that sends `key` must send the user's own `uuid`; anything else answers `403`.
+- Administrators get no exception: through this rule they read and write their own rows only. Removing a user's rows (account deletion, erme2/sweegly#9) is a job of its own, not a CRUD call.
+- A rule whose `key` is not in the maps answers `500` (fail closed); saving a map whose `key` is not a field of the table is refused.
 
 ## System and Meta Subjects
 
