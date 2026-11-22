@@ -9,6 +9,7 @@ use App\Models\Maps\MapTable;
 use App\Models\User;
 use App\Support\Maps\MapFieldValidation;
 use App\Support\Maps\MemberScope;
+use App\Support\Maps\OwnerScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
 
@@ -115,6 +116,31 @@ class AppMaps
             readValue: is_array($roleRule) ? (string) $roleRule['read'] : null,
             editValue: is_array($roleRule) ? (string) $roleRule['edit'] : null,
         );
+    }
+
+    /**
+     * The owner rule of a subject for a user (Pane#218), or null when the subject
+     * has none. Fails closed on a key column the maps don't describe.
+     *
+     * @throws SystemException
+     */
+    public function ownerScope(string $subject, User $user): ?OwnerScope
+    {
+        $map = $this->table($subject);
+        $rule = $map?->access['owner'] ?? null;
+        if ($map === null || ! is_array($rule)) {
+            return null;
+        }
+
+        $key = $this->column($map, $rule['key'] ?? '');
+        if ($key === null) {
+            throw new SystemException("The owner rule of $subject cannot be used: its key is not in the maps", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        if (! filled($user->uuid)) {
+            throw new SystemException('The signed-in user has no uuid', Response::HTTP_FORBIDDEN);
+        }
+
+        return new OwnerScope($key->name, (string) $user->uuid);
     }
 
     private function column(MapTable $map, string $name): ?MapField

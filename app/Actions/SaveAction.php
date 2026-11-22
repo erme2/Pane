@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
 use App\Stories\StoryPlot;
+use App\Support\Maps\MemberScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
@@ -61,7 +62,7 @@ class SaveAction extends AbstractAction
             DB::transaction(function () use ($record, $scope, $plot): void {
                 $record->save();
                 // A user who starts a new row in a parent table (a new list) becomes its first member.
-                if ($scope !== null && $scope->keyIsPrimary && $this->isCreate($plot)) {
+                if ($scope instanceof MemberScope && $scope->keyIsPrimary && $this->isCreate($plot)) {
                     $scope->addCreator($record->getKey());
                 }
             });
