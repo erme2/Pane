@@ -18,6 +18,10 @@ class ReadAction extends AbstractAction
 {
     use PaginationHelper;
 
+    private const FILTER_OPERATORS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'contains'];
+
+    private const SQL_OPERATORS = ['eq' => '=', 'ne' => '<>', 'gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<='];
+
     /**
      * @throws SystemException
      * @throws ValidationException
@@ -59,12 +63,19 @@ class ReadAction extends AbstractAction
         } else {
             $pagination = $this->getPaginationData($plot, $subject);
             $filters = $this->getFilters($plot, $subject);
-            $query = $this->applyFilters($this->scopedQuery($model, $plot), $filters)
-                ->limit($pagination['limit'])
-                ->offset($pagination['offset'])
-                ->orderBy($pagination['sort'], $pagination['order']);
-            foreach ($query->get() as $record) {
-                $plot->data[] = $mapper->extractFromModel($record);
+            $countOnly = $this->isCountOnly($plot);
+            if (! $countOnly) {
+                $query = $this->applyFilters($this->scopedQuery($model, $plot), $filters)
+                    ->limit($pagination['limit'])
+                    ->offset($pagination['offset']);
+                foreach ($pagination['sorts'] as [$field, $direction]) {
+                    $query->orderBy($field, $direction);
+                }
+                // The key breaks ties, so a page never repeats or skips a row.
+                $query->orderBy($keyName);
+                foreach ($query->get() as $record) {
+                    $plot->data[] = $mapper->extractFromModel($record);
+                }
             }
             $pagination['total'] = $this->applyFilters($this->scopedQuery($model, $plot), $filters)->count();
             $pagination['pages'] = ceil($pagination['total'] / $pagination['limit']);
@@ -75,10 +86,31 @@ class ReadAction extends AbstractAction
     }
 
     /**
-     * The `filter[<field>]=<value>` query parameters: equality on mapped fields.
-     * A filter on a field the map doesn't declare (or a password) is a 400.
+     * `count=only` returns the total of the filtered rows and no rows.
      *
-     * @return array<string, scalar>
+     * @throws ValidationException
+     */
+    private function isCountOnly(StoryPlot $plot): bool
+    {
+        $count = $plot->requestData['data']['count'] ?? null;
+        if ($count === null) {
+            return false;
+        }
+        if ($count !== 'only') {
+            throw new ValidationException(['count' => ['The count must be count=only']]);
+        }
+
+        return true;
+    }
+
+    /**
+     * The filters of a list request, as `[field, operator, value]` triples.
+     *
+     * `filter[<field>]=<value>` is equality; `filter[<field>][<op>]=<value>` takes one of `eq`, `ne`,
+     * `gt`, `gte`, `lt`, `lte`, `in` (comma separated values) or `contains`. Only mapped fields can be
+     * filtered, never a password. Several filters combine with AND.
+     *
+     * @return list<array{0: string, 1: string, 2: scalar|list<string>}>
      *
      * @throws ValidationException
      */
@@ -91,24 +123,46 @@ class ReadAction extends AbstractAction
         $types = $this->getMapper($subject)->getFields($subject)->pluck('type', 'name')->all();
         $allowed = array_keys(array_filter($types, fn ($type) => $type !== 'password'));
         $errors = [];
-        foreach ($filters as $name => $value) {
+        $parsed = [];
+        foreach ($filters as $name => $condition) {
             if (! in_array($name, $allowed, true)) {
                 $errors["filter.$name"] = ['Unknown filter field'];
-            } elseif (! is_scalar($value)) {
-                $errors["filter.$name"] = ['The filter value must be a single value'];
+
+                continue;
+            }
+            foreach (is_array($condition) ? $condition : ['eq' => $condition] as $operator => $value) {
+                if (! in_array($operator, self::FILTER_OPERATORS, true)) {
+                    $errors["filter.$name"] = ['Unknown filter operator'];
+                } elseif (! is_scalar($value)) {
+                    $errors["filter.$name"] = ['The filter value must be a single value'];
+                } elseif ($operator === 'in') {
+                    $parsed[] = [$name, $operator, explode(',', (string) $value)];
+                } else {
+                    $parsed[] = [$name, $operator, $value];
+                }
             }
         }
         if ($errors !== []) {
             throw new ValidationException($errors);
         }
 
-        return $filters;
+        return $parsed;
     }
 
+    /**
+     * @param  list<array{0: string, 1: string, 2: scalar|list<string>}>  $filters
+     */
     private function applyFilters(Builder $query, array $filters): Builder
     {
-        foreach ($filters as $name => $value) {
-            $query->where($name, '=', $value);
+        foreach ($filters as [$name, $operator, $value]) {
+            match ($operator) {
+                'in' => $query->whereIn($name, $value),
+                'contains' => $query->whereRaw(
+                    $query->getGrammar()->wrap($name)." like ? escape '!'",
+                    ['%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], (string) $value).'%']
+                ),
+                default => $query->where($name, self::SQL_OPERATORS[$operator], $value),
+            };
         }
 
         return $query;
