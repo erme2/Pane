@@ -26,6 +26,8 @@ use Illuminate\Support\Str;
  * @property int $user_type_id
  * @property bool $is_active
  * @property Carbon|null $last_login_at
+ * @property string|null $terms_version
+ * @property Carbon|null $terms_accepted_at
  */
 class User extends Authenticatable
 {
@@ -104,6 +106,7 @@ class User extends Authenticatable
         'settings' => 'array',
         'is_active' => 'boolean',
         'last_login_at' => 'datetime',
+        'terms_accepted_at' => 'datetime',
     ];
 
     /**

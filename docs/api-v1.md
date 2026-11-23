@@ -43,7 +43,8 @@ Pane's Laravel session cookie.
 | `POST /api/v1/csrf-cookie` | origin | Initialise CSRF protection |
 | `POST /api/v1/auth/login-intents` | origin | Store the redirect target and return the WorkOS authorization URL and state; body: `redirect_to`, optional `invitation_token`; other fields are rejected |
 | `POST /api/v1/auth/callback` | origin | Complete the WorkOS sign-in from `code` and `state` and start the session |
-| `GET /api/v1/session` | session | The signed-in `user` (`id`, `email`, `name`, `role`) and the frontend `application` |
+| `GET /api/v1/session` | session | The signed-in `user` (`id`, `email`, `name`, `role`, `terms_version`, `terms_accepted_at`; both terms fields are `null` until the user accepts) and the frontend `application` |
+| `PUT /api/v1/session/terms` | session | The signed-in user accepts a Terms and Privacy version; body: `terms_version` (opaque string, at most 100 characters, not validated by Pane). Stores it with the time and replaces any earlier value (no version comparison, no history); `200` with `terms_version` and `terms_accepted_at`; `422 validation_failed` for a missing or invalid value |
 | `DELETE /api/v1/session` | session | End the session and return `logout_url`, the WorkOS URL clients must navigate to |
 | `GET /api/v1/installation/pane-admin-invitations` | admin | List administrator invitations (cursor paging) |
 | `POST /api/v1/installation/pane-admin-invitations` | admin | Invite an administrator by `email`; `201` with a one-time `meta.invitation_url` |
