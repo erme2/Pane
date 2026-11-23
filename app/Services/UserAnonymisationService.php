@@ -155,6 +155,8 @@ class UserAnonymisationService
             'settings' => null,
             'is_active' => false,
             'last_login_at' => null,
+            'terms_version' => null,
+            'terms_accepted_at' => null,
         ])->save();
     }
 

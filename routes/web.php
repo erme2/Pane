@@ -7,6 +7,7 @@ use App\Http\Controllers\MapReadController;
 use App\Http\Controllers\PaneAdminInvitationController;
 use App\Http\Controllers\ReleaseMetadataController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TermsAcceptanceController;
 use App\Http\Controllers\UserAnonymisationController;
 use App\Http\Controllers\UserInvitationController;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,7 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/session', [WorkOsAuthController::class, 'session'])->name('session.show');
         Route::delete('/session', [WorkOsAuthController::class, 'destroySession'])->name('session.destroy');
+        Route::put('/session/terms', [TermsAcceptanceController::class, 'update'])->name('session.terms.update');
         Route::get('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'list'])
             ->name('installation.pane-admin-invitations.index');
         Route::post('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'store'])

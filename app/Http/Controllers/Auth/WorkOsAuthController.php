@@ -602,6 +602,8 @@ class WorkOsAuthController extends Controller
                 'email' => $email,
                 'name' => (string) ($user->getAttribute('name') ?: $email),
                 'role' => $user->role(),
+                'terms_version' => $user->terms_version,
+                'terms_accepted_at' => $user->terms_accepted_at?->toJSON(),
             ],
         ];
     }
