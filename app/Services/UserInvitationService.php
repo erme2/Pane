@@ -77,6 +77,43 @@ class UserInvitationService
     }
 
     /**
+     * Issues a fresh link for a pending invitation. The row is kept (no new invitation); the old
+     * link stops working because only the new token's hash is stored.
+     *
+     * @return array{invitation: UserInvitation, token: string}
+     */
+    public function resend(User $actor, UserInvitation $invitation): array
+    {
+        $this->assertPaneAdministrator($actor);
+
+        return DB::transaction(function () use ($actor, $invitation): array {
+            $locked = UserInvitation::query()
+                ->whereKey($invitation->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! $locked->isPending()) {
+                throw new DomainException('Only pending invitations can be resent.');
+            }
+
+            $token = Str::random(self::TOKEN_BYTES);
+            $locked->forceFill([
+                'token_hash' => hash('sha256', $token),
+                'expires_at' => now()->addSeconds($this->expirySeconds()),
+            ])->save();
+
+            $this->audit->record('installation.user.invitation.resend', AuditEvent::OUTCOME_SUCCESS, [
+                'real_actor' => $actor,
+                'effective_user' => $actor,
+                'resource_ids' => ['user_invitation_id' => $locked->getKey()],
+                'metadata' => ['email' => $locked->email],
+            ]);
+
+            return ['invitation' => $locked, 'token' => $token];
+        });
+    }
+
+    /**
      * @param  (\Closure(UserInvitation): bool)|null  $stillCurrent  checked against the locked row,
      *                                                               so a concurrent change is never missed
      *

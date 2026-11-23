@@ -31,7 +31,7 @@ class InvitationMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.invitation',
+            text: 'emails.invitation',
             with: [
                 'invitationUrl' => $this->invitationUrl,
                 'role' => $this->role,

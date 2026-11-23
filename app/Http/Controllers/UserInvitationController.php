@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\InvitationVersionConflict;
+use App\Mail\InvitationMail;
 use App\Models\User;
 use App\Models\UserInvitation;
 use App\Services\UserInvitationService;
@@ -11,8 +12,11 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * List, create and revoke user invitations. Pane administrators only; the response shapes mirror
@@ -111,16 +115,92 @@ class UserInvitationController extends Controller
 
         $invitation = $result['invitation'];
         $requestId = $this->requestId($request);
+        $invitationUrl = $this->invitationUrl($result['token']);
 
         return response()->json([
             'data' => $this->resource($invitation),
             'meta' => [
                 'request_id' => $requestId,
-                'invitation_url' => $this->invitationUrl($result['token']),
+                'invitation_url' => $invitationUrl,
+                'email_sent' => $this->sendInvitationEmail($actor, $invitation, $invitationUrl),
             ],
         ], Response::HTTP_CREATED)
             ->header('X-Request-Id', $requestId)
             ->header('ETag', $this->etag($invitation));
+    }
+
+    /**
+     * Emails a fresh link for a pending invitation. No new invitation row is created.
+     */
+    public function resend(Request $request, string $invitationId): JsonResponse
+    {
+        $actor = $request->user();
+
+        if (! $actor instanceof User) {
+            return $this->v1Error($request, 'permission_denied', self::DENIED, Response::HTTP_FORBIDDEN);
+        }
+
+        if (! Str::isUuid($invitationId)) {
+            return $this->v1Error($request, 'invalid_identifier', 'The invitation_id path parameter must be a valid UUID.', Response::HTTP_BAD_REQUEST);
+        }
+
+        if (! $actor->isPaneAdministrator()) {
+            return $this->v1Error($request, 'permission_denied', self::DENIED, Response::HTTP_FORBIDDEN);
+        }
+
+        $invitation = UserInvitation::query()->find($invitationId);
+
+        if (! $invitation instanceof UserInvitation) {
+            return $this->v1Error($request, 'resource_not_found', 'The requested resource was not found.', Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $result = $this->invitations->resend($actor, $invitation);
+        } catch (DomainException $exception) {
+            return str_contains($exception->getMessage(), 'pending')
+                ? $this->v1Error($request, 'operation_conflict', $exception->getMessage(), Response::HTTP_CONFLICT)
+                : $this->v1Error($request, 'permission_denied', $exception->getMessage(), Response::HTTP_FORBIDDEN);
+        }
+
+        $invitation = $result['invitation'];
+        $requestId = $this->requestId($request);
+        $invitationUrl = $this->invitationUrl($result['token']);
+
+        return response()->json([
+            'data' => $this->resource($invitation),
+            'meta' => [
+                'request_id' => $requestId,
+                'invitation_url' => $invitationUrl,
+                'email_sent' => $this->sendInvitationEmail($actor, $invitation, $invitationUrl),
+            ],
+        ])
+            ->header('X-Request-Id', $requestId)
+            ->header('ETag', $this->etag($invitation));
+    }
+
+    /**
+     * The invitation already exists when this runs, so a mail failure is logged and reported in the
+     * response (email_sent); the link can still be shared by hand or resent.
+     */
+    private function sendInvitationEmail(User $actor, UserInvitation $invitation, string $invitationUrl): bool
+    {
+        try {
+            Mail::to($invitation->email)->send(new InvitationMail(
+                invitationUrl: $invitationUrl,
+                role: 'user',
+                inviterName: (string) ($actor->name ?: $actor->email),
+                expiresAt: $invitation->expires_at->toDateTimeString(),
+            ));
+        } catch (Throwable $exception) {
+            Log::warning('User invitation email failed', [
+                'invitation_id' => $invitation->getKey(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     public function destroy(Request $request, string $invitationId): Response|JsonResponse

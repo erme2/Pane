@@ -49,7 +49,8 @@ Pane's Laravel session cookie.
 | `POST /api/v1/installation/pane-admin-invitations` | admin | Invite an administrator by `email`; `201` with a one-time `meta.invitation_url` |
 | `DELETE /api/v1/installation/pane-admin-invitations/{invitation_id}` | admin | Revoke an invitation; needs `If-Match` with the invitation's `ETag` |
 | `GET /api/v1/installation/user-invitations` | admin | List user invitations (cursor paging) |
-| `POST /api/v1/installation/user-invitations` | admin | Invite a user by `email`; `201` with a one-time `meta.invitation_url` |
+| `POST /api/v1/installation/user-invitations` | admin | Invite a user by `email`; `201` with a one-time `meta.invitation_url`. The link is also emailed (plain text); `meta.email_sent` is `false` when sending failed, and the invitation is kept |
+| `POST /api/v1/installation/user-invitations/{invitation_id}/resend` | admin | Issue a fresh link for a pending invitation and email it; no new row, the old link stops working; `409` when not pending |
 | `DELETE /api/v1/installation/user-invitations/{invitation_id}` | admin | Revoke a user invitation; needs `If-Match` with the invitation's `ETag` |
 | `DELETE /api/v1/users/{user_id}` | session | Anonymise a user for personal-data deletion: the user themselves or an admin (below) |
 | `GET /api/v1/maps` | session | The maps bootstrap (below) |
