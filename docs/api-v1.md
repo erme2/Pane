@@ -222,10 +222,22 @@ CRUD work.
 
 On the CRUD route a `POST`/`PUT` that names a column the table's map doesn't
 declare is refused with `422` and nothing is written (keys starting with `_` are
-ignored). A list `GET` accepts `filter[<field>]=<value>` (equality on any mapped
-field except passwords, several filters combine with AND); a filter on an
-unknown field is a `400`. Filters apply inside the members access rule, and
-`pagination.total` counts the filtered rows.
+ignored). A list `GET` takes a small query language (Pane#223), with no joins and no
+aggregates other than count:
+
+- `filter[<field>]=<value>` is equality; `filter[<field>][<op>]=<value>` takes `eq`,
+  `ne`, `gt`, `gte`, `lt`, `lte`, `in` (comma separated values) or `contains`
+  (a literal substring match). Only mapped fields, never passwords; several filters
+  combine with AND. An unknown field or operator is a `400`.
+- `sort=<field>[,<field>]` sorts on at most 2 sortable fields (a `-` prefix sorts that
+  field descending; `order=asc|desc` sets the direction of the others). The key breaks
+  ties, so pages are stable. More than 2 fields, a password or an unsortable field is a `400`.
+- Paging is always applied: `limit` (default 25, maximum 100) and `page`.
+- `count=only` returns no rows, just `pagination.total` for the filtered rows.
+
+Filters, sort and count all run inside the table's access rule (members or owner), so
+they can only ever reach rows the caller may read, and `pagination.total` counts the
+filtered rows.
 
 ## Success, pagination and concurrency
 
