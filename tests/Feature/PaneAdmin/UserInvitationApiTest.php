@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\PaneAdmin;
 
+use App\Mail\InvitationMail;
 use App\Models\PaneAdminInvitation;
 use App\Models\User;
 use App\Models\UserInvitation;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -215,6 +218,85 @@ class UserInvitationApiTest extends TestCase
 
         $this->assertFalse(User::query()->where('email', 'unverified@example.com')->exists());
         $this->assertSame(0, User::query()->where('user_type_id', User::PANE_ADMINISTRATOR_USER_TYPE_ID)->count());
+    }
+
+    public function test_inviting_a_user_emails_the_link_in_plain_text(): void
+    {
+        Mail::fake();
+        $actor = $this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID);
+        $this->withCsrfToken()->actingAs($actor);
+
+        $create = $this->invite('mailed.user@example.com')
+            ->assertCreated()
+            ->assertJsonPath('meta.email_sent', true);
+        $url = (string) $create->json('meta.invitation_url');
+
+        Mail::assertSent(InvitationMail::class, function (InvitationMail $mail) use ($url, $actor): bool {
+            $mail->assertSeeInText($url);
+            $mail->assertSeeInText($actor->name);
+            $mail->assertDontSeeInHtml('<p>');
+
+            return $mail->hasTo('mailed.user@example.com')
+                && $mail->invitationUrl === $url
+                && $mail->role === 'user'
+                && $mail->inviterName === $actor->name;
+        });
+    }
+
+    public function test_a_mail_failure_keeps_the_user_invitation(): void
+    {
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('smtp down'));
+        Log::shouldReceive('warning')->once();
+        $this->withCsrfToken()->actingAs($this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID));
+
+        $this->invite('unsent.user@example.com')
+            ->assertCreated()
+            ->assertJsonPath('meta.email_sent', false)
+            ->assertJsonPath('data.attributes.status', UserInvitation::STATUS_PENDING);
+
+        $this->assertSame(1, UserInvitation::query()->count());
+    }
+
+    public function test_resending_emails_a_fresh_link_without_a_new_row(): void
+    {
+        Mail::fake();
+        $this->withCsrfToken()->actingAs($this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID));
+        $create = $this->invite('again.user@example.com')->assertCreated();
+        $id = (string) $create->json('data.id');
+        $oldToken = $this->tokenFromUrl((string) $create->json('meta.invitation_url'));
+
+        $resend = $this->resend($id)
+            ->assertOk()
+            ->assertJsonPath('meta.email_sent', true)
+            ->assertJsonPath('data.id', $id);
+
+        $newToken = $this->tokenFromUrl((string) $resend->json('meta.invitation_url'));
+        $this->assertNotSame($oldToken, $newToken);
+        $this->assertSame(1, UserInvitation::query()->count());
+        $this->assertSame(hash('sha256', $newToken), UserInvitation::query()->firstOrFail()->token_hash);
+        Mail::assertSent(InvitationMail::class, 2);
+    }
+
+    public function test_only_a_pending_invitation_can_be_resent_and_only_by_an_administrator(): void
+    {
+        Mail::fake();
+        $this->withCsrfToken()->actingAs($this->makePaneUser(User::PANE_ADMINISTRATOR_USER_TYPE_ID));
+        $id = (string) $this->invite('revoked.user@example.com')->json('data.id');
+        UserInvitation::query()->whereKey($id)->update(['status' => UserInvitation::STATUS_REVOKED]);
+
+        $this->resend($id)->assertStatus(409);
+
+        $this->actingAs($this->makePaneUser(User::STANDARD_USER_TYPE_ID));
+        $this->resend($id)->assertForbidden();
+
+        Mail::assertSentCount(1);
+    }
+
+    private function resend(string $id): TestResponse
+    {
+        return $this->withV1ApplicationSession()
+            ->withHeader('Origin', 'https://latte.test')
+            ->postJson('/api/v1/installation/user-invitations/'.$id.'/resend');
     }
 
     private function invite(string $email): TestResponse

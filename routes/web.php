@@ -50,6 +50,8 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('installation.user-invitations.index');
         Route::post('/installation/user-invitations', [UserInvitationController::class, 'store'])
             ->name('installation.user-invitations.store');
+        Route::post('/installation/user-invitations/{invitationId}/resend', [UserInvitationController::class, 'resend'])
+            ->name('installation.user-invitations.resend');
         Route::delete('/installation/user-invitations/{invitationId}', [UserInvitationController::class, 'destroy'])
             ->name('installation.user-invitations.destroy');
         Route::delete('/users/{userId}', [UserAnonymisationController::class, 'destroy'])
