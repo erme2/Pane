@@ -12,7 +12,8 @@
         "laravel/framework": "^13.30.0",
         "laravel/tinker": "^3.0",
         "league/commonmark": "^2.10.2",
-        "league/flysystem-aws-s3-v3": "^3.0"
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "minishlink/web-push": "^11.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.20",

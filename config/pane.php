@@ -1,6 +1,7 @@
 <?php
 
 use App\Messages\EmailChannel;
+use App\Messages\WebPushChannel;
 
 return [
 
@@ -29,7 +30,23 @@ return [
         // Channel name => App\Messages\MessageChannel class. SMS and mobile push plug in here.
         'channels' => [
             EmailChannel::NAME => EmailChannel::class,
+            WebPushChannel::NAME => WebPushChannel::class,
         ],
+    ],
+
+    'push' => [
+        // VAPID keys of this install (web push). Set by the deploy from secrets, never through the API.
+        // Without a public and a private key, push is off: registering and sending are refused.
+        'vapid_public_key' => (string) env('PANE_VAPID_PUBLIC_KEY', ''),
+        'vapid_private_key' => (string) env('PANE_VAPID_PRIVATE_KEY', ''),
+        // A mailto: or https: address the push services can reach the install owner at.
+        'vapid_subject' => (string) env('PANE_VAPID_SUBJECT', ''),
+        // Most pushes one member can be sent per minute (all their devices count as one).
+        'rate_limit_per_minute' => (int) env('PANE_PUSH_RATE_LIMIT', 10),
+        // Most devices one member can keep registered.
+        'max_subscriptions_per_user' => (int) env('PANE_PUSH_MAX_DEVICES', 10),
+        // Seconds the push service keeps an undelivered push.
+        'ttl' => (int) env('PANE_PUSH_TTL', 86400),
     ],
 
 ];

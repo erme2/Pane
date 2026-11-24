@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\UserAnonymisationException;
 use App\Models\AuditEvent;
 use App\Models\PaneAdminInvitation;
+use App\Models\PushSubscription;
 use App\Models\User;
 use App\Models\UserInvitation;
 use DomainException;
@@ -71,6 +72,8 @@ class UserAnonymisationService
 
             $this->redactInvitations($locked, $email);
             $this->redactAuditMetadata($email);
+            // A removed user's devices must never get another push.
+            PushSubscription::query()->where('user_id', $locked->getKey())->delete();
             $this->blankUser($locked);
 
             // No email, name or WorkOS id here: only the anonymised row's own id.
