@@ -14,6 +14,8 @@ use Throwable;
  * so only one run can send it. A failed send is retried after 1, 5 and 30
  * minutes, then marked failed. A message stuck in `sending` (a run that
  * crashed) goes back to pending after STALE_AFTER_MINUTES, so none is lost.
+ * A run records its outcome only while it still owns the reservation (see
+ * complete()), and the worker does nothing while Pane is in maintenance mode.
  */
 class MessageWorker
 {
@@ -30,11 +32,18 @@ class MessageWorker
      */
     public function run(int $limit, callable $shouldStop): array
     {
-        $result = ['sent' => [], 'retried' => [], 'failed' => [], 'released' => $this->releaseStale()];
+        $result = ['sent' => [], 'retried' => [], 'failed' => [], 'released' => 0];
+
+        // Maintenance mode (a restore) stops every queue write, stale recovery included.
+        if (app()->isDownForMaintenance()) {
+            return $result;
+        }
+
+        $result['released'] = $this->releaseStale();
 
         foreach ($this->dueIds($limit) as $id) {
             // Maintenance mode (a restore) stops the claim, so a run already in progress stops writing.
-            if ($shouldStop() || app()->isDownForMaintenance()) {
+            if ($shouldStop() || $this->inMaintenance()) {
                 break;
             }
 
@@ -47,6 +56,14 @@ class MessageWorker
         }
 
         return $result;
+    }
+
+    /**
+     * Read on every claim, not once per run: a restore can start while a run is going.
+     */
+    private function inMaintenance(): bool
+    {
+        return app()->isDownForMaintenance();
     }
 
     /**
@@ -90,14 +107,32 @@ class MessageWorker
             return $this->recordFailure($message, $exception);
         }
 
-        $message->forceFill([
+        // Only the run that still owns the reservation may record the outcome.
+        $this->complete($message, [
             'status' => Message::STATUS_SENT,
             'sent_at' => now(),
             'reserved_at' => null,
             'last_error' => null,
-        ])->save();
+        ]);
 
         return 'sent';
+    }
+
+    /**
+     * Records an outcome only while this run still owns the reservation: the
+     * row is still `sending` with the `attempts` value this run's claim set
+     * (each reservation increments it). A run that finishes after its claim
+     * went stale and another run took the row changes nothing.
+     *
+     * @param  array<string, mixed>  $values
+     */
+    private function complete(Message $message, array $values): void
+    {
+        Message::query()
+            ->whereKey($message->getKey())
+            ->where('status', Message::STATUS_SENDING)
+            ->where('attempts', $message->attempts)
+            ->update([...$values, 'updated_at' => now()]);
     }
 
     private function channel(string $name): MessageChannel
@@ -120,12 +155,12 @@ class MessageWorker
         $failed = $message->attempts >= self::MAX_ATTEMPTS;
         $delay = self::BACKOFF_MINUTES[max(1, min($message->attempts, count(self::BACKOFF_MINUTES))) - 1];
 
-        $message->forceFill([
+        $this->complete($message, [
             'status' => $failed ? Message::STATUS_FAILED : Message::STATUS_PENDING,
             'reserved_at' => null,
             'available_at' => $failed ? $message->available_at : now()->addMinutes($delay),
             'last_error' => $this->safeError($exception),
-        ])->save();
+        ]);
 
         return $failed ? 'failed' : 'retried';
     }

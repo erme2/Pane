@@ -79,13 +79,20 @@ Production migrations are forward-only.
      window has none, start the import. If it has some, wait another `T` and check
      the last `T` minutes again. Each check looks only at its own window, so once
      one window is clear the drain has finished.
+   - Disable the cron jobs that run the message queue worker: the `schedule:run`
+     job and any direct `php artisan messages:send` job. While Pane is in
+     maintenance mode the worker does nothing, but a run already sending a
+     message saves its outcome when the send ends. Drain those too: wait at least
+     the worker's `--max-time` (50 seconds) plus the mail transport's timeout
+     after disabling the jobs, and check that no `messages:send` process is still
+     running (`ps aux | grep messages:send`) before the import.
 3. In hPanel, import the backup file into the installation's database
    (Databases → phpMyAdmin → Import, or the plan's restore tool). Restore only
    that installation's database; installations sharing a database are
    separated by `APP_TABLE_PREFIX`, so check the dump holds only its tables.
 4. Validate the restored data while Pane is still in maintenance mode (the
    dump's tables are present and the key row counts look right).
-5. Resume: `php artisan up`, re-enable the `schedule:run` cron job, then run the
+5. Resume: `php artisan up`, re-enable the `schedule:run` cron job (and any direct `messages:send` job), then run the
    smoke checks. Record the backup used and the lost-writes window.
 
 `storage/` (uploaded files, logs) is not part of the database backup and is

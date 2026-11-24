@@ -153,6 +153,42 @@ class MessageQueueTest extends TestCase
         $this->assertSame([$message->message_id], $result['sent']);
     }
 
+    public function test_a_run_that_lost_its_reservation_cannot_overwrite_the_newer_outcome(): void
+    {
+        $message = app(MessageQueue::class)->push('fake', 'who', null, 'hello');
+        $worker = app(MessageWorker::class);
+
+        $stale = $worker->reserve($message->message_id); // worker A claims, then hangs
+        $this->travel(MessageWorker::STALE_AFTER_MINUTES + 1)->minutes();
+        $this->assertSame([$message->message_id], $worker->run(10, fn () => false)['sent']); // worker B sends
+
+        $record = new \ReflectionMethod($worker, 'recordFailure');
+        $record->invoke($worker, $stale, new RuntimeException('late failure')); // worker A fails late
+
+        $row = Message::query()->find($message->message_id);
+        $this->assertSame(Message::STATUS_SENT, $row->status);
+        $this->assertSame(2, $row->attempts);
+        $this->assertCount(1, FakeChannel::$sent);
+    }
+
+    public function test_the_worker_writes_nothing_in_maintenance_mode(): void
+    {
+        $message = app(MessageQueue::class)->push('fake', 'who', null, 'hello');
+        $worker = app(MessageWorker::class);
+        $worker->reserve($message->message_id);
+        $this->travel(MessageWorker::STALE_AFTER_MINUTES + 1)->minutes();
+
+        $this->app->maintenanceMode()->activate([]);
+        try {
+            $result = $worker->run(10, fn () => false);
+        } finally {
+            $this->app->maintenanceMode()->deactivate();
+        }
+
+        $this->assertSame(['sent' => [], 'retried' => [], 'failed' => [], 'released' => 0], $result);
+        $this->assertSame(Message::STATUS_SENDING, Message::query()->find($message->message_id)->status);
+    }
+
     public function test_a_claimed_message_cannot_be_claimed_twice(): void
     {
         $message = app(MessageQueue::class)->push('fake', 'who', null, 'hello');
