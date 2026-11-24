@@ -27,6 +27,18 @@ Every install also has a message queue (table `messages`, prefixed like the othe
 - Creating an administrator invitation through the v1 API sends one email with the invitation link. Revoking sends none. The API response, including `meta.invitation_url`, is the same either way.
 - If the send fails, the invitation stays: the failure is logged (invitation id and exception class only, never the address or link) and the caller still gets the link to pass on.
 
+## Web Push
+
+Web push (Pane#174) needs a VAPID key pair for the install, set by the deploy from secrets and never through the API. Without the public key, the private key and the subject, `GET /api/v1/push` reports `enabled: false`, registering a device returns `503 push_unavailable`, and sending is refused.
+
+- `PANE_VAPID_PUBLIC_KEY` and `PANE_VAPID_PRIVATE_KEY`: the key pair, base64url as `minishlink/web-push` generates it (run `Minishlink\WebPush\VAPID::createVapidKeys()` once in `php artisan tinker`). Keep the private key secret; the public key is served to browsers.
+- `PANE_VAPID_SUBJECT`: a `mailto:` or `https:` address the push services can reach the install owner at.
+- `PANE_PUSH_RATE_LIMIT`: most pushes one member is sent per minute (10 by default).
+- `PANE_PUSH_MAX_DEVICES`: most devices one member can register (10 by default).
+- `PANE_PUSH_TTL`: seconds a push service keeps an undelivered push (86400 by default).
+
+Pushes go through the message queue, so the one `schedule:run` cron job delivers them (see [Outgoing Email](#outgoing-email)).
+
 ## URLs And Trusted Hosts
 
 - `APP_URL` is Pane's canonical origin. It is used for URL generation and is always included in the trusted-host list outside local/test environments.

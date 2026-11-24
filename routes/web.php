@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\MapAdminController;
 use App\Http\Controllers\MapReadController;
 use App\Http\Controllers\PaneAdminInvitationController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReleaseMetadataController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TermsAcceptanceController;
@@ -58,6 +59,10 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
             ->name('installation.user-invitations.destroy');
         Route::delete('/users/{userId}', [UserAnonymisationController::class, 'destroy'])
             ->name('users.anonymise');
+        Route::get('/push', [PushSubscriptionController::class, 'show'])->name('push.config');
+        Route::get('/push/subscriptions', [PushSubscriptionController::class, 'list'])->name('push.subscriptions.index');
+        Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push.subscriptions.store');
+        Route::delete('/push/subscriptions/{subscriptionId}', [PushSubscriptionController::class, 'destroy'])->name('push.subscriptions.destroy');
         Route::get('/maps', [MapReadController::class, 'show'])->name('maps.show');
         // Maps admin API (Pane#157). The fixed `menu` and `functions` routes come before `{source}/{table}`.
         Route::get('/maps/menu', [MapAdminController::class, 'menu'])->name('maps.menu.show');

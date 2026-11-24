@@ -45,6 +45,10 @@ Pane's Laravel session cookie.
 | `POST /api/v1/auth/callback` | origin | Complete the WorkOS sign-in from `code` and `state` and start the session |
 | `GET /api/v1/session` | session | The signed-in `user` (`id`, `email`, `name`, `role`, `terms_version`, `terms_accepted_at`; both terms fields are `null` until the user accepts) and the frontend `application` |
 | `PUT /api/v1/session/terms` | session | The signed-in user accepts a Terms and Privacy version; body: `terms_version` (opaque string, at most 100 characters, not validated by Pane). Stores it with the time and replaces any earlier value (no version comparison, no history); `200` with `terms_version` and `terms_accepted_at`; `422 validation_failed` for a missing or invalid value |
+| `GET /api/v1/push` | push | Whether web push is on for this install (`enabled`) and the VAPID `vapid_public_key` the browser subscribes with (`null` when push is off) |
+| `GET /api/v1/push/subscriptions` | push | The signed-in member's devices: `id`, `kind`, `device_label`, `service` (the push service host only), `created_at`, `last_sent_at`. Endpoints and keys are never returned |
+| `POST /api/v1/push/subscriptions` | push | Registers or refreshes a device. Body: the browser's subscription JSON (`endpoint`, `keys.p256dh`, `keys.auth`, optional `expirationTime`) and an optional `device_label` (at most 100 characters). The endpoint must be an `https` address of a public host. The same endpoint again refreshes it (and moves it to the signed-in member); `201` when new, `200` when refreshed; `422 validation_failed`, `422 too_many_devices` (limit `PANE_PUSH_MAX_DEVICES`, 10 by default), `503 push_unavailable` when the install has no VAPID keys |
+| `DELETE /api/v1/push/subscriptions/{id}` | push | Removes one of the signed-in member's devices; `204`, or `404 not_found` for an unknown device or another member's |
 | `DELETE /api/v1/session` | session | End the session and return `logout_url`, the WorkOS URL clients must navigate to |
 | `GET /api/v1/installation/pane-admin-invitations` | admin | List administrator invitations (cursor paging) |
 | `POST /api/v1/installation/pane-admin-invitations` | admin | Invite an administrator by `email`; `201` with a one-time `meta.invitation_url` |
@@ -311,6 +315,10 @@ Production messages never contain SQL, credentials, hosts, paths or traces.
 | 429 | `rate_limited` |
 | 500 | `internal_error` |
 | 503 | `dependency_unavailable` |
+
+### Web push (Pane#174)
+
+A member registers each browser or device with `POST /api/v1/push/subscriptions` and can list and remove their own devices; nobody sees another member's. Pane features send a push with `App\Services\Push\WebPushService::sendToUser($user, $payload)` or `sendToUsers($users, $payload)` (the building block Pane#161 declarative actions call for "send a push"). It queues one message per device on the `push` channel of the message queue; `messages:send` delivers it with the queue's retries (after 1, 5 and 30 minutes, then `failed`). The caller passes only the members the access policy lets see the event: the service never widens that list. A device the push service reports gone (`404` or `410`) is removed and not retried. Each member can be sent `PANE_PUSH_RATE_LIMIT` pushes per minute (10 by default, all their devices count as one); a send over the limit queues nothing. The payload is the app's own JSON (at most 3000 bytes); Pane adds no personal data to it. Device keys are encrypted at rest, and anonymising a user removes their devices. The subscription table has a `kind` (`web` today), so native iOS and Android push can add kinds and a channel without a new table.
 
 ## Planned
 
