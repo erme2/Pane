@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\ActionHelper;
 use App\Stories\StoryPlot;
+use App\Support\Maps\MemberScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -31,6 +32,12 @@ class ValidateAction extends AbstractAction
 
         // what the client sent, before the action adds the primary key itself
         $this->rejectUnknownFields($subject, $plot->requestData['data']);
+
+        // the creator column is Pane's to fill (Pane#227): it counts as sent by the signed-in user, whatever the client sent
+        $scope = $this->memberScope($plot);
+        if ($scope instanceof MemberScope) {
+            $plot->requestData['data'] = $scope->withCreator($plot->requestData['data']);
+        }
 
         // if it's an update we need to add the primary key to the data array
         if (! $this->isCreate($plot)) {

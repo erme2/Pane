@@ -5,7 +5,7 @@
       "name": "lists",
       "sql_name": "fixt_lists",
       "description": "Shopping lists",
-      "access": { "members": { "table": "list_members", "key": "id", "members_key": "list_id", "members_user": "membership_id" } },
+      "access": { "members": { "table": "list_members", "key": "id", "members_key": "list_id", "members_user": "membership_id", "creator": "created_by_membership_id" } },
       "fields": [
         { "name": "id", "type": "number", "primary": true },
         { "name": "name", "type": "string", "validations": [{ "rule": "max", "value": 100 }] },

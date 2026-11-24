@@ -158,7 +158,7 @@ class MapRules
      *                                         The owner rule (Pane#218) is the other kind: an "owner" object with the `key`
      *                                         field of this table, which holds the owner's user uuid.
      * @param  array<string, string>  $errors
-     * @return array{members: array{table: string, key: string, members_key: string, members_user: string, role?: array{field: string, read: string, edit: string}}}|array{owner: array{key: string}}|null
+     * @return array{members: array{table: string, key: string, members_key: string, members_user: string, role?: array{field: string, read: string, edit: string}, creator?: string}}|array{owner: array{key: string}}|null
      */
     private static function normalizeAccess(mixed $access, mixed $fields, array &$errors): ?array
     {
@@ -188,16 +188,27 @@ class MapRules
                 $rule[$part] = $members[$part];
             }
         }
-        if (array_diff(array_keys($members), [...$parts, 'role']) !== []) {
-            $errors['access.members'] = 'Only '.implode(', ', [...$parts, 'role']).' are allowed.';
+        if (array_diff(array_keys($members), [...$parts, 'role', 'creator']) !== []) {
+            $errors['access.members'] = 'Only '.implode(', ', [...$parts, 'role', 'creator']).' are allowed.';
         }
         $names = array_column(is_array($fields) ? array_filter($fields, 'is_array') : [], 'name');
+        $creator = null;
+        if (array_key_exists('creator', $members)) {
+            if (! is_string($members['creator']) || ! preg_match(self::NAME, $members['creator']) || ! in_array($members['creator'], $names, true)) {
+                $errors['access.members.creator'] = 'Must be a field of this table.';
+            } else {
+                $creator = $members['creator'];
+            }
+        }
         if (isset($rule['key']) && ! in_array($rule['key'], $names, true)) {
             $errors['access.members.key'] = 'Must be a field of this table.';
         }
 
-        if (count($rule) !== 4 || ($errors['access.members.role'] ?? null) !== null) {
+        if (count($rule) !== 4 || ($errors['access.members.role'] ?? null) !== null || ($errors['access.members.creator'] ?? null) !== null) {
             return null;
+        }
+        if ($creator !== null) {
+            $rule['creator'] = $creator;
         }
         if ($role !== null) {
             $rule['role'] = $role;
