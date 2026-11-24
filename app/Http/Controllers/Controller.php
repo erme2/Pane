@@ -162,10 +162,15 @@ HTML;
     public function runStory(Request $request, string $story, string $subject, $key = null): Response
     {
         $scope = $this->authorizeStory($request, $story, $subject);
+        $storyName = $story;
 
         $story = $this->loadStory($request, $story);
         if ($scope !== null) {
             $story->plot->options['member_scope'] = $scope;
+        }
+        if (strtolower($storyName) === 'crud') {
+            // Joined tables are read through their own access rule, resolved like the request's subject.
+            $story->plot->options['join_scope'] = fn (string $joined) => $this->authorizeStory($request, $storyName, $joined);
         }
 
         return $this->success($story->run($subject, $key));

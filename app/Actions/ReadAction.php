@@ -5,10 +5,16 @@ namespace App\Actions;
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\PaginationHelper;
+use App\Models\Maps\MapTable;
+use App\Services\AppMaps;
 use App\Stories\StoryPlot;
+use App\Support\Maps\RowScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 /**
  * Class ReadAction
@@ -19,6 +25,8 @@ class ReadAction extends AbstractAction
     use PaginationHelper;
 
     private const FILTER_OPERATORS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'contains'];
+
+    private const JOIN_MAX = 3;
 
     private const SQL_OPERATORS = ['eq' => '=', 'ne' => '<>', 'gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<='];
 
@@ -61,23 +69,50 @@ class ReadAction extends AbstractAction
                 }
             }
         } else {
-            $pagination = $this->getPaginationData($plot, $subject);
-            $filters = $this->getFilters($plot, $subject);
-            $countOnly = $this->isCountOnly($plot);
-            if (! $countOnly) {
-                $query = $this->applyFilters($this->scopedQuery($model, $plot), $filters)
-                    ->limit($pagination['limit'])
-                    ->offset($pagination['offset']);
-                foreach ($pagination['sorts'] as [$field, $direction]) {
-                    $query->orderBy($field, $direction);
-                }
-                // The key breaks ties, so a page never repeats or skips a row.
-                $query->orderBy($keyName);
-                foreach ($query->get() as $record) {
-                    $plot->data[] = $mapper->extractFromModel($record);
+            $joins = $this->getJoins($plot, $subject);
+            $joinSortable = [];
+            foreach ($joins as $join) {
+                foreach ($join['sortable'] as $name) {
+                    $joinSortable[] = $join['field'].'.'.$name;
                 }
             }
-            $pagination['total'] = $this->applyFilters($this->scopedQuery($model, $plot), $filters)->count();
+            $pagination = $this->getPaginationData($plot, $subject, $joinSortable);
+            $filters = $this->getFilters($plot, $subject, $joins);
+            $countOnly = $this->isCountOnly($plot);
+            if ($joins === []) {
+                if (! $countOnly) {
+                    $query = $this->applyFilters($this->scopedQuery($model, $plot), $filters)
+                        ->limit($pagination['limit'])
+                        ->offset($pagination['offset']);
+                    foreach ($pagination['sorts'] as [$field, $direction]) {
+                        $query->orderBy($field, $direction);
+                    }
+                    // The key breaks ties, so a page never repeats or skips a row.
+                    $query->orderBy($keyName);
+                    foreach ($query->get() as $record) {
+                        $plot->data[] = $mapper->extractFromModel($record);
+                    }
+                }
+                $pagination['total'] = $this->applyFilters($this->scopedQuery($model, $plot), $filters)->count();
+            } else {
+                $build = fn () => $this->applyFilters($this->joinedQuery($model, $plot, $joins), $filters);
+                if (! $countOnly) {
+                    $query = $build()->select('b.*')->limit($pagination['limit'])->offset($pagination['offset']);
+                    foreach ($joins as $join) {
+                        foreach ($join['columns'] as $name) {
+                            $query->addSelect($join['alias'].'.'.$name.' as '.$join['alias'].'__'.$name);
+                        }
+                    }
+                    foreach ($pagination['sorts'] as [$field, $direction]) {
+                        $query->orderBy($this->qualify($field), $direction);
+                    }
+                    $query->orderBy('b.'.$keyName);
+                    foreach ($query->get() as $row) {
+                        $plot->data[] = $this->extractJoined((array) $row, $model, $mapper, $joins);
+                    }
+                }
+                $pagination['total'] = $build()->count();
+            }
             $pagination['pages'] = ceil($pagination['total'] / $pagination['limit']);
             $plot->setPagination($pagination);
         }
@@ -110,11 +145,12 @@ class ReadAction extends AbstractAction
      * `gt`, `gte`, `lt`, `lte`, `in` (comma separated values) or `contains`. Only mapped fields can be
      * filtered, never a password. Several filters combine with AND.
      *
+     * @param  list<array<string, mixed>>  $joins
      * @return list<array{0: string, 1: string, 2: scalar|list<string>}>
      *
      * @throws ValidationException
      */
-    private function getFilters(StoryPlot $plot, string $subject): array
+    private function getFilters(StoryPlot $plot, string $subject, array $joins = []): array
     {
         $filters = $plot->requestData['data']['filter'] ?? [];
         if (! is_array($filters)) {
@@ -122,6 +158,11 @@ class ReadAction extends AbstractAction
         }
         $types = $this->getMapper($subject)->getFields($subject)->pluck('type', 'name')->all();
         $allowed = array_keys(array_filter($types, fn ($type) => $type !== 'password'));
+        foreach ($joins as $join) {
+            foreach ($join['filterable'] as $name) {
+                $allowed[] = $join['field'].'.'.$name;
+            }
+        }
         $errors = [];
         $parsed = [];
         foreach ($filters as $name => $condition) {
@@ -152,9 +193,13 @@ class ReadAction extends AbstractAction
     /**
      * @param  list<array{0: string, 1: string, 2: scalar|list<string>}>  $filters
      */
-    private function applyFilters(Builder $query, array $filters): Builder
+    private function applyFilters(Builder|QueryBuilder $query, array $filters): Builder|QueryBuilder
     {
+        $joined = $query instanceof QueryBuilder;
         foreach ($filters as [$name, $operator, $value]) {
+            if ($joined) {
+                $name = $this->qualify($name);
+            }
             match ($operator) {
                 'in' => $query->whereIn($name, $value),
                 'contains' => $query->whereRaw(
@@ -166,5 +211,142 @@ class ReadAction extends AbstractAction
         }
 
         return $query;
+    }
+
+    /**
+     * `a.b` is the field `b` of the table joined through field `a` (alias `j_a`); a plain name is a
+     * column of the base table (alias `b`).
+     */
+    private function qualify(string $name): string
+    {
+        return str_contains($name, '.') ? 'j_'.$name : 'b.'.$name;
+    }
+
+    /**
+     * The `join=<field>[,<field>]` of a list request: one level only. A field can be joined when it
+     * references another mapped table with an `exists:<table>,<primary key>` validation, so a base row
+     * has at most one joined row. Each joined table is read through its own access rule.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws ValidationException
+     * @throws SystemException
+     */
+    private function getJoins(StoryPlot $plot, string $subject): array
+    {
+        $join = $plot->requestData['data']['join'] ?? null;
+        if ($join === null) {
+            return [];
+        }
+        $names = is_string($join) ? array_values(array_filter(explode(',', $join), fn ($n) => $n !== '')) : [];
+        if ($names === [] || count($names) > self::JOIN_MAX || count(array_unique($names)) !== count($names)) {
+            throw new ValidationException(['join' => ['The join must be join=field or join=field,field (at most '.self::JOIN_MAX.', one level)']]);
+        }
+        $base = app(AppMaps::class)->table(Str::snake($subject));
+        $resolver = $plot->options['join_scope'] ?? null;
+        $joins = [];
+        foreach ($names as $field) {
+            $reference = $base === null ? null : $this->reference($base, $field);
+            if ($reference === null) {
+                throw new ValidationException(['join' => ["Cannot join $field: it does not reference a mapped table"]]);
+            }
+            [$target, $column] = $reference;
+            // The caller's rule on the joined table: protected tables are refused, as on the CRUD route itself.
+            $scope = is_callable($resolver) ? $resolver($target->name) : null;
+            $mapper = $this->getMapper($target->name);
+            $fields = $mapper->getFields($target->name);
+            $readable = $fields->where('type', '!=', 'password')->pluck('name')->all();
+            $joins[] = [
+                'field' => $field,
+                'alias' => 'j_'.$field,
+                'column' => $column,
+                'scope' => $scope,
+                'model' => $this->getModel($target->name),
+                'mapper' => $mapper,
+                'columns' => $fields->pluck('name')->all(),
+                'filterable' => $readable,
+                'sortable' => array_values(array_intersect($readable, $mapper->getIndexableFields())),
+            ];
+        }
+
+        return $joins;
+    }
+
+    /**
+     * @return array{0: MapTable, 1: string}|null the referenced table and its primary key column
+     */
+    private function reference(MapTable $base, string $field): ?array
+    {
+        $maps = app(AppMaps::class);
+        $column = $base->fields()->where('name', $field)->first();
+        if ($column === null || $column->type === 'password') {
+            return null;
+        }
+        foreach ($column->validations ?? [] as $validation) {
+            if (($validation['rule'] ?? null) !== 'exists' || ! is_string($validation['value'] ?? null)) {
+                continue;
+            }
+            [$table, $key] = array_pad(explode(',', $validation['value'], 2), 2, null);
+            $target = $maps->table($table);
+            if ($target === null) {
+                $bySql = MapTable::query()->where('sql_name', $table)->first();
+                $target = $bySql === null ? null : $maps->table($bySql->name);
+            }
+            $primary = $target?->fields()->where('primary', true)->first();
+            if ($target !== null && $primary !== null && ($key === null || $key === $primary->name)) {
+                return [$target, $primary->name];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The base rows the caller may read, each left-joined to the one row it references, which only
+     * joins when the caller may read that row too: a hidden row looks like a missing one.
+     *
+     * @param  list<array<string, mixed>>  $joins
+     */
+    private function joinedQuery(mixed $model, StoryPlot $plot, array $joins): QueryBuilder
+    {
+        $query = DB::query()->fromSub($this->scopedQuery($model, $plot)->toBase(), 'b');
+        foreach ($joins as $join) {
+            $sub = $join['model']->newQuery();
+            if ($join['scope'] instanceof RowScope) {
+                $join['scope']->restrict($sub);
+            }
+            $query->leftJoinSub($sub->toBase(), $join['alias'], 'b.'.$join['field'], '=', $join['alias'].'.'.$join['column']);
+        }
+
+        return $query;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  list<array<string, mixed>>  $joins
+     */
+    private function extractJoined(array $row, mixed $model, mixed $mapper, array $joins): object
+    {
+        $base = [];
+        $joined = [];
+        foreach ($row as $name => $value) {
+            if (str_starts_with($name, 'j_') && str_contains($name, '__')) {
+                [$alias, $column] = explode('__', $name, 2);
+                $joined[$alias][$column] = $value;
+            } else {
+                $base[$name] = $value;
+            }
+        }
+        $result = $mapper->extractFromModel($model->newFromBuilder($base));
+        $result->joined = new \stdClass;
+        foreach ($joins as $join) {
+            $attributes = $joined[$join['alias']] ?? [];
+            $present = ($attributes[$join['column']] ?? null) !== null;
+            $result->joined->{$join['field']} = $present
+                ? $join['mapper']->extractFromModel($join['model']->newFromBuilder($attributes))
+                : null;
+        }
+
+        return $result;
     }
 }

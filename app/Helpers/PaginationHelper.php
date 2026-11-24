@@ -18,10 +18,12 @@ trait PaginationHelper
      * Creates and return an array built from the plot data you can use to paginate the data in the database.
      * It will also validate the pagination data and throw a ValidationException if the data is invalid.
      *
+     * @param  list<string>  $extraSortable  joined fields (`field.column`) a request may also sort on
+     *
      * @throws ValidationException
      * @throws SystemException
      */
-    public function getPaginationData(StoryPlot $plot, string $subject): array
+    public function getPaginationData(StoryPlot $plot, string $subject, array $extraSortable = []): array
     {
         $mapper = $this->getMapper($subject);
         $keyName = ($this->getModel($subject))->getPrimaryKey($subject);
@@ -41,7 +43,7 @@ trait PaginationHelper
         ];
         $errors = Validator::make($data, $rules)->errors()->toArray();
         if ($errors === []) {
-            [$data['sorts'], $errors] = $this->parseSorts($data['sort'], $data['order'], $this->sortableFields($mapper));
+            [$data['sorts'], $errors] = $this->parseSorts($data['sort'], $data['order'], array_merge($this->sortableFields($mapper), $extraSortable));
         }
         if ($errors !== []) {
             throw new ValidationException($errors);
