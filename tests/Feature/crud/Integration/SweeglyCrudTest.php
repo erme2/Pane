@@ -92,6 +92,17 @@ class SweeglyCrudTest extends TestCase
         $this->assertSame(0, DB::table('fixt_list_members')->count());
     }
 
+    public function test_a_name_only_list_create_gets_the_signed_in_creator_and_ignores_a_sent_one(): void
+    {
+        $this->actingAs($this->owner);
+
+        $this->withCsrfToken()->postJson('/crud/lists', ['name' => 'Groceries'])->assertStatus(Response::HTTP_CREATED);
+        $this->withCsrfToken()->postJson('/crud/lists', ['name' => 'Weekly', 'created_by_membership_id' => $this->other->uuid])->assertStatus(Response::HTTP_CREATED);
+
+        $this->assertSame(2, DB::table('fixt_lists')->where('created_by_membership_id', $this->owner->uuid)->count());
+        $this->assertSame(2, DB::table('fixt_list_members')->where('membership_id', $this->owner->uuid)->count());
+    }
+
     public function test_a_member_manages_list_items(): void
     {
         $listId = $this->listFor($this->owner, 'Groceries');

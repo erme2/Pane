@@ -33,7 +33,41 @@ final class MemberScope implements RowScope
         private readonly ?string $readValue = null,
         /** Role value that lets a member read and write. */
         private readonly ?string $editValue = null,
+        /** Field of the table that holds the creator's user uuid (set by Pane, never by the client), or null. */
+        public readonly ?string $creatorField = null,
     ) {}
+
+    /**
+     * Stamps the signed-in user as the creator of a new row and drops any
+     * creator value the client sent. Only a parent table (a new list) has one.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function withCreator(array $data): array
+    {
+        if ($this->creatorField === null) {
+            return $data;
+        }
+        $data[$this->creatorField] = $this->userUuid;
+
+        return $data;
+    }
+
+    /**
+     * On update the creator never changes: a creator value sent by the client is dropped.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function withoutCreator(array $data): array
+    {
+        if ($this->creatorField !== null) {
+            unset($data[$this->creatorField]);
+        }
+
+        return $data;
+    }
 
     /**
      * Narrows a members query to the rows that count: any member for a read, and

@@ -115,6 +115,7 @@ class AppMaps
             membersRole: $membersRole === null ? null : ($membersRole->sql_name ?? $membersRole->name),
             readValue: is_array($roleRule) ? (string) $roleRule['read'] : null,
             editValue: is_array($roleRule) ? (string) $roleRule['edit'] : null,
+            creatorField: is_string($rule['creator'] ?? null) && $this->column($map, $rule['creator']) !== null ? $rule['creator'] : null,
         );
     }
 

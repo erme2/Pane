@@ -38,6 +38,9 @@ class SaveAction extends AbstractAction
         // is it create or update?
         if ($this->isCreate($plot)) {
             $scope?->assertCanCreate($plot->requestData['data']);
+            if ($scope instanceof MemberScope && $scope->keyIsPrimary) {
+                $plot->requestData['data'] = $scope->withCreator($plot->requestData['data']);
+            }
             $record = $model->newInstance();
         } else {
             $primaryKey = $model->getKeyName();
@@ -51,6 +54,9 @@ class SaveAction extends AbstractAction
                 throw $scope->forbidden();
             }
             $scope?->assertCanUpdate($plot->requestData['data'], $record?->{$scope->keyField});
+            if ($scope instanceof MemberScope) {
+                $plot->requestData['data'] = $scope->withoutCreator($plot->requestData['data']);
+            }
         }
         if ($record) {
             $record = $mapper->fillModel($record, $plot->requestData['data']);
