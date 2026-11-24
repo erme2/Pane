@@ -35,7 +35,22 @@ final class MemberScope implements RowScope
         private readonly ?string $editValue = null,
         /** Field of the table that holds the creator's user uuid (set by Pane, never by the client), or null. */
         public readonly ?string $creatorField = null,
+        /** True for an administrator: no row is hidden or refused, but the creator is still set by Pane. */
+        public readonly bool $unrestricted = false,
     ) {}
+
+    /**
+     * The same rule for an administrator: it keeps the creator handling and
+     * lets every row through.
+     */
+    public function asUnrestricted(): self
+    {
+        return new self(
+            $this->keyField, $this->keyIsPrimary, $this->membersTableHasRule, $this->membersTable,
+            $this->membersKey, $this->membersUser, $this->userUuid, $this->membersRole,
+            $this->readValue, $this->editValue, $this->creatorField, true,
+        );
+    }
 
     /**
      * Stamps the signed-in user as the creator of a new row and drops any
@@ -94,6 +109,10 @@ final class MemberScope implements RowScope
      */
     public function restrict(Builder $query, bool $write = false): Builder
     {
+        if ($this->unrestricted) {
+            return $query;
+        }
+
         return $query->whereIn(
             $this->keyField,
             function ($sub) use ($write): void {
@@ -125,6 +144,9 @@ final class MemberScope implements RowScope
      */
     public function addCreator(mixed $key): void
     {
+        if ($this->unrestricted && ! $this->membersTableHasRule) {
+            return;
+        }
         DB::table($this->membersTable)->insert([
             $this->membersKey => $key,
             $this->membersUser => $this->userUuid,
@@ -141,6 +163,9 @@ final class MemberScope implements RowScope
      */
     public function assertCanCreate(array $data): void
     {
+        if ($this->unrestricted) {
+            return;
+        }
         if ($this->keyIsPrimary) {
             if (! $this->membersTableHasRule) {
                 throw $this->forbidden('The members table has no rule, so a creator row cannot be added');
@@ -163,6 +188,9 @@ final class MemberScope implements RowScope
      */
     public function assertCanUpdate(array $data, mixed $current): void
     {
+        if ($this->unrestricted) {
+            return;
+        }
         if ($this->keyIsPrimary || ! array_key_exists($this->keyField, $data)) {
             return;
         }

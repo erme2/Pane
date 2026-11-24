@@ -202,6 +202,13 @@ HTML;
         }
 
         if ($isAdministrator) {
+            // An administrator sees every row, but a new list still gets its creator from Pane (Pane#227).
+            if ($user instanceof User && filled($user->uuid) && in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT], true)) {
+                $creatorScope = app(AppMaps::class)->memberScope($subject, $user);
+
+                return $creatorScope?->creatorField !== null ? $creatorScope->asUnrestricted() : null;
+            }
+
             return null;
         }
 
