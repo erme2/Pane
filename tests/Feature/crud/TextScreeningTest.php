@@ -113,9 +113,35 @@ class TextScreeningTest extends TestCase
         $this->assertSame(TextScreener::REASON_TERM, $screener->screen('fuuuuck'));
         $this->assertSame(TextScreener::REASON_TERM, $screener->screen('$h1t'));
         $this->assertSame(TextScreener::REASON_TERM, $screener->screen('please KILL   yourself'));
+        $this->assertSame(TextScreener::REASON_TERM, $screener->screen('fuck!'));
+        $this->assertSame(TextScreener::REASON_TERM, $screener->screen('shit!!'));
+        $this->assertSame(TextScreener::REASON_TERM, $screener->screen('f.u.c.k!'));
         $this->assertSame(TextScreener::REASON_REPEAT, $screener->screen('aaaaaaaaaaaaaa'));
+        $this->assertNull($screener->screen(str_repeat('ab ', 666).'ab'));
+        $this->assertSame(TextScreener::REASON_LENGTH, $screener->screen(str_repeat('ab ', 667)));
         $this->assertSame(TextScreener::REASON_LINK, $screener->screen('see www.example.org'));
         $this->assertSame(TextScreener::REASON_LINK, $screener->screen('see https://example.org/x'));
+    }
+
+    public function test_punctuation_after_a_blocked_term_is_still_refused_on_create(): void
+    {
+        $this->withCsrfToken()->postJson('/crud/notes', ['title' => 'Milk', 'body' => 'fuck!'])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->assertSame(0, DB::table('tsc_notes')->count());
+    }
+
+    public function test_the_text_length_limit_applies_on_create_and_update(): void
+    {
+        config(['pane.screening.max_length' => 20]);
+        $this->withCsrfToken()->postJson('/crud/notes', ['title' => 'Milk', 'body' => str_repeat('a b ', 5)])
+            ->assertStatus(Response::HTTP_CREATED);
+        $id = (int) DB::table('tsc_notes')->value('note_id');
+
+        $this->withCsrfToken()->postJson('/crud/notes', ['title' => 'Milk', 'body' => str_repeat('a b ', 5).'c'])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->withCsrfToken()->putJson("/crud/notes/$id", ['title' => 'Milk', 'body' => str_repeat('a b ', 5).'c'])
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->assertSame(1, DB::table('tsc_notes')->count());
     }
 
     public function test_links_can_be_allow_listed_and_terms_added_per_install(): void

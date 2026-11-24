@@ -5,7 +5,7 @@ namespace App\Services;
 /**
  * Screens user-written text on shared records before it is saved (Pane#175).
  * Cheap checks only: a blocklist (matched through spacing and look-alike
- * characters), a limit on repeated characters, and links. A stronger checker,
+ * characters), a limit on length and on repeated characters, and links. A stronger checker,
  * such as a moderation API, can replace this class behind screen().
  */
 class TextScreener
@@ -15,6 +15,8 @@ class TextScreener
     public const string REASON_REPEAT = 'repeated_characters';
 
     public const string REASON_LINK = 'link';
+
+    public const string REASON_LENGTH = 'too_long';
 
     /** Default terms; an install adds its own through PANE_SCREENING_BLOCKLIST. */
     private const array DEFAULT_BLOCKLIST = [
@@ -31,6 +33,10 @@ class TextScreener
      */
     public function screen(string $text): ?string
     {
+        $maxLength = (int) config('pane.screening.max_length', 2000);
+        if ($maxLength > 0 && mb_strlen($text) > $maxLength) {
+            return self::REASON_LENGTH;
+        }
         if ($this->hasLink($text)) {
             return self::REASON_LINK;
         }
@@ -72,7 +78,21 @@ class TextScreener
 
     private function hasBlockedTerm(string $text): bool
     {
-        $words = $this->words($text);
+        // Look-alikes turn "!" into "i", so "fuck!" must also be read with punctuation kept as a boundary.
+        foreach ([true, false] as $lookalikes) {
+            if ($this->wordsContainTerm($this->words($text, $lookalikes))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<string>  $words
+     */
+    private function wordsContainTerm(array $words): bool
+    {
         $haystack = ' '.implode(' ', $words).' ';
         // "f u c k": runs of single characters are also read as one word
         $joined = ' '.implode(' ', $this->joinSingles($words)).' ';
@@ -113,14 +133,16 @@ class TextScreener
     }
 
     /**
-     * @return list<string> lowercase words, accents removed, look-alike characters mapped to letters
+     * @return list<string> lowercase words, accents removed, look-alike characters mapped to letters when $lookalikes is set
      */
-    private function words(string $text): array
+    private function words(string $text, bool $lookalikes = true): array
     {
         $text = mb_strtolower($text);
         $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
         $text = $ascii !== false && $ascii !== '' ? $ascii : $text;
-        $text = strtr($text, self::LOOKALIKES);
+        if ($lookalikes) {
+            $text = strtr($text, self::LOOKALIKES);
+        }
         $text = preg_replace('/[^a-z\s]+/u', ' ', $text) ?? '';
 
         return array_values(array_filter(preg_split('/\s+/', trim($text)) ?: []));

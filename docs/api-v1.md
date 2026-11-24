@@ -188,7 +188,8 @@ subject and the from and to versions; the full diff stays in `maps_versions`.
 - **Screened fields.** A field with the validation `{ "rule": "screened" }` holds
   user-written text on shared records. On a create or update, after the access check
   and the other rules, the text is refused with `422` and nothing is saved when it has
-  a blocked term (also spaced out or with look-alike characters), a long run of one
+  a blocked term (also spaced out, next to punctuation or with look-alike characters),
+  more characters than `PANE_SCREENING_MAX_LENGTH` (default 2000), a long run of one
   character, or a link (per install settings, see `docs/environment.md`). The error
   names the field with the generic message `This text is not allowed.` and never echoes
   the text. Each refusal writes a `data.text.screened` audit row (denied) with the user,
