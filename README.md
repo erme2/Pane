@@ -13,7 +13,7 @@ The current code is a transitional metadata-driven CRUD implementation over one
 default database. The target (see `plans/2026-11-16-pane-simple-cpanel.yaml` in
 Yaup) is a simple control panel over the install's own database: maps, roles,
 membership-owned rows and auditing. Managed connections, discovery, the
-application registry and the message queue were removed in Pane#181. Read
+application registry were removed in Pane#181; the message queue came back in Pane#226 as a platform feature. Read
 [Pane Architecture](docs/architecture.md) before making structural changes.
 
 Pane remains focused on three qualities:

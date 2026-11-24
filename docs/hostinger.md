@@ -110,7 +110,7 @@ tree has no `resources/views` directory.
 
 ## Email
 
-Pane sends invitation email directly through Laravel Mail when the invitation is created or resent (see [Outgoing Email](environment.md#outgoing-email)). There is no worker, no queue and no cron job to set up: the `MAIL_*` settings are all it needs. `GET /status` no longer reports a message queue.
+Pane sends invitation email directly through Laravel Mail when the invitation is created or resent (see [Outgoing Email](environment.md#outgoing-email)). The message queue worker is `php artisan messages:send`: run it every minute from cron (the existing job), or let the one `schedule:run` cron job run it. `GET /status` does not report the queue.
 
 ## Preflight Script
 

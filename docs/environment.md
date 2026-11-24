@@ -19,7 +19,9 @@ Pane trusts the frontends listed in its environment, and nothing else. There is 
 
 ## Outgoing Email
 
-Pane sends invitation email directly through Laravel Mail and the `MAIL_*` settings, right after the invitation is saved. There is no message queue, no worker and no cron job for email.
+Pane sends invitation email directly through Laravel Mail and the `MAIL_*` settings, right after the invitation is saved.
+
+Every install also has a message queue (table `messages`, prefixed like the other Pane tables) for outgoing messages. A Pane feature adds a row with `App\Services\MessageQueue::push($channel, $recipient, $subject, $body)`, and `php artisan messages:send` sends the due rows through the row's channel (`email` uses the `MAIL_*` settings). A failed send is retried after 1, 5 and 30 minutes, then marked `failed` with the last error (links and addresses removed). A row left `sending` by a crashed run goes back to `pending` after 10 minutes. The body is encrypted at rest. The command is scheduled every minute, so the one `schedule:run` cron job runs it; an install that already calls `messages:send` from cron keeps working, since overlapping runs never send a message twice. A new channel (SMS, mobile push) implements `App\Messages\MessageChannel` and is registered in `config/pane.php` under `messages.channels`: no table or worker change.
 
 - Creating an administrator invitation through the v1 API sends one email with the invitation link. Revoking sends none. The API response, including `meta.invitation_url`, is the same either way.
 - If the send fails, the invitation stays: the failure is logged (invitation id and exception class only, never the address or link) and the caller still gets the link to pass on.

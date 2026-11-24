@@ -12,6 +12,8 @@ class PaneTable
 
     public const string USER_INVITATIONS = 'user_invitations';
 
+    public const string MESSAGES = 'messages';
+
     public const string PANE_INSTALLATION_LOCKS = 'installation_locks';
 
     public const string SETTING_DEFAULTS = 'setting_defaults';

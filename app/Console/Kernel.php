@@ -12,7 +12,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Nothing is scheduled: Pane has no background worker.
+        // The message worker runs on every install. Overlapping runs are safe (messages are claimed
+        // atomically), so an installation that also calls `messages:send` from cron keeps working.
+        $schedule->command('messages:send')->everyMinute()->withoutOverlapping();
     }
 
     /**
