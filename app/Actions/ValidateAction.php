@@ -5,9 +5,14 @@ namespace App\Actions;
 use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\ActionHelper;
+use App\Models\AuditEvent;
+use App\Models\Field;
+use App\Services\AuditEventService;
+use App\Services\TextScreener;
 use App\Stories\StoryPlot;
 use App\Support\Maps\MemberScope;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -53,7 +58,48 @@ class ValidateAction extends AbstractAction
             throw new ValidationException($errors->toArray());
         }
 
+        $this->screenText($subject, $plot->requestData['data']);
+
         return $plot;
+    }
+
+    /**
+     * Fields a map marks `screened` are checked after the access policy and
+     * the other rules, before the row is saved (Pane#175). A refusal names the
+     * field with a generic reason and is logged without the text.
+     *
+     * @throws ValidationException
+     */
+    private function screenText(string $subject, array $data): void
+    {
+        $screener = app(TextScreener::class);
+        $errors = [];
+        $rejected = [];
+        /** @var Field $field */
+        foreach ($this->getMapper($subject)->getFields($subject) as $field) {
+            $name = (string) $field->getAttribute('name');
+            $value = $data[$name] ?? null;
+            if (! is_string($value) || $value === '' || ! $field->hasValidation('screened')) {
+                continue;
+            }
+            $reason = $screener->screen($value);
+            if ($reason !== null) {
+                $errors[$name] = ['This text is not allowed.'];
+                $rejected[$name] = $reason;
+            }
+        }
+        if ($errors === []) {
+            return;
+        }
+
+        app(AuditEventService::class)->record('data.text.screened', AuditEvent::OUTCOME_DENIED, [
+            'effective_user' => Auth::user(),
+            'table_name' => $subject,
+            'changed_columns' => array_keys($rejected),
+            'metadata' => ['reasons' => $rejected],
+        ]);
+
+        throw new ValidationException($errors, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**

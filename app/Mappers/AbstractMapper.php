@@ -45,6 +45,7 @@ abstract class AbstractMapper
         'max' => 3,
         'min' => 4,
         'email' => 5,
+        'screened' => 6,
     ];
 
     const string PASSWORD_REPLACEMENT = '********';
