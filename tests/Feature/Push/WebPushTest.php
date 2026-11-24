@@ -110,6 +110,59 @@ class WebPushTest extends TestCase
         $this->assertSame('newAuthKey', PushSubscription::query()->first()->auth);
     }
 
+    public function test_a_device_moved_to_another_member_does_not_receive_the_first_members_queued_push(): void
+    {
+        $a = $this->signedIn();
+        $this->asLatte()->postJson('/api/v1/push/subscriptions', $this->body())->assertCreated();
+        $oldId = PushSubscription::query()->first()->subscription_id;
+
+        app(WebPushService::class)->sendToUser($a, ['title' => 'Private to A']);
+
+        $b = $this->signedIn();
+        $this->assertNotSame($a->getKey(), $b->getKey());
+        $this->asLatte()->postJson('/api/v1/push/subscriptions', $this->body())->assertCreated();
+
+        $moved = PushSubscription::query()->first();
+        $this->assertSame(1, PushSubscription::query()->count());
+        $this->assertSame($b->getKey(), $moved->user_id);
+        $this->assertNotSame($oldId, $moved->subscription_id);
+
+        app(MessageWorker::class)->run(10, fn (): bool => false);
+
+        $this->assertSame([], $this->push->sent, 'A\'s push must not reach B\'s registration');
+    }
+
+    public function test_only_public_addresses_are_called(): void
+    {
+        $resolver = new class extends PushSender
+        {
+            /** @var array<string, list<string>> */
+            public array $dns = [];
+
+            protected function resolve(string $host): array
+            {
+                return $this->dns[$host] ?? [];
+            }
+        };
+        $resolver->dns = [
+            'public.example.com' => ['93.184.216.34'],
+            'private.example.com' => ['10.0.0.5'],
+            '127.0.0.1.nip.io' => ['127.0.0.1'],
+            'mixed.example.com' => ['93.184.216.34', '192.168.1.9'],
+        ];
+
+        $this->assertSame(['93.184.216.34'], $resolver->publicAddresses('public.example.com'));
+        $this->assertSame([], $resolver->publicAddresses('private.example.com'));
+        $this->assertSame([], $resolver->publicAddresses('127.0.0.1.nip.io'));
+        $this->assertSame([], $resolver->publicAddresses('mixed.example.com'));
+        $this->assertSame([], $resolver->publicAddresses('unknown.example.com'));
+        $this->assertSame([], $resolver->publicAddresses('127.0.0.1'));
+
+        $subscription = new PushSubscription(['endpoint' => 'https://private.example.com/x', 'p256dh' => 'a', 'auth' => 'b']);
+        [$outcome] = $resolver->send($subscription, '{}');
+        $this->assertSame(PushSender::FAILED, $outcome);
+    }
+
     public function test_keys_are_encrypted_at_rest(): void
     {
         $this->signedIn();

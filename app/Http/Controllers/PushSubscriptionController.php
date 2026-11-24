@@ -62,7 +62,7 @@ class PushSubscriptionController extends Controller
      * `POST /api/v1/push/subscriptions`: registers or refreshes a device. The
      * browser's own subscription JSON is accepted as is (`endpoint`, `keys`).
      * Registering the same endpoint again refreshes its keys and label, and
-     * moves it to the signed-in member (a browser that changed account).
+     * re-creates it for the signed-in member (a browser that changed account).
      */
     public function store(Request $request, PushSender $sender): JsonResponse
     {
@@ -107,12 +107,21 @@ class PushSubscriptionController extends Controller
         $hash = PushSubscription::hashEndpoint($endpoint);
         $existing = PushSubscription::query()->where('endpoint_hash', $hash)->first();
 
-        if (! $existing instanceof PushSubscription) {
+        // A device that changes member is a new subscription (new id), so pushes
+        // queued for the previous member can never reach the new one.
+        $transfer = $existing instanceof PushSubscription && $existing->user_id !== (int) $user->getKey();
+
+        if (! $existing instanceof PushSubscription || $transfer) {
             $count = PushSubscription::query()->where('user_id', $user->getKey())->count();
 
             if ($count >= max(1, (int) config('pane.push.max_subscriptions_per_user'))) {
                 return $this->fail($request, 'too_many_devices', 'Remove a device before adding another.', Response::HTTP_UNPROCESSABLE_ENTITY);
             }
+        }
+
+        if ($transfer) {
+            $existing->delete();
+            $existing = null;
         }
 
         $subscription = $existing ?? new PushSubscription;
