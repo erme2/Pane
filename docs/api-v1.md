@@ -233,7 +233,7 @@ CRUD work.
 
 On the CRUD route a `POST`/`PUT` that names a column the table's map doesn't
 declare is refused with `422` and nothing is written (keys starting with `_` are
-ignored). A list `GET` takes a small query language (Pane#223), with no joins and no
+ignored). A list `GET` takes a small query language (Pane#223, Pane#224), with one join level and no
 aggregates other than count:
 
 - `filter[<field>]=<value>` is equality; `filter[<field>][<op>]=<value>` takes `eq`,
@@ -245,6 +245,18 @@ aggregates other than count:
   ties, so pages are stable. More than 2 fields, a password or an unsortable field is a `400`.
 - Paging is always applied: `limit` (default 25, maximum 100) and `page`.
 - `count=only` returns no rows, just `pagination.total` for the filtered rows.
+- `join=<field>[,<field>]` (Pane#224, one level, at most 3) adds the row a field
+  references. A field can be joined when it has an `exists` validation
+  `<table>,<primary key>` that points at another mapped install table, so a row has at
+  most one joined row. Each row gets `joined.<field>`: the joined row, or `null` when
+  the field is empty or the caller may not read that row (a hidden row looks like a
+  missing one, and the join never adds or removes base rows). The joined table is
+  read through its own access rule; passwords come back masked. Filters and sort may
+  use joined fields as `filter[<field>.<column>]` and `sort=<field>.<column>`, with
+  the same rules as the base table's. A field that is not a reference, a reference to
+  a table that is not a mapped install table (for example `users`), a repeated field or
+  a join without `join=` for the field a filter names is a `400`. A join on a
+  single-row read (`/crud/{subject}/{key}`) is ignored.
 
 Filters, sort and count all run inside the table's access rule (members or owner), so
 they can only ever reach rows the caller may read, and `pagination.total` counts the
