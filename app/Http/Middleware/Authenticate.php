@@ -15,15 +15,17 @@ class Authenticate extends Middleware
     {
         parent::authenticate($request, $guards);
 
-        foreach ($guards ?: [null] as $guard) {
-            $auth = $this->auth->guard($guard);
-            $user = $auth->user();
+        // The guard that authenticated the request (the parent made it the default).
+        $auth = $this->auth->guard();
+        $user = $auth->user();
 
-            if ($user !== null && isset($user->is_active) && ! (bool) $user->is_active) {
+        if ($user !== null && isset($user->is_active) && ! (bool) $user->is_active) {
+            // A bearer-token guard has no session to end: the device guard already refuses inactive users.
+            if (method_exists($auth, 'logout')) {
                 $auth->logout();
-
-                $this->unauthenticated($request, $guards);
             }
+
+            $this->unauthenticated($request, $guards);
         }
     }
 

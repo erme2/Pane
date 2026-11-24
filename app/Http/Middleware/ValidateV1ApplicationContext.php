@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\ApplicationRegistration;
 use App\Services\ApplicationRegistryService;
+use App\Services\DeviceTokenService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,11 +19,21 @@ class ValidateV1ApplicationContext
 
     private const V1_APPLICATION_SESSION_VERSION_KEY = 'pane_v1_application_session_version';
 
-    public function __construct(private readonly ApplicationRegistryService $applications) {}
+    public function __construct(
+        private readonly ApplicationRegistryService $applications,
+        private readonly DeviceTokenService $deviceTokens,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->is('api/v1/maps', 'api/v1/maps/*')) {
+            return $next($request);
+        }
+
+        // A native client (Pane#130) works as the install's primary application.
+        if ($this->deviceTokens->isDeviceRequest($request)) {
+            $request->attributes->set('pane_v1_application', $this->applications->configuredLatteApplication());
+
             return $next($request);
         }
 

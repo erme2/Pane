@@ -40,7 +40,7 @@ class WorkOsService
      *
      * @throws RequestException
      */
-    public function authenticateWithCode(string $code, ?string $ipAddress, ?string $userAgent): array
+    public function authenticateWithCode(string $code, ?string $ipAddress, ?string $userAgent, ?string $codeVerifier = null): array
     {
         return Http::acceptJson()
             ->asJson()
@@ -49,6 +49,8 @@ class WorkOsService
                 'client_secret' => $this->apiKey(),
                 'grant_type' => 'authorization_code',
                 'code' => $code,
+                // A native client starts the sign-in with its own PKCE challenge (Pane#130).
+                'code_verifier' => $codeVerifier,
                 'ip_address' => $ipAddress,
                 'user_agent' => $userAgent,
             ], fn ($value) => filled($value)))

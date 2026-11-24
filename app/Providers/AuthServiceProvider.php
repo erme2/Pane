@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\AuditEvent;
 use App\Policies\AuditEventPolicy;
-// use Illuminate\Support\Facades\Gate;
+use App\Services\DeviceTokenService;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Native clients sign in with a per-device bearer token (Pane#130).
+        Auth::viaRequest('pane-device', fn (Request $request) => $this->app->make(DeviceTokenService::class)->userForRequest($request));
     }
 }

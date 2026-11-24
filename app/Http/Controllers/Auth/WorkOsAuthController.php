@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApplicationRegistration;
+use App\Models\DeviceToken;
 use App\Models\User;
 use App\Services\ApplicationRegistryService;
+use App\Services\DeviceTokenService;
 use App\Services\PaneAdminLifecycleService;
 use App\Services\UserInvitationService;
 use App\Services\WorkOsService;
 use App\Support\LatteApplicationConfig;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +42,7 @@ class WorkOsAuthController extends Controller
         private readonly PaneAdminLifecycleService $administrators,
         private readonly UserInvitationService $userInvitations,
         private readonly ApplicationRegistryService $applications,
+        private readonly DeviceTokenService $deviceTokens,
     ) {}
 
     public function loginUrl(Request $request): JsonResponse
@@ -65,6 +69,25 @@ class WorkOsAuthController extends Controller
 
     public function destroySession(Request $request): JsonResponse
     {
+        $device = $this->deviceTokens->deviceForRequest($request);
+
+        if ($device instanceof DeviceToken) {
+            // A native client signs out this device only; there is no cookie session to end.
+            $application = $this->activeSessionApplication($request);
+            $workOsSessionId = $device->workos_session_id;
+            $logoutUrl = $application instanceof ApplicationRegistration && filled($workOsSessionId)
+                ? $this->workOs->logoutUrl($workOsSessionId, $application)
+                : null;
+            $requestId = $this->requestId($request);
+
+            $this->deviceTokens->revoke($device);
+
+            return response()->json([
+                'data' => ['logout_url' => $logoutUrl],
+                'meta' => ['request_id' => $requestId],
+            ])->header('X-Request-Id', $requestId);
+        }
+
         $application = $this->activeSessionApplication($request);
 
         if ($application instanceof JsonResponse) {
@@ -204,6 +227,119 @@ class WorkOsAuthController extends Controller
     public function completeV1Callback(Request $request): JsonResponse
     {
         return $this->completeCallbackResponse($request, true);
+    }
+
+    /**
+     * `POST /api/v1/auth/native/exchange` (Pane#130): a native app signs in with WorkOS itself (its own
+     * PKCE verifier and `sweegly://auth/callback` redirect), then posts the `code`, its `code_verifier`
+     * and the `state` here. Pane exchanges the code, applies the same membership and invitation rules
+     * as the browser flow, and returns a per-device access and refresh token. No cookie is set.
+     * Pane stores no WorkOS token. The app checks that the returned `state` is its own.
+     */
+    public function exchangeNative(Request $request): JsonResponse
+    {
+        $body = $this->requestBody($request);
+        $unsupported = array_diff(array_keys($body), ['code', 'code_verifier', 'state', 'device_label', 'invitation_token']);
+
+        if ($unsupported !== []) {
+            return $this->nativeInvalid($request, 'The '.reset($unsupported).' field is not supported.');
+        }
+
+        $code = $body['code'] ?? null;
+        $verifier = $body['code_verifier'] ?? null;
+        $state = $body['state'] ?? null;
+        $label = $body['device_label'] ?? null;
+
+        if (! is_string($code) || $code === '' || strlen($code) > 2048) {
+            return $this->nativeInvalid($request, 'The code field is required.');
+        }
+
+        // RFC 7636: 43 to 128 characters from the unreserved set.
+        if (! is_string($verifier) || preg_match('/\A[A-Za-z0-9\-._~]{43,128}\z/', $verifier) !== 1) {
+            return $this->nativeInvalid($request, 'The code_verifier field must be a PKCE code verifier.');
+        }
+
+        if (! is_string($state) || $state === '' || strlen($state) > 255) {
+            return $this->nativeInvalid($request, 'The state field is required.');
+        }
+
+        if ($label !== null && (! is_string($label) || mb_strlen($label) > 100)) {
+            return $this->nativeInvalid($request, 'The device_label field must be text of at most 100 characters.');
+        }
+
+        $invitationTokenHash = $this->versionedInvitationTokenHash($request);
+
+        if ($invitationTokenHash instanceof JsonResponse) {
+            return $invitationTokenHash;
+        }
+
+        $this->workOs->ensureConfigured();
+
+        try {
+            $authentication = $this->workOs->authenticateWithCode($code, $request->ip(), $request->userAgent(), $verifier);
+        } catch (RequestException) {
+            return $this->versionedErrorResponse($request, 'invalid_request', 'The WorkOS callback was rejected.', Response::HTTP_BAD_REQUEST);
+        }
+
+        $workOsUser = is_array($authentication['user'] ?? null) ? $authentication['user'] : [];
+
+        if (! filled($workOsUser['email'] ?? null)) {
+            return $this->nativeInvalid($request, 'WorkOS did not return a user email.');
+        }
+
+        try {
+            $user = $this->syncResolvedUser($authentication, $workOsUser, $invitationTokenHash);
+        } catch (InvalidArgumentException $exception) {
+            return $this->versionedErrorResponse(
+                $request,
+                $this->invitationErrorCode($exception),
+                $exception->getMessage(),
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        if (! (bool) $user->is_active) {
+            return $this->versionedErrorResponse($request, 'permission_denied', 'Pane account is inactive.', Response::HTTP_FORBIDDEN);
+        }
+
+        $issued = $this->deviceTokens->issue(
+            $user,
+            is_string($label) && trim($label) !== '' ? trim($label) : null,
+            $this->workOsSessionId($authentication)
+        );
+        $requestId = $this->requestId($request);
+
+        return response()->json([
+            'data' => $this->nativeTokenResource($issued) + [
+                'state' => $state,
+                'user' => $this->userResource($user),
+                'application' => $this->applicationResource($this->applications->configuredLatteApplication()),
+            ],
+            'meta' => ['request_id' => $requestId],
+        ], Response::HTTP_CREATED)->header('X-Request-Id', $requestId)->header('Cache-Control', 'no-store');
+    }
+
+    /**
+     * @param  array{device: DeviceToken, access_token: string, refresh_token: string}  $issued
+     * @return array<string, mixed>
+     */
+    public static function nativeTokenResource(array $issued): array
+    {
+        $tokens = app(DeviceTokenService::class);
+
+        return [
+            'device_id' => $issued['device']->device_id,
+            'token_type' => 'Bearer',
+            'access_token' => $issued['access_token'],
+            'expires_in' => $tokens->accessTtl(),
+            'refresh_token' => $issued['refresh_token'],
+            'refresh_expires_in' => $tokens->refreshTtl(),
+        ];
+    }
+
+    private function nativeInvalid(Request $request, string $message): JsonResponse
+    {
+        return $this->versionedErrorResponse($request, 'validation_failed', $message, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     private function completeCallbackResponse(Request $request, bool $versioned): JsonResponse
@@ -373,6 +509,11 @@ class WorkOsAuthController extends Controller
 
     private function activeSessionApplication(Request $request): ApplicationRegistration|JsonResponse
     {
+        // A native client has no browser origin: it works as the install's primary application.
+        if ($this->deviceTokens->deviceForRequest($request) instanceof DeviceToken) {
+            return $this->applications->configuredLatteApplication();
+        }
+
         $sessionApplicationId = $request->session()->get(self::V1_APPLICATION_SESSION_KEY);
 
         if (! is_string($sessionApplicationId)) {
@@ -807,6 +948,15 @@ class WorkOsAuthController extends Controller
             throw new InvalidArgumentException('The application origin is not allowed.');
         }
 
+        return $this->syncResolvedUser($authentication, $workOsUser, $invitationTokenHash);
+    }
+
+    /**
+     * @param  array<string, mixed>  $authentication
+     * @param  array<string, mixed>  $workOsUser
+     */
+    private function syncResolvedUser(array $authentication, array $workOsUser, mixed $invitationTokenHash): User
+    {
         if (is_string($invitationTokenHash)) {
             return $this->acceptVersionedInvitation($invitationTokenHash, $workOsUser, $authentication);
         }

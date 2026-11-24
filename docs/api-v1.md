@@ -43,6 +43,10 @@ Pane's Laravel session cookie.
 | `POST /api/v1/csrf-cookie` | origin | Initialise CSRF protection |
 | `POST /api/v1/auth/login-intents` | origin | Store the redirect target and return the WorkOS authorization URL and state; body: `redirect_to`, optional `invitation_token`; other fields are rejected |
 | `POST /api/v1/auth/callback` | origin | Complete the WorkOS sign-in from `code` and `state` and start the session |
+| `POST /api/v1/auth/native/exchange` | none | Native sign-in (Pane#130, see [Native clients](#native-clients-pane130)): body `code`, `code_verifier`, `state`, optional `device_label`, `invitation_token`; `201` with the device's `access_token` and `refresh_token` |
+| `POST /api/v1/auth/native/refresh` | none | Body `refresh_token`; `200` with a new access and refresh token, `401 invalid_refresh_token` |
+| `GET /api/v1/session/devices` | session or bearer | The member's signed-in native devices: `id`, `device_label`, `created_at`, `last_used_at`, `current` |
+| `DELETE /api/v1/session/devices/{id}` | session or bearer | Signs one of the member's devices out; `204`, or `404 not_found` for an unknown device or another member's |
 | `GET /api/v1/session` | session | The signed-in `user` (`id`, `email`, `name`, `role`, `terms_version`, `terms_accepted_at`; both terms fields are `null` until the user accepts) and the frontend `application` |
 | `PUT /api/v1/session/terms` | session | The signed-in user accepts a Terms and Privacy version; body: `terms_version` (opaque string, at most 100 characters, not validated by Pane). Stores it with the time and replaces any earlier value (no version comparison, no history); `200` with `terms_version` and `terms_accepted_at`; `422 validation_failed` for a missing or invalid value |
 | `GET /api/v1/push` | push | Whether web push is on for this install (`enabled`) and the VAPID `vapid_public_key` the browser subscribes with (`null` when push is off) |
@@ -320,12 +324,41 @@ Production messages never contain SQL, credentials, hosts, paths or traces.
 
 A member registers each browser or device with `POST /api/v1/push/subscriptions` and can list and remove their own devices; nobody sees another member's. Pane features send a push with `App\Services\Push\WebPushService::sendToUser($user, $payload)` or `sendToUsers($users, $payload)` (the building block Pane#161 declarative actions call for "send a push"). It queues one message per device on the `push` channel of the message queue; `messages:send` delivers it with the queue's retries (after 1, 5 and 30 minutes, then `failed`). The caller passes only the members the access policy lets see the event: the service never widens that list. A device the push service reports gone (`404` or `410`) is removed and not retried. Each member can be sent `PANE_PUSH_RATE_LIMIT` pushes per minute (10 by default, all their devices count as one); a send over the limit queues nothing. The payload is the app's own JSON (at most 3000 bytes); Pane adds no personal data to it. Device keys are encrypted at rest, and anonymising a user removes their devices. The subscription table has a `kind` (`web` today), so native iOS and Android push can add kinds and a channel without a new table.
 
+### Native clients (Pane#130)
+
+The iOS and Android apps sign in without cookies, `Origin` or CSRF tokens:
+
+1. The app starts WorkOS AuthKit itself, with its own PKCE `code_challenge`, its own `state` and the
+   `sweegly://auth/callback` redirect. That redirect URI must be added in WorkOS (install owner's
+   configuration; Pane does not need it).
+2. The app checks the returned `state` is its own, then posts `code`, `code_verifier` (43 to 128 PKCE
+   characters) and `state` to `POST /api/v1/auth/native/exchange`, with an optional `device_label` (at most
+   100 characters) and `invitation_token`. Pane exchanges the code with WorkOS (sending the verifier), applies
+   the same membership, invitation and open sign-up rules as the browser flow, and answers `201`:
+   `data.access_token`, `data.refresh_token`, `data.expires_in`, `data.refresh_expires_in`, `data.device_id`,
+   `data.state` (echoed), `data.user` and `data.application` (the install's primary frontend). Errors are the
+   [sign-in](#sign-in) ones plus `422 validation_failed`. WorkOS tokens are never stored.
+3. Every later request sends `Authorization: Bearer <access_token>`. Such a request needs no `Origin` and no
+   CSRF token, and can use every route that works with the session cookie (`/api/v1/session`, `/maps`, the
+   legacy CRUD route, ...), with the same policies and scoping. Without a valid bearer token the normal cookie
+   rules apply. A missing, wrong or expired token is `401`.
+4. The access token lives `PANE_NATIVE_ACCESS_TTL` seconds (1 hour). `POST /api/v1/auth/native/refresh` swaps
+   the refresh token (`PANE_NATIVE_REFRESH_TTL`, 30 days) for a new pair; each refresh token works once.
+   Presenting an already replaced refresh token signs that device out (a stolen copy was used) and is audited
+   as `auth.native.refresh_reuse`: the app must sign in again.
+5. `DELETE /api/v1/session` with the bearer token signs this device out and returns the WorkOS `logout_url`.
+   `GET /api/v1/session/devices` lists the member's devices and `DELETE /api/v1/session/devices/{id}` signs one
+   out. A member keeps at most `PANE_NATIVE_MAX_DEVICES` (10) devices: a new one signs out the least recently
+   used. A deactivated or anonymised member loses every device at once.
+
+Only hashes of the tokens are stored. The token routes answer `Cache-Control: no-store`, and `exchange` and
+`refresh` are rate limited per client address.
+
 ## Planned
 
 Each item has its own ticket and is added here when it lands:
 
-- map-driven CRUD with access through a members table (Pane#185, Pane#194);
-- native-client sign-in (Pane#130).
+- map-driven CRUD with access through a members table (Pane#185, Pane#194).
 
 ## App settings (Pane#158)
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\UserAnonymisationException;
 use App\Models\AuditEvent;
+use App\Models\DeviceToken;
 use App\Models\PaneAdminInvitation;
 use App\Models\PushSubscription;
 use App\Models\User;
@@ -74,6 +75,8 @@ class UserAnonymisationService
             $this->redactAuditMetadata($email);
             // A removed user's devices must never get another push.
             PushSubscription::query()->where('user_id', $locked->getKey())->delete();
+            // ... and no signed-in native device may keep working.
+            DeviceToken::query()->where('user_id', $locked->getKey())->delete();
             $this->blankUser($locked);
 
             // No email, name or WorkOS id here: only the anonymised row's own id.
