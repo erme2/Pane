@@ -14,6 +14,7 @@ Pane uses `.env.example` as the template for local and deployed environment file
 Pane trusts the frontends listed in its environment, and nothing else. There is no application table and no API to manage them: change the env to add or remove one.
 
 - `FRONTEND_URL` is the main frontend origin. `LATTE_REDIRECT_URIS` lists the redirect URIs it may use after sign-in.
+- Text screening (Pane#175) of fields a map marks with the `screened` validation: `PANE_SCREENING_BLOCKLIST` (comma-separated extra blocked terms, added to the default list), `PANE_SCREENING_DEFAULT_BLOCKLIST` (default `true`; `false` keeps only the install's own terms), `PANE_SCREENING_MAX_LENGTH` (default `2000`, the longest screened text in characters, `0` for no limit), `PANE_SCREENING_MAX_REPEAT` (default `6`, the longest run of one character), `PANE_SCREENING_LINKS` (`block` by default, `allow_list` or `off`) and `PANE_SCREENING_ALLOWED_HOSTS` (comma-separated hosts for `allow_list`).
 - `PANE_EXTRA_FRONTEND_ORIGINS` adds more frontends: entries separated by `;`, each `origin` or `origin|redirect_uri,redirect_uri`. Without redirect URIs a frontend gets `<origin>/auth/callback`.
 - Every frontend gets a stable id derived from its origin and `LATTE_APPLICATION_ID`, so ids and sessions survive redeploys. A frontend removed from the env stops resolving. Removal alone does not revoke its sessions: they would work again if the origin were re-added. Change `PANE_SESSION_EPOCH` (any string) when re-adding a frontend, or to sign every frontend out; it is part of the session version.
 

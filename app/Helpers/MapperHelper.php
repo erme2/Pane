@@ -128,6 +128,11 @@ trait MapperHelper
         foreach ($fieldSpecificRules as $validationField) {
             $type = $validationField->getValidationType();
 
+            // screened text is checked by TextScreener after validation, not by a Laravel rule (Pane#175)
+            if ($type->name === 'screened') {
+                continue;
+            }
+
             $rules[] = match ($type->name) {
                 'exists', 'max', 'min', 'unique' => $type->name.':'.$validationField->value,
                 'email' => $validationField->value ? 'email:'.$validationField->value : 'email:dns',

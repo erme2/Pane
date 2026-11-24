@@ -13,7 +13,7 @@ class MapRules
 {
     public const array FIELD_TYPES = ['number', 'string', 'text', 'boolean', 'date', 'array', 'password', 'json'];
 
-    public const array VALIDATION_RULES = ['unique', 'exists', 'max', 'min', 'email'];
+    public const array VALIDATION_RULES = ['unique', 'exists', 'max', 'min', 'email', 'screened'];
 
     public const array SOURCE_KINDS = ['install', 'external'];
 
