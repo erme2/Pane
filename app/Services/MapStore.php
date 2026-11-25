@@ -85,6 +85,7 @@ class MapStore
                 'description' => $normalized['description'],
                 'ui' => $normalized['ui'],
                 'access' => $normalized['access'],
+                'queries' => $normalized['queries'],
                 'version' => $current + 1,
             ])->save();
 
@@ -204,6 +205,7 @@ class MapStore
             'description' => $table->description,
             'ui' => $table->ui,
             'access' => $table->access,
+            'queries' => $table->queries,
             'fields' => $table->fields()->get()->map(fn (MapField $field): array => [
                 'name' => $field->name,
                 'sql_name' => $field->sql_name,
