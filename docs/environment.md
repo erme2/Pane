@@ -35,6 +35,8 @@ Web push (Pane#174) needs a VAPID key pair for the install, set by the deploy fr
 - `PANE_VAPID_SUBJECT`: a `mailto:` or `https:` address the push services can reach the install owner at.
 - `PANE_PUSH_RATE_LIMIT`: most pushes one member is sent per minute (10 by default).
 - `PANE_PUSH_MAX_DEVICES`: most devices one member can register (10 by default).
+- `PANE_NATIVE_ACCESS_TTL`, `PANE_NATIVE_REFRESH_TTL`: seconds a native client's access token (3600) and refresh token (2592000) live (Pane#130).
+- `PANE_NATIVE_MAX_DEVICES`: most native devices one member can keep signed in (10 by default); a new one signs out the least recently used.
 - `PANE_PUSH_TTL`: seconds a push service keeps an undelivered push (86400 by default).
 
 Pushes go through the message queue, so the one `schedule:run` cron job delivers them (see [Outgoing Email](#outgoing-email)).

@@ -16,6 +16,10 @@ class PaneTable
 
     public const string PUSH_SUBSCRIPTIONS = 'push_subscriptions';
 
+    public const string DEVICE_TOKENS = 'device_tokens';
+
+    public const string DEVICE_CONSUMED_REFRESH_TOKENS = 'device_consumed_refresh_tokens';
+
     public const string PANE_INSTALLATION_LOCKS = 'installation_locks';
 
     public const string SETTING_DEFAULTS = 'setting_defaults';

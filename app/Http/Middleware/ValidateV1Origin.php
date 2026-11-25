@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\ApplicationRegistryService;
+use App\Services\DeviceTokenService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -14,11 +15,20 @@ class ValidateV1Origin
 
     private const V1_APPLICATION_SESSION_VERSION_KEY = 'pane_v1_application_session_version';
 
-    public function __construct(private readonly ApplicationRegistryService $applications) {}
+    public function __construct(
+        private readonly ApplicationRegistryService $applications,
+        private readonly DeviceTokenService $deviceTokens,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->is('api/v1/*')) {
+            return $next($request);
+        }
+
+        // Native clients (Pane#130) have no browser origin: a valid bearer token, or the token
+        // exchange and refresh routes, stand in for it.
+        if ($request->is('api/v1/auth/native/*') || $this->deviceTokens->isDeviceRequest($request)) {
             return $next($request);
         }
 

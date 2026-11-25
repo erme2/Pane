@@ -49,4 +49,13 @@ return [
         'ttl' => (int) env('PANE_PUSH_TTL', 86400),
     ],
 
+    'native_auth' => [
+        // Seconds a native client's access token lives.
+        'access_ttl' => (int) env('PANE_NATIVE_ACCESS_TTL', 3600),
+        // Seconds a native client's refresh token lives; every refresh issues a new one.
+        'refresh_ttl' => (int) env('PANE_NATIVE_REFRESH_TTL', 2592000),
+        // Most devices one member can keep signed in; the least recently used one is signed out for a new one.
+        'max_devices_per_user' => (int) env('PANE_NATIVE_MAX_DEVICES', 10),
+    ],
+
 ];

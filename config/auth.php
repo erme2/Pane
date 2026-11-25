@@ -42,6 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        // Native clients (Pane#130): a bearer access token issued per device.
+        'device' => [
+            'driver' => 'pane-device',
+            'provider' => 'users',
+        ],
     ],
 
     /*

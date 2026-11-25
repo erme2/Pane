@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\WorkOsAuthController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\MapAdminController;
 use App\Http\Controllers\MapReadController;
+use App\Http\Controllers\NativeDeviceController;
 use App\Http\Controllers\PaneAdminInvitationController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReleaseMetadataController;
@@ -39,9 +40,20 @@ Route::prefix('/api/v1')->name('api.v1.')->group(function () {
         ->block(10, 10)
         ->name('auth.callback');
 
-    Route::middleware('auth')->group(function () {
+    // Native clients (Pane#130): no cookie, Origin or CSRF; the code verifier or refresh token is the proof.
+    Route::post('/auth/native/exchange', [WorkOsAuthController::class, 'exchangeNative'])
+        ->middleware('throttle:20,1')
+        ->name('auth.native.exchange');
+    Route::post('/auth/native/refresh', [NativeDeviceController::class, 'refresh'])
+        ->middleware('throttle:60,1')
+        ->name('auth.native.refresh');
+
+    // `device` first: a request with a valid bearer token is a native client; otherwise the cookie session applies.
+    Route::middleware('auth:device,web')->group(function () {
         Route::get('/session', [WorkOsAuthController::class, 'session'])->name('session.show');
         Route::delete('/session', [WorkOsAuthController::class, 'destroySession'])->name('session.destroy');
+        Route::get('/session/devices', [NativeDeviceController::class, 'list'])->name('session.devices.index');
+        Route::delete('/session/devices/{deviceId}', [NativeDeviceController::class, 'destroy'])->name('session.devices.destroy');
         Route::put('/session/terms', [TermsAcceptanceController::class, 'update'])->name('session.terms.update');
         Route::get('/installation/pane-admin-invitations', [PaneAdminInvitationController::class, 'list'])
             ->name('installation.pane-admin-invitations.index');
@@ -92,7 +104,7 @@ Route::get('/auth/callback', [WorkOsAuthController::class, 'callback'])->name('a
 Route::get('/auth/user', [WorkOsAuthController::class, 'user'])->middleware('auth')->name('auth.user');
 
 // all stories (crud)
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:device,web')->group(function () {
     Route::match(['get', 'post'], '/{story}/{subject}', [Controller::class, 'runStory']);
     Route::match(['get', 'put', 'delete'], '/{story}/{subject}/{key}', [Controller::class, 'runStory']);
 });
