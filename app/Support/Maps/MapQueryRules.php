@@ -45,7 +45,7 @@ class MapQueryRules
 
             return null;
         }
-        $names = array_column(is_array($fields) ? array_filter($fields, 'is_array') : [], 'name');
+        $columns = self::columns($fields);
 
         $normalized = [];
         $seen = [];
@@ -72,9 +72,10 @@ class MapQueryRules
             }
 
             $params = self::normalizeParams($query['params'] ?? [], $prefix, $errors);
-            $filter = self::normalizeFilter($query['filter'] ?? [], $params, $names, $prefix, $errors);
-            $sort = self::normalizeSort($query['sort'] ?? null, $names, $prefix, $errors);
-            $join = self::normalizeJoin($query['join'] ?? null, $names, $prefix, $errors);
+            $join = self::normalizeJoin($query['join'] ?? null, $columns, $prefix, $errors);
+            $joined = $join === null ? [] : explode(',', $join);
+            $filter = self::normalizeFilter($query['filter'] ?? [], $params, $columns, $joined, $prefix, $errors);
+            $sort = self::normalizeSort($query['sort'] ?? null, $columns, $joined, $prefix, $errors);
 
             $normalized[] = [
                 'name' => $name,
@@ -87,6 +88,35 @@ class MapQueryRules
         }
 
         return $normalized;
+    }
+
+    /**
+     * What the list reader allows per field of the table: a password is never readable, only an
+     * indexed, primary, sortable or unique field sorts, and only a field with an `exists` rule joins.
+     *
+     * @return array<string, array{password: bool, sortable: bool, joinable: bool}>
+     */
+    private static function columns(mixed $fields): array
+    {
+        $columns = [];
+        foreach (is_array($fields) ? array_filter($fields, 'is_array') : [] as $field) {
+            if (! is_string($field['name'] ?? null)) {
+                continue;
+            }
+            $validations = is_array($field['validations'] ?? null) ? array_filter($field['validations'], 'is_array') : [];
+            $rules = array_column($validations, 'rule');
+            $joinable = false;
+            foreach ($validations as $validation) {
+                $joinable = $joinable || (($validation['rule'] ?? null) === 'exists' && is_string($validation['value'] ?? null));
+            }
+            $columns[$field['name']] = [
+                'password' => ($field['type'] ?? null) === 'password',
+                'sortable' => ! empty($field['index']) || ! empty($field['primary']) || ! empty($field['sortable']) || in_array('unique', $rules, true),
+                'joinable' => $joinable,
+            ];
+        }
+
+        return $columns;
     }
 
     /**
@@ -147,11 +177,12 @@ class MapQueryRules
 
     /**
      * @param  list<array{name: string, type: string, default?: string}>  $params
-     * @param  list<mixed>  $names
+     * @param  array<string, array{password: bool, sortable: bool, joinable: bool}>  $columns
+     * @param  list<string>  $joined
      * @param  array<string, string>  $errors
      * @return list<array{field: string, op: string, value?: string|int|float|bool, param?: string}>
      */
-    private static function normalizeFilter(mixed $filter, array $params, array $names, string $prefix, array &$errors): array
+    private static function normalizeFilter(mixed $filter, array $params, array $columns, array $joined, string $prefix, array &$errors): array
     {
         if (! is_array($filter) || ! array_is_list($filter)) {
             $errors["$prefix.filter"] = 'Must be a list.';
@@ -169,8 +200,8 @@ class MapQueryRules
                 continue;
             }
             $field = $condition['field'] ?? null;
-            if (! is_string($field) || ! preg_match(self::FIELD, $field) || (! str_contains($field, '.') && ! in_array($field, $names, true))) {
-                $errors["$where.field"] = 'Must be a field of this table, or field.column of a joined table.';
+            if (! is_string($field) || ! self::usable($field, $columns, $joined, false)) {
+                $errors["$where.field"] = 'Must be a readable field of this table, or field.column of a table joined by this query.';
 
                 continue;
             }
@@ -212,10 +243,11 @@ class MapQueryRules
     }
 
     /**
-     * @param  list<mixed>  $names
+     * @param  array<string, array{password: bool, sortable: bool, joinable: bool}>  $columns
+     * @param  list<string>  $joined
      * @param  array<string, string>  $errors
      */
-    private static function normalizeSort(mixed $sort, array $names, string $prefix, array &$errors): ?string
+    private static function normalizeSort(mixed $sort, array $columns, array $joined, string $prefix, array &$errors): ?string
     {
         if ($sort === null) {
             return null;
@@ -224,10 +256,10 @@ class MapQueryRules
         $valid = $parts !== [] && count($parts) <= self::SORT_MAX_FIELDS;
         foreach ($parts as $part) {
             $field = ltrim($part, '-');
-            $valid = $valid && preg_match(self::FIELD, $field) === 1 && (str_contains($field, '.') || in_array($field, $names, true));
+            $valid = $valid && self::usable($field, $columns, $joined, true);
         }
         if (! $valid) {
-            $errors["$prefix.sort"] = 'Must be "field" or "field,field" (at most '.self::SORT_MAX_FIELDS.', a "-" prefix sorts descending).';
+            $errors["$prefix.sort"] = 'Must be "field" or "field,field" of sortable fields (at most '.self::SORT_MAX_FIELDS.', a "-" prefix sorts descending).';
 
             return null;
         }
@@ -236,10 +268,10 @@ class MapQueryRules
     }
 
     /**
-     * @param  list<mixed>  $names
+     * @param  array<string, array{password: bool, sortable: bool, joinable: bool}>  $columns
      * @param  array<string, string>  $errors
      */
-    private static function normalizeJoin(mixed $join, array $names, string $prefix, array &$errors): ?string
+    private static function normalizeJoin(mixed $join, array $columns, string $prefix, array &$errors): ?string
     {
         if ($join === null) {
             return null;
@@ -247,15 +279,36 @@ class MapQueryRules
         $parts = is_string($join) ? explode(',', $join) : [];
         $valid = $parts !== [] && count($parts) <= self::JOIN_MAX && count(array_unique($parts)) === count($parts);
         foreach ($parts as $part) {
-            $valid = $valid && in_array($part, $names, true);
+            $valid = $valid && ($columns[$part]['joinable'] ?? false) && ! $columns[$part]['password'];
         }
         if (! $valid) {
-            $errors["$prefix.join"] = 'Must be "field" or "field,field" of this table (at most '.self::JOIN_MAX.').';
+            $errors["$prefix.join"] = 'Must be "field" or "field,field" of fields of this table that reference another table (at most '.self::JOIN_MAX.').';
 
             return null;
         }
 
         return (string) $join;
+    }
+
+    /**
+     * Whether the list reader accepts the field: a readable (and, to sort, sortable) field of the
+     * table, or `join.column` of a table this query joins. The column of a joined table is only
+     * known when the query runs.
+     *
+     * @param  array<string, array{password: bool, sortable: bool, joinable: bool}>  $columns
+     * @param  list<string>  $joined
+     */
+    private static function usable(string $field, array $columns, array $joined, bool $sorting): bool
+    {
+        if (preg_match(self::FIELD, $field) !== 1) {
+            return false;
+        }
+        if (str_contains($field, '.')) {
+            return in_array(explode('.', $field)[0], $joined, true);
+        }
+        $column = $columns[$field] ?? null;
+
+        return $column !== null && ! $column['password'] && (! $sorting || $column['sortable']);
     }
 
     /**

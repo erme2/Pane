@@ -267,6 +267,12 @@ class NamedQueryTest extends TestCase
             'sort on three fields' => [['name' => 'q', 'sort' => 'title,position,done'], 'queries.0.sort'],
             'sort that is SQL' => [['name' => 'q', 'sort' => 'title;drop table x'], 'queries.0.sort'],
             'join on an unmapped field' => [['name' => 'q', 'join' => 'nope'], 'queries.0.join'],
+            'sort on a field that is not sortable' => [['name' => 'q', 'sort' => 'done'], 'queries.0.sort'],
+            'sort on a password' => [['name' => 'q', 'sort' => 'secret'], 'queries.0.sort'],
+            'filter on a password' => [['name' => 'q', 'filter' => [['field' => 'secret', 'value' => 'x']]], 'queries.0.filter.0.field'],
+            'join through a field without a reference' => [['name' => 'q', 'join' => 'title'], 'queries.0.join'],
+            'filter on a joined column without the join' => [['name' => 'q', 'filter' => [['field' => 'missing.title', 'value' => 'x']]], 'queries.0.filter.0.field'],
+            'sort on a joined column without the join' => [['name' => 'q', 'sort' => 'missing.title'], 'queries.0.sort'],
             'queries that are not a list' => [['x' => 1], 'queries.0.name'],
         ];
     }
