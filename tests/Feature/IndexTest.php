@@ -25,6 +25,30 @@ class IndexTest extends TestCase
             ->assertSee('/docs/openapi.json');
     }
 
+    public function test_docs_reference_the_pane_icon(): void
+    {
+        $response = $this->get('/docs');
+
+        $response
+            ->assertStatus(Response::HTTP_OK)
+            ->assertSee('<link rel="icon" href="/icon.svg" type="image/svg+xml">', false)
+            ->assertSee('<link rel="icon" href="/favicon.ico" sizes="32x32">', false)
+            ->assertSee('<link rel="apple-touch-icon" href="/apple-touch-icon.png">', false);
+    }
+
+    public function test_pane_icon_files_are_published(): void
+    {
+        $this->assertFileExists(public_path('icon.svg'));
+        $this->assertStringContainsString('<svg', (string) file_get_contents(public_path('icon.svg')));
+
+        $this->assertFileExists(public_path('apple-touch-icon.png'));
+        $this->assertSame("\x89PNG\r\n\x1a\n", substr((string) file_get_contents(public_path('apple-touch-icon.png')), 0, 8));
+
+        $favicon = (string) file_get_contents(public_path('favicon.ico'));
+        $this->assertSame("\x00\x00\x01\x00", substr($favicon, 0, 4));
+        $this->assertGreaterThan(6, strlen($favicon));
+    }
+
     public function test_docs_openapi_contract_is_public(): void
     {
         $response = $this->getJson('/docs/openapi.json');
