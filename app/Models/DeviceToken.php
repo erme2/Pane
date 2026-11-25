@@ -17,7 +17,6 @@ use Illuminate\Support\Str;
  * @property string $access_token_hash
  * @property Carbon $access_expires_at
  * @property string $refresh_token_hash
- * @property string|null $previous_refresh_hash
  * @property Carbon $refresh_expires_at
  * @property string|null $workos_session_id
  * @property Carbon|null $last_used_at
@@ -33,10 +32,10 @@ class DeviceToken extends Model
 
     protected $fillable = [
         'user_id', 'device_label', 'access_token_hash', 'access_expires_at', 'refresh_token_hash',
-        'previous_refresh_hash', 'refresh_expires_at', 'workos_session_id', 'last_used_at',
+        'refresh_expires_at', 'workos_session_id', 'last_used_at',
     ];
 
-    protected $hidden = ['access_token_hash', 'refresh_token_hash', 'previous_refresh_hash', 'workos_session_id'];
+    protected $hidden = ['access_token_hash', 'refresh_token_hash', 'workos_session_id'];
 
     protected $casts = [
         'user_id' => 'integer',

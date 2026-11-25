@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditEvent;
 use App\Models\DeviceToken;
 use App\Models\User;
+use App\Support\PaneTable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -150,7 +151,10 @@ class DeviceTokenService
         $access = self::ACCESS_PREFIX.Str::random(48);
         $refresh = self::REFRESH_PREFIX.Str::random(64);
 
-        $device->previous_refresh_hash = $device->exists ? $device->refresh_token_hash : null;
+        if ($device->exists) {
+            $this->rememberConsumed($device);
+        }
+
         $device->access_token_hash = DeviceToken::hash($access);
         $device->access_expires_at = now()->addSeconds($this->accessTtl());
         $device->refresh_token_hash = DeviceToken::hash($refresh);
@@ -188,9 +192,31 @@ class DeviceTokenService
         }
     }
 
+    /** Remembers the refresh token being replaced, and forgets the ones that would be expired by now. */
+    private function rememberConsumed(DeviceToken $device): void
+    {
+        $table = PaneTable::name(PaneTable::DEVICE_CONSUMED_REFRESH_TOKENS);
+
+        DB::table($table)->where('expires_at', '<', now())->delete();
+        DB::table($table)->insert([
+            'refresh_token_hash' => $device->refresh_token_hash,
+            'device_id' => $device->device_id,
+            'expires_at' => $device->refresh_expires_at,
+        ]);
+    }
+
     private function revokeReused(string $hash): void
     {
-        $device = DeviceToken::query()->where('previous_refresh_hash', $hash)->lockForUpdate()->first();
+        $consumed = DB::table(PaneTable::name(PaneTable::DEVICE_CONSUMED_REFRESH_TOKENS))
+            ->where('refresh_token_hash', $hash)
+            ->where('expires_at', '>=', now())
+            ->first();
+
+        if ($consumed === null) {
+            return;
+        }
+
+        $device = DeviceToken::query()->whereKey($consumed->device_id)->lockForUpdate()->first();
 
         if (! $device instanceof DeviceToken) {
             return;
@@ -198,6 +224,7 @@ class DeviceTokenService
 
         $user = User::query()->find($device->user_id);
         $device->delete();
+        DB::table(PaneTable::name(PaneTable::DEVICE_CONSUMED_REFRESH_TOKENS))->where('device_id', $device->device_id)->delete();
 
         if ($user instanceof User) {
             $this->audit->record('auth.native.refresh_reuse', AuditEvent::OUTCOME_DENIED, [

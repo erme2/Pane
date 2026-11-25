@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditEvent;
 use App\Models\DeviceToken;
 use App\Models\User;
 use App\Services\AuditEventService;
@@ -253,6 +254,23 @@ class NativeAuthTest extends TestCase
         $this->postJson('/api/v1/auth/native/refresh', ['refresh_token' => $new['refresh_token']])->assertUnauthorized();
     }
 
+    public function test_replaying_an_older_ancestor_after_several_rotations_signs_the_device_out_and_is_audited(): void
+    {
+        $this->member();
+        $reuseEvents = fn (): int => AuditEvent::query()->where('action', 'auth.native.refresh_reuse')->count();
+        $before = $reuseEvents();
+        $first = $this->exchange();
+        $second = $this->postJson('/api/v1/auth/native/refresh', ['refresh_token' => $first['refresh_token']])->json('data');
+        $third = $this->postJson('/api/v1/auth/native/refresh', ['refresh_token' => $second['refresh_token']])->json('data');
+
+        $this->postJson('/api/v1/auth/native/refresh', ['refresh_token' => $first['refresh_token']])->assertUnauthorized();
+
+        $this->assertSame(0, DeviceToken::query()->count());
+        $this->withHeaders(['Authorization' => 'Bearer '.$third['access_token']])->getJson('/api/v1/session')->assertUnauthorized();
+        $this->postJson('/api/v1/auth/native/refresh', ['refresh_token' => $third['refresh_token']])->assertUnauthorized();
+        $this->assertSame($before + 1, $reuseEvents());
+    }
+
     public function test_refresh_refuses_expired_unknown_malformed_and_inactive(): void
     {
         $user = $this->member();
@@ -285,6 +303,8 @@ class NativeAuthTest extends TestCase
     public function test_logout_signs_out_this_device_only_and_returns_the_workos_logout_url(): void
     {
         $this->member();
+        $reuseEvents = fn (): int => AuditEvent::query()->where('action', 'auth.native.refresh_reuse')->count();
+        $before = $reuseEvents();
         $first = $this->exchange();
         $second = $this->exchange(['device_label' => 'iPad']);
 
