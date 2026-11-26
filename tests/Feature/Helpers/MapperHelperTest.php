@@ -58,6 +58,10 @@ class MapperHelperTest extends TestCase
                     $this->assertEquals(self::UPDATED_VALID_TEST_TABLE_RECORD[$key], $value);
             }
         }
+
+        // a stored NULL is a cleared nullable field, not an empty value (Pane#242)
+        $model->setAttribute('test_array', null);
+        $this->assertNull($mapper->extractFromModel($model)->test_array);
     }
 
     public function test_fill_model()

@@ -102,4 +102,30 @@ class NullableClearTest extends TestCase
 
         $response->assertStatus(Response::HTTP_BAD_REQUEST);
     }
+
+    public function test_clearing_a_nullable_date_and_json_returns_null_in_the_response(): void
+    {
+        $id = $this->createRecord();
+
+        $response = $this->put($this->endpoint.'/'.$id, $this->record(['test_date' => null, 'test_json' => null]));
+
+        $response->assertStatus(Response::HTTP_OK);
+        $result = json_decode($response->getContent(), false);
+        $this->assertNull($result->data[0]->test_date);
+        $this->assertNull($result->data[0]->test_json);
+        $this->assertNull($this->column($id, 'test_date'));
+        $this->assertNull($this->column($id, 'test_json'));
+    }
+
+    public function test_clearing_a_nullable_field_returns_null_in_the_response(): void
+    {
+        $id = $this->createRecord();
+
+        $response = $this->put($this->endpoint.'/'.$id, $this->record(['description' => null, 'is_active' => null]));
+
+        $response->assertStatus(Response::HTTP_OK);
+        $result = json_decode($response->getContent(), false);
+        $this->assertNull($result->data[0]->description);
+        $this->assertNull($result->data[0]->is_active);
+    }
 }

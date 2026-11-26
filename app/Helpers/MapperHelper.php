@@ -40,6 +40,13 @@ trait MapperHelper
     {
         $return = new \stdClass;
         foreach ($this->getFields($this->name) as $field) {
+            // a stored NULL is a cleared nullable field: return null rather than coerce it (Pane#242)
+            $name = $field->getAttribute('name');
+            if ($field->getAttribute('type') !== 'password' && $model->getAttribute($name) === null) {
+                $return->{$name} = null;
+
+                continue;
+            }
             switch ($field->type) {
                 case 'array':
                     $return->{$field->name} = json_decode($model->{$field->name}, true, 512, JSON_THROW_ON_ERROR);
