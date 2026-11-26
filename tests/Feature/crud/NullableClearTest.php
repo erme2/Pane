@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class NullableClearTest extends TestCase
@@ -127,5 +128,31 @@ class NullableClearTest extends TestCase
         $result = json_decode($response->getContent(), false);
         $this->assertNull($result->data[0]->description);
         $this->assertNull($result->data[0]->is_active);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function nullableFields(): array
+    {
+        return [
+            'text' => ['description'],
+            'boolean' => ['is_active'],
+            'date' => ['test_date'],
+            'json' => ['test_json'],
+            'number' => ['numero'],
+        ];
+    }
+
+    #[DataProvider('nullableFields')]
+    public function test_a_cleared_field_is_written_as_null_and_read_back_as_null(string $field): void
+    {
+        $id = $this->createRecord();
+
+        $response = $this->put($this->endpoint.'/'.$id, $this->record([$field => null]));
+
+        $response->assertStatus(Response::HTTP_OK);
+        $this->assertNull($this->column($id, $field));
+
+        $read = json_decode($this->get($this->endpoint.'/'.$id)->getContent(), false);
+        $this->assertNull($read->data[0]->$field);
     }
 }
