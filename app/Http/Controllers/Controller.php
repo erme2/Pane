@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\SystemException;
+use App\Exceptions\ValidationException;
 use App\Helpers\ResponseHelper;
 use App\Helpers\StoryHelper;
 use App\Mappers\AbstractMapper;
 use App\Models\User;
 use App\Services\AppMaps;
+use App\Stories\AbstractStory;
+use App\Support\Maps\MapQueryRules;
 use App\Support\Maps\RowScope;
 use App\Support\ReleaseMetadata;
 use Illuminate\Http\JsonResponse;
@@ -164,6 +167,37 @@ HTML;
      */
     public function runStory(Request $request, string $story, string $subject, $key = null): Response
     {
+        return $this->success($this->prepareStory($request, $story, $subject)->run($subject, $key));
+    }
+
+    /**
+     * Runs a named query of a table map (Pane#225): the query's filter, sort and join with the caller's
+     * typed parameters, through the same list read and the same access rules as `GET /crud/<table>`.
+     *
+     * @throws SystemException
+     * @throws ValidationException
+     */
+    public function runNamedQuery(Request $request, string $story, string $subject, string $name): Response
+    {
+        if (strtolower($story) !== 'crud') {
+            throw new SystemException("Unknown story ($story)", Response::HTTP_NOT_FOUND);
+        }
+        $prepared = $this->prepareStory($request, $story, $subject);
+
+        $queries = app(AppMaps::class)->table(Str::snake($subject))?->queries;
+        $queries ??= [];
+        $query = collect($queries)->firstWhere('name', $name);
+        if ($query === null) {
+            throw new SystemException("Unknown named query ($subject/$name)", Response::HTTP_NOT_FOUND);
+        }
+        $prepared->plot->requestData['data'] = MapQueryRules::bind($query, $request->all());
+
+        return $this->success($prepared->run($subject));
+    }
+
+    /** The story with the caller's access rule on its subject and joined tables applied. */
+    private function prepareStory(Request $request, string $story, string $subject): AbstractStory
+    {
         $scope = $this->authorizeStory($request, $story, $subject);
         $storyName = $story;
 
@@ -176,7 +210,7 @@ HTML;
             $story->plot->options['join_scope'] = fn (string $joined) => $this->authorizeStory($request, $storyName, $joined);
         }
 
-        return $this->success($story->run($subject, $key));
+        return $story;
     }
 
     /**

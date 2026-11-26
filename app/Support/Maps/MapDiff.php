@@ -17,7 +17,7 @@ class MapDiff
     {
         $diff = ['table' => [], 'added' => [], 'removed' => [], 'changed' => []];
 
-        foreach (['name', 'sql_name', 'description', 'ui', 'access'] as $key) {
+        foreach (['name', 'sql_name', 'description', 'ui', 'access', 'queries'] as $key) {
             $old = $before[$key] ?? null;
             $new = $after[$key] ?? null;
             if ($old !== $new) {

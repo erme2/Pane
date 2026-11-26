@@ -24,7 +24,7 @@ class MapRules
      * numbered by position in the order given).
      *
      * @param  array<string, mixed>  $map
-     * @return array{name: string, sql_name: string|null, description: string|null, ui: array<mixed>|null, access: array<mixed>|null, fields: list<array<string, mixed>>}
+     * @return array{name: string, sql_name: string|null, description: string|null, ui: array<mixed>|null, access: array<mixed>|null, queries: list<array<string, mixed>>|null, fields: list<array<string, mixed>>}
      *
      * @throws InvalidMapException
      */
@@ -49,6 +49,7 @@ class MapRules
         }
 
         $access = self::normalizeAccess($map['access'] ?? null, $map['fields'] ?? [], $errors);
+        $queries = MapQueryRules::normalize($map['queries'] ?? null, $map['fields'] ?? [], $errors);
 
         $fields = $map['fields'] ?? [];
         if (! is_array($fields) || ! array_is_list($fields)) {
@@ -144,6 +145,7 @@ class MapRules
             'description' => $map['description'] ?? null,
             'ui' => $map['ui'] ?? null,
             'access' => $access,
+            'queries' => $queries,
             'fields' => $normalized,
         ];
     }
