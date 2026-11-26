@@ -24,8 +24,8 @@ return new class extends Migration
             function (Blueprint $table) {
                 $table->unsignedInteger('table_id')->autoIncrement();
                 $table->string('name');
-                $table->text('description');
-                $table->boolean('is_active');
+                $table->text('description')->nullable();
+                $table->boolean('is_active')->nullable();
                 $table->timestamp('test_date');
                 $table->json('test_array');
                 $table->string('password');

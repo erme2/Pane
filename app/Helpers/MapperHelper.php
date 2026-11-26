@@ -81,6 +81,13 @@ trait MapperHelper
     public function fillModel(Model $model, array $data): Model
     {
         foreach ($this->getFields($this->name) as $field) {
+            // an explicit null clears a nullable field on an existing row (Pane#242); passwords are never cleared
+            if (array_key_exists($field->name, $data) && $data[$field->name] === null
+                && $model->exists && ! $field->primary && $field->nullable && $field->type !== 'password') {
+                $model->{$field->name} = null;
+
+                continue;
+            }
             if (isset($data[$field->name]) && (! $field->primary)) {
                 switch ($field->type) {
                     case 'array':
@@ -256,6 +263,11 @@ trait MapperHelper
 
             // checking if the field is required (!nullable)
             $array[$field->name] = $this->checkIfRequired($array[$field->name] ?? [], $field);
+
+            // on update a nullable field can be cleared by sending null (Pane#242)
+            if (! $isCreate && ! $field->primary && $field->nullable) {
+                $array[$field->name][] = 'nullable';
+            }
 
             // checking for some more validation rules
             $array[$field->name] = $this->getAdditionalValidationRules($array[$field->name] ?? [], $field);
