@@ -84,6 +84,47 @@ class MemberCreatorTest extends TestCase
         $this->assertDatabaseHas('mcr_list_members', ['list_id' => $listId, 'user_uuid' => $this->owner->uuid]);
     }
 
+    public function test_member_creation_works_when_the_rules_live_only_in_pane_config(): void
+    {
+        // Pane#232: the maps drop `access`; both rules come from config/pane_access.php.
+        $this->saveWithoutAccess();
+        $members = ['table' => 'list_members', 'key' => 'list_id', 'members_key' => 'list_id', 'members_user' => 'user_uuid'];
+        config(['pane_access.tables' => [
+            'lists' => ['members' => $members + ['creator' => 'created_by']],
+            'list_members' => ['members' => $members],
+        ]]);
+
+        $this->actingAs($this->owner);
+        $this->withCsrfToken()->postJson('/crud/lists', ['title' => 'Groceries'])->assertStatus(Response::HTTP_CREATED);
+        $listId = (int) DB::table('mcr_lists')->value('list_id');
+        $this->assertDatabaseHas('mcr_list_members', ['list_id' => $listId, 'user_uuid' => $this->owner->uuid]);
+
+        $this->authenticateAsAdministrator();
+        $this->withCsrfToken()->postJson('/crud/lists', ['title' => 'Admin list'])->assertStatus(Response::HTTP_CREATED);
+        $this->assertSame(2, DB::table('mcr_list_members')->count());
+    }
+
+    private function saveWithoutAccess(): void
+    {
+        $store = app(MapStore::class);
+        $store->saveTable('install', [
+            'name' => 'lists', 'sql_name' => 'mcr_lists',
+            'fields' => [
+                ['name' => 'list_id', 'type' => 'number', 'primary' => true],
+                ['name' => 'title', 'type' => 'string'],
+                ['name' => 'created_by', 'type' => 'string'],
+            ],
+        ], 'test');
+        $store->saveTable('install', [
+            'name' => 'list_members', 'sql_name' => 'mcr_list_members',
+            'fields' => [
+                ['name' => 'list_member_id', 'type' => 'number', 'primary' => true],
+                ['name' => 'list_id', 'type' => 'number'],
+                ['name' => 'user_uuid', 'type' => 'string'],
+            ],
+        ], 'test');
+    }
+
     public function test_a_creator_sent_by_the_client_is_ignored_on_create_and_update(): void
     {
         $this->actingAs($this->owner);

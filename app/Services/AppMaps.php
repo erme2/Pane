@@ -107,7 +107,7 @@ class AppMaps
         return new MemberScope(
             keyField: $key->name,
             keyIsPrimary: $key->primary,
-            membersTableHasRule: $members->access !== null,
+            membersTableHasRule: $this->hasRule($rule['table']),
             membersTable: $this->sqlName($members),
             membersKey: $membersKey->sql_name ?? $membersKey->name,
             membersUser: $membersUser->sql_name ?? $membersUser->name,
