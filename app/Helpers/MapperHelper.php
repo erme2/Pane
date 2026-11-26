@@ -82,9 +82,11 @@ trait MapperHelper
     {
         foreach ($this->getFields($this->name) as $field) {
             // an explicit null clears a nullable field on an existing row (Pane#242); passwords are never cleared
-            if (array_key_exists($field->name, $data) && $data[$field->name] === null
-                && $model->exists && ! $field->primary && $field->nullable && $field->type !== 'password') {
-                $model->{$field->name} = null;
+            $name = $field->getAttribute('name');
+            if (array_key_exists($name, $data) && $data[$name] === null && $model->exists
+                && ! $field->getAttribute('primary') && $field->getAttribute('nullable')
+                && $field->getAttribute('type') !== 'password') {
+                $model->{$name} = null;
 
                 continue;
             }
@@ -265,8 +267,8 @@ trait MapperHelper
             $array[$field->name] = $this->checkIfRequired($array[$field->name] ?? [], $field);
 
             // on update a nullable field can be cleared by sending null (Pane#242)
-            if (! $isCreate && ! $field->primary && $field->nullable) {
-                $array[$field->name][] = 'nullable';
+            if (! $isCreate && ! $field->getAttribute('primary') && $field->getAttribute('nullable')) {
+                $array[$field->getAttribute('name')][] = 'nullable';
             }
 
             // checking for some more validation rules
