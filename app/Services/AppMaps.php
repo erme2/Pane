@@ -83,7 +83,7 @@ class AppMaps
     public function memberScope(string $subject, User $user): ?MemberScope
     {
         $map = $this->table($subject);
-        $rule = $map?->access['members'] ?? null;
+        $rule = $this->rule($subject, $map, 'members');
         if ($map === null || ! is_array($rule)) {
             return null;
         }
@@ -128,7 +128,7 @@ class AppMaps
     public function ownerScope(string $subject, User $user): ?OwnerScope
     {
         $map = $this->table($subject);
-        $rule = $map?->access['owner'] ?? null;
+        $rule = $this->rule($subject, $map, 'owner');
         if ($map === null || ! is_array($rule)) {
             return null;
         }
@@ -142,6 +142,57 @@ class AppMaps
         }
 
         return new OwnerScope($key->name, (string) $user->uuid);
+    }
+
+    /**
+     * True when Pane's own rules give the subject the shared-read rule (Pane#232):
+     * any signed-in user reads every row, only administrators write.
+     */
+    public function hasReadRule(string $subject): bool
+    {
+        return $this->table($subject) !== null && ($this->paneRules($subject)['read'] ?? false) === true;
+    }
+
+    /**
+     * True when Pane or the table's map has an access rule for the subject.
+     */
+    public function hasRule(string $subject): bool
+    {
+        $map = $this->table($subject);
+        if ($map === null) {
+            return false;
+        }
+
+        return $this->hasReadRule($subject)
+            || $this->rule($subject, $map, 'members') !== null
+            || $this->rule($subject, $map, 'owner') !== null;
+    }
+
+    /**
+     * One rule kind of a subject. Pane's own rules (config/pane_access.php) win
+     * over the map's `access`, which is honoured only until the maps drop it.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function rule(string $subject, ?MapTable $map, string $kind): ?array
+    {
+        $own = $this->paneRules($subject);
+        if ($own !== []) {
+            return is_array($own[$kind] ?? null) ? $own[$kind] : null;
+        }
+        $rule = $map?->access[$kind] ?? null;
+
+        return is_array($rule) ? $rule : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function paneRules(string $subject): array
+    {
+        $rules = config('pane_access.tables.'.$subject);
+
+        return is_array($rules) ? $rules : [];
     }
 
     private function column(MapTable $map, string $name): ?MapField

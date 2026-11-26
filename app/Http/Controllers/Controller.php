@@ -221,8 +221,15 @@ HTML;
         }
 
         $scope = $user instanceof User ? app(AppMaps::class)->memberScope($subject, $user) : null;
-        if ($scope === null && in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT, Request::METHOD_DELETE], true)) {
-            throw new SystemException("Forbidden CRUD mutation ($subject)", Response::HTTP_FORBIDDEN);
+        if ($scope === null) {
+            $isWrite = in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT, Request::METHOD_DELETE], true);
+            if ($isWrite) {
+                throw new SystemException("Forbidden CRUD mutation ($subject)", Response::HTTP_FORBIDDEN);
+            }
+            // A table with no access rule is refused, reads included (Pane#232).
+            if (! app(AppMaps::class)->hasReadRule($subject)) {
+                throw new SystemException("No access rule for CRUD subject ($subject)", Response::HTTP_FORBIDDEN);
+            }
         }
 
         return $scope;

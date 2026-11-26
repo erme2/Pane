@@ -29,9 +29,17 @@ class CrudAuthorizationTest extends TestCase
             ->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
-    public function test_authenticated_user_can_read_non_system_subject(): void
+    public function test_authenticated_user_cannot_read_a_subject_without_an_access_rule(): void
     {
         $this->authenticateAsUser();
+
+        $this->getJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1')
+            ->assertStatus(Response::HTTP_FORBIDDEN);
+    }
+
+    public function test_administrator_can_read_a_subject_without_an_access_rule(): void
+    {
+        $this->authenticateAsAdministrator();
 
         $this->getJson('/crud/'.AbstractMapper::TABLES['test_table'].'/1')
             ->assertStatus(Response::HTTP_OK);
