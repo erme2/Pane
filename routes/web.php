@@ -105,6 +105,7 @@ Route::get('/auth/user', [WorkOsAuthController::class, 'user'])->middleware('aut
 
 // all stories (crud)
 Route::middleware('auth:device,web')->group(function () {
+    Route::get('/{story}/{subject}/queries/{name}', [Controller::class, 'runNamedQuery']);
     Route::match(['get', 'post'], '/{story}/{subject}', [Controller::class, 'runStory']);
     Route::match(['get', 'put', 'delete'], '/{story}/{subject}/{key}', [Controller::class, 'runStory']);
 });

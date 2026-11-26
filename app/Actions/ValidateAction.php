@@ -14,6 +14,7 @@ use App\Support\Maps\MemberScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 /**
  * Class ValidateAction
@@ -48,9 +49,13 @@ class ValidateAction extends AbstractAction
         if (! $this->isCreate($plot)) {
             $plot->requestData['data'][$this->getModel($subject)->getKeyName()] = $key;
         }
+        $rules = $mapper->getValidationRules($this->isCreate($plot));
+        if (! $this->isCreate($plot)) {
+            $rules = $this->ignoreCurrentRowInUniqueRules($rules, $key, $this->getModel($subject)->getKeyName());
+        }
         $errors = Validator::make(
             $plot->requestData['data'],
-            $mapper->getValidationRules($this->isCreate($plot)),
+            $rules,
             $mapper->getValidationMessages($this->isCreate($plot))
         )->errors();
 
@@ -61,6 +66,35 @@ class ValidateAction extends AbstractAction
         $this->screenText($subject, $plot->requestData['data']);
 
         return $plot;
+    }
+
+    /**
+     * A unique rule on update must not count the row being edited, or saving
+     * it unchanged would be refused as already taken (Pane#240). Only the
+     * literal `unique:table,column` rules that MapperHelper emits are changed.
+     */
+    private function ignoreCurrentRowInUniqueRules(array $rules, mixed $key, ?string $keyName): array
+    {
+        if ($key === null || $keyName === null) {
+            return $rules;
+        }
+
+        foreach ($rules as $field => $fieldRules) {
+            $parts = is_string($fieldRules) ? explode('|', $fieldRules) : (array) $fieldRules;
+            foreach ($parts as $index => $part) {
+                if (! is_string($part) || ! str_starts_with($part, 'unique:')) {
+                    continue;
+                }
+                $arguments = explode(',', substr($part, strlen('unique:')));
+                if (count($arguments) !== 2) {
+                    continue;
+                }
+                $parts[$index] = Rule::unique($arguments[0], $arguments[1])->ignore($key, $keyName);
+            }
+            $rules[$field] = $parts;
+        }
+
+        return $rules;
     }
 
     /**

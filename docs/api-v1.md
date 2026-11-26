@@ -270,6 +270,37 @@ Filters, sort and count all run inside the table's access rule (members or owner
 they can only ever reach rows the caller may read, and `pagination.total` counts the
 filtered rows.
 
+### Named queries (Pane#225)
+
+A table map can carry `queries`: filters, a sort and a join described once, with typed
+parameters, that a client calls by name (stored with the table map, so saved, versioned
+and diffed with it; `app:install` loads them from the maps file):
+
+```json
+{"name": "open_from", "description": "Items not done, from a position on",
+ "params": [{"name": "position", "type": "integer"}, {"name": "done", "type": "boolean", "default": false}],
+ "filter": [{"field": "position", "op": "gte", "param": "position"}, {"field": "done", "param": "done"}],
+ "sort": "-position", "join": null}
+```
+
+- A parameter has a `name` and a `type`: `string` (at most 255 characters), `integer`,
+  `boolean` (`true`, `false`, `1`, `0`), `date` (`YYYY-MM-DD`) or `record` (a record id:
+  letters, digits, `_`, `-`). It is required unless it has a `default`.
+- A filter condition has a `field` (a field of the table, or `field.column` of a joined
+  table), an `op` (default `eq`, the operators above) and exactly one of `value` (a
+  literal) or `param` (a declared parameter). One condition per field and operator.
+  `sort` and `join` follow the rules of the list query language. A map that breaks any of
+  this is refused when saved.
+- Run it with `GET /crud/<table>/queries/<name>?params[<name>]=<value>`. The answer is a
+  list answer (rows, `pagination`), and `limit`, `page`, `order` and `count=only` work as
+  on a list. Any other `filter`, `sort` or `join` of the request is ignored, so a caller
+  cannot widen a query. A missing required, unknown or mistyped parameter is a `400`; an
+  unknown table or query is a `404`.
+- The query becomes the same list request, so the table's access rule (members or owner)
+  applies per row on every run, and values are always bound, never put into SQL.
+- `GET /api/v1/maps/<source>/<table>` lists each query's `name`, `description` and
+  `params` (not its filters).
+
 ## Success, pagination and concurrency
 
 ```json

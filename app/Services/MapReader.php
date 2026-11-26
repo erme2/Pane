@@ -69,7 +69,7 @@ class MapReader
     }
 
     /**
-     * @return array{source: string, table: string, description: string|null, system: bool, version: int, ui: array<mixed>|null, fields: list<array<string, mixed>>}
+     * @return array{source: string, table: string, description: string|null, system: bool, version: int, ui: array<mixed>|null, queries: list<array<string, mixed>>, fields: list<array<string, mixed>>}
      *
      * @throws MapNotFoundException
      */
@@ -85,6 +85,11 @@ class MapReader
 
         return [
             ...$this->summary($source, $map),
+            // Name and parameters only: how a query filters is the server's business.
+            'queries' => array_map(
+                fn (array $query): array => ['name' => $query['name'], 'description' => $query['description'] ?? null, 'params' => $query['params'] ?? []],
+                $map->queries ?? [],
+            ),
             'fields' => $map->fields()->get()->map(fn (MapField $field): array => [
                 'name' => $field->name,
                 'type' => $field->type,
