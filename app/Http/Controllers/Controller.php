@@ -182,10 +182,16 @@ HTML;
         if (strtolower($story) !== 'crud') {
             throw new SystemException("Unknown story ($story)", Response::HTTP_NOT_FOUND);
         }
+
+        // A table without a map has no named queries, so 404 is true for everyone and tells no one
+        // anything; it keeps its 404 ahead of the access rule (Pane#232).
+        $map = app(AppMaps::class)->table(Str::snake($subject));
+        if ($map === null) {
+            throw new SystemException("Unknown named query ($subject/$name)", Response::HTTP_NOT_FOUND);
+        }
         $prepared = $this->prepareStory($request, $story, $subject);
 
-        $queries = app(AppMaps::class)->table(Str::snake($subject))?->queries;
-        $queries ??= [];
+        $queries = $map->queries ?? [];
         $query = collect($queries)->firstWhere('name', $name);
         if ($query === null) {
             throw new SystemException("Unknown named query ($subject/$name)", Response::HTTP_NOT_FOUND);
@@ -255,8 +261,15 @@ HTML;
         }
 
         $scope = $user instanceof User ? app(AppMaps::class)->memberScope($subject, $user) : null;
-        if ($scope === null && in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT, Request::METHOD_DELETE], true)) {
-            throw new SystemException("Forbidden CRUD mutation ($subject)", Response::HTTP_FORBIDDEN);
+        if ($scope === null) {
+            $isWrite = in_array($request->method(), [Request::METHOD_POST, Request::METHOD_PUT, Request::METHOD_DELETE], true);
+            if ($isWrite) {
+                throw new SystemException("Forbidden CRUD mutation ($subject)", Response::HTTP_FORBIDDEN);
+            }
+            // A table with no access rule is refused, reads included (Pane#232).
+            if (! app(AppMaps::class)->hasReadRule($subject)) {
+                throw new SystemException("No access rule for CRUD subject ($subject)", Response::HTTP_FORBIDDEN);
+            }
         }
 
         return $scope;

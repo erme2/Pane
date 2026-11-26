@@ -53,6 +53,14 @@ abstract class TestCase extends BaseTestCase
         'numero' => 55,
     ];
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Pane's own row rules (config/pane_access.php) are Sweegly's; tests that need rules set their own.
+        config(['pane_access.tables' => []]);
+    }
+
     protected function authenticateAsAdministrator(): User
     {
         $user = $this->makePaneUser(1);

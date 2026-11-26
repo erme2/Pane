@@ -34,10 +34,20 @@ Pane currently treats `user_type_id = 1` as the administrator user type.
 | User state | Normal CRUD reads | Normal CRUD mutations | System/meta subjects |
 | --- | --- | --- | --- |
 | Unauthenticated | `401 Unauthorized` | `401 Unauthorized` | `401 Unauthorized` |
-| Authenticated non-admin | Allowed (only own rows on a members-rule table) | `403 Forbidden`, except on a members-rule table (own rows) | `403 Forbidden` |
+| Authenticated non-admin | Allowed only on a table with an access rule (own rows on a members-rule or owner-rule table); a table with no rule answers `403` | `403 Forbidden`, except on a members-rule table (own rows) | `403 Forbidden` |
 | Authenticated administrator | Allowed (only own rows on an owner-rule table) | Allowed (only own rows on an owner-rule table) | Allowed by the authorization layer |
 
 Normal CRUD subjects are application tables such as `test_table`. Mutating operations are `POST`, `PUT`, and `DELETE`.
+
+## Pane's own row rules (Pane#232)
+
+Pane filters every row a signed-in user reads or writes from the session, with rules that Pane owns: `config/pane_access.php`, keyed by table name, changed only by a deploy. A map cannot add, change or remove them.
+
+- Rule kinds: `members` (the same fields as a map's `access.members`, below), `owner` (`{"key": "<field>"}`, below) and `read` (`true`: any signed-in user reads every row, only administrators write; for shared catalogues such as Sweegly's products).
+- A table with no rule is refused to non-administrators, reads included: `403 Forbidden`. Administrators keep access, except to the rows an owner rule hides.
+- Pane's rule for a table wins over the map's `access`. While Pane has no rule for a table, the map's `access` still counts (transition: the maps drop it in a later ticket). A table with neither is refused.
+- Joined tables (`join`) are read through their own rule, so a joined table with no rule is refused as well.
+- `config/pane_access.php` ships the rules of Sweegly's tables, taken from `data/maps/sweegly.json`: `categories`, `products`, `chains`, `shops`, `offers` (`read`), and `lists`, `list_members`, `list_items` (`members`). An install with other tables adds its own entries there.
 
 ## Members rule (one hop)
 
