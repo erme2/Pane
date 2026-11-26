@@ -24,14 +24,14 @@ return new class extends Migration
             function (Blueprint $table) {
                 $table->unsignedInteger('table_id')->autoIncrement();
                 $table->string('name');
-                $table->text('description');
-                $table->boolean('is_active');
-                $table->timestamp('test_date');
+                $table->text('description')->nullable();
+                $table->boolean('is_active')->nullable();
+                $table->timestamp('test_date')->nullable();
                 $table->json('test_array');
                 $table->string('password');
                 $table->string('email');
-                $table->json('test_json');
-                $table->integer('numero');
+                $table->json('test_json')->nullable();
+                $table->integer('numero')->nullable();
             });
         $this->addTableRecord();
         $this->addFieldsRecords();

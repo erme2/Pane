@@ -40,6 +40,13 @@ trait MapperHelper
     {
         $return = new \stdClass;
         foreach ($this->getFields($this->name) as $field) {
+            // a stored NULL is a cleared nullable field: return null rather than coerce it (Pane#242)
+            $name = $field->getAttribute('name');
+            if ($field->getAttribute('type') !== 'password' && $model->getAttribute($name) === null) {
+                $return->{$name} = null;
+
+                continue;
+            }
             switch ($field->type) {
                 case 'array':
                     $return->{$field->name} = json_decode($model->{$field->name}, true, 512, JSON_THROW_ON_ERROR);
@@ -81,6 +88,15 @@ trait MapperHelper
     public function fillModel(Model $model, array $data): Model
     {
         foreach ($this->getFields($this->name) as $field) {
+            // an explicit null clears a nullable field on an existing row (Pane#242); passwords are never cleared
+            $name = $field->getAttribute('name');
+            if (array_key_exists($name, $data) && $data[$name] === null && $model->exists
+                && ! $field->getAttribute('primary') && $field->getAttribute('nullable')
+                && $field->getAttribute('type') !== 'password') {
+                $model->{$name} = null;
+
+                continue;
+            }
             if (isset($data[$field->name]) && (! $field->primary)) {
                 switch ($field->type) {
                     case 'array':
@@ -256,6 +272,11 @@ trait MapperHelper
 
             // checking if the field is required (!nullable)
             $array[$field->name] = $this->checkIfRequired($array[$field->name] ?? [], $field);
+
+            // on update a nullable field can be cleared by sending null (Pane#242)
+            if (! $isCreate && ! $field->getAttribute('primary') && $field->getAttribute('nullable')) {
+                $array[$field->getAttribute('name')][] = 'nullable';
+            }
 
             // checking for some more validation rules
             $array[$field->name] = $this->getAdditionalValidationRules($array[$field->name] ?? [], $field);
