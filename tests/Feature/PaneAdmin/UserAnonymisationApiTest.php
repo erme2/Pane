@@ -50,6 +50,32 @@ class UserAnonymisationApiTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_anonymising_runs_the_personal_data_cleanup_and_audits_a_failed_one(): void
+    {
+        Http::fake(['api.workos.com/user_management/users/*' => Http::response(null, 204)]);
+        $member = $this->makeMember();
+        $firstEvent = (int) AuditEvent::query()->max('audit_event_id');
+        $this->withCsrfToken()->actingAs($member);
+        config()->set('services.posthog.private_key', 'phx_secret');
+        config()->set('services.posthog.host', 'https://eu.posthog.test');
+        Http::fake(['eu.posthog.test/*' => Http::sequence()->push('nope', 500)->push(null, 200)]);
+
+        // PostHog is down: the user is still anonymised and the request still succeeds.
+        $this->deleteUser($member)->assertNoContent();
+
+        $this->assertAnonymised($member->fresh());
+        $this->assertSame(
+            ['failure'],
+            AuditEvent::query()->where('action', 'user.personal_data_cleanup')->where('audit_event_id', '>', $firstEvent)->where('effective_user_id', $member->getKey())->pluck('outcome')->all(),
+        );
+
+        // Anonymising again repeats the cleanup.
+        app(UserAnonymisationService::class)->anonymise($member->fresh(), $member->fresh());
+
+        $outcomes = AuditEvent::query()->where('action', 'user.personal_data_cleanup')->where('audit_event_id', '>', $firstEvent)->where('effective_user_id', $member->getKey())->pluck('outcome')->sort()->values()->all();
+        $this->assertSame(['failure', 'success'], $outcomes);
+    }
+
     public function test_member_cannot_sign_in_again_after_anonymisation(): void
     {
         Http::fake(['api.workos.com/user_management/users/*' => Http::response(null, 204)]);

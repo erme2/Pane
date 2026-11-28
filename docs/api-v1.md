@@ -149,6 +149,12 @@ transaction blanks the user, revokes and redacts the user's invitations
 email later creates a new user. The audit event `user.anonymise` carries only
 the anonymised user's id.
 
+- After the user is anonymised, Pane cleans the install's own data and removes
+  the person from PostHog ([Personal data cleanup](personal-data.md)). A failure
+  there doesn't undo the anonymisation or change the `204`: it is logged and
+  recorded as the audit event `user.personal_data_cleanup` with outcome
+  `failure`, and anonymising the user again (or `php artisan
+  personal-data:clean <uuid>`) repeats it.
 - It is idempotent: an anonymised user returns `204` again without calling WorkOS.
 - If WorkOS fails, nothing changes in Pane and the call returns
   `503 dependency_unavailable`; repeat it. A WorkOS user that no longer exists

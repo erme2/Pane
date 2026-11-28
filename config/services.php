@@ -41,6 +41,12 @@ return [
         'connection_id' => env('WORKOS_CONNECTION_ID'),
     ],
 
+    // Server-side only: the private key never goes to an app bundle or a log (sweegly#49).
+    'posthog' => [
+        'private_key' => env('POSTHOG_PRIVATE_KEY'),
+        'host' => env('POSTHOG_HOST'),
+    ],
+
     'latte' => [
         'application_id' => env('LATTE_APPLICATION_ID', '00000000-0000-4000-8000-000000000001'),
         'frontend_url' => env('FRONTEND_URL', 'https://latte.localhost'),

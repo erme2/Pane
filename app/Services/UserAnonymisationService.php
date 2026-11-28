@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\PersonalDataCleanupException;
 use App\Exceptions\UserAnonymisationException;
 use App\Models\AuditEvent;
 use App\Models\DeviceToken;
@@ -33,6 +34,7 @@ class UserAnonymisationService
     public function __construct(
         private readonly AuditEventService $audit,
         private readonly WorkOsService $workOs,
+        private readonly PersonalDataCleaner $personalData,
     ) {}
 
     /**
@@ -48,10 +50,13 @@ class UserAnonymisationService
         $current = User::query()->findOrFail($target->getKey());
 
         if ($this->isAnonymised($current)) {
+            // Anonymising again is how a cleanup that failed the first time gets retried.
+            $this->cleanPersonalData($actor, $current);
+
             return $current;
         }
 
-        return DB::transaction(function () use ($actor, $current): User {
+        $anonymised = DB::transaction(function () use ($actor, $current): User {
             // Lock every active administrator row first, so two overlapping erasures take turns
             // and the last-administrator check below sees the other one's result. The lock is held
             // across the WorkOS call on purpose: the check must cover the identity deletion.
@@ -89,11 +94,37 @@ class UserAnonymisationService
 
             return $locked;
         });
+
+        $this->cleanPersonalData($actor, $anonymised);
+
+        return $anonymised;
     }
 
     public function isAnonymised(User $user): bool
     {
         return filled(data_get($user->details, 'anonymised_at'));
+    }
+
+    /**
+     * The install's own data (sweegly#49). The user is anonymised for good by now, so a failure
+     * here must not undo that or tell the user to retry: it is logged, audited, and repeated by
+     * `php artisan personal-data:clean <uuid>` or by anonymising the user again.
+     */
+    private function cleanPersonalData(User $actor, User $user): void
+    {
+        $outcome = AuditEvent::OUTCOME_SUCCESS;
+        try {
+            $this->personalData->clean($user);
+        } catch (PersonalDataCleanupException $exception) {
+            $outcome = AuditEvent::OUTCOME_FAILURE;
+            report($exception);
+        }
+
+        $this->audit->record('user.personal_data_cleanup', $outcome, [
+            'real_actor' => $actor->is($user) ? $user : $actor,
+            'effective_user' => $user,
+            'resource_ids' => ['user_id' => $user->getKey()],
+        ]);
     }
 
     private function assertMayAnonymise(User $actor, User $target): void
