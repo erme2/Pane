@@ -28,6 +28,10 @@ class ReadAction extends AbstractAction
 
     private const JOIN_MAX = 3;
 
+    private const SEARCH_MAX_LENGTH = 200;
+
+    private const SEARCH_TYPES = ['string', 'text'];
+
     private const SQL_OPERATORS = ['eq' => '=', 'ne' => '<>', 'gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<='];
 
     /**
@@ -78,10 +82,11 @@ class ReadAction extends AbstractAction
             }
             $pagination = $this->getPaginationData($plot, $subject, $joinSortable);
             $filters = $this->getFilters($plot, $subject, $joins);
+            $search = $this->getSearch($plot, $subject);
             $countOnly = $this->isCountOnly($plot);
             if ($joins === []) {
                 if (! $countOnly) {
-                    $query = $this->applyFilters($this->scopedQuery($model, $plot), $filters)
+                    $query = $this->applySearch($this->applyFilters($this->scopedQuery($model, $plot), $filters), $search)
                         ->limit($pagination['limit'])
                         ->offset($pagination['offset']);
                     foreach ($pagination['sorts'] as [$field, $direction]) {
@@ -93,9 +98,9 @@ class ReadAction extends AbstractAction
                         $plot->data[] = $mapper->extractFromModel($record);
                     }
                 }
-                $pagination['total'] = $this->applyFilters($this->scopedQuery($model, $plot), $filters)->count();
+                $pagination['total'] = $this->applySearch($this->applyFilters($this->scopedQuery($model, $plot), $filters), $search)->count();
             } else {
-                $build = fn () => $this->applyFilters($this->joinedQuery($model, $plot, $joins), $filters);
+                $build = fn () => $this->applySearch($this->applyFilters($this->joinedQuery($model, $plot, $joins), $filters), $search);
                 if (! $countOnly) {
                     $query = $build()->select('b.*')->limit($pagination['limit'])->offset($pagination['offset']);
                     foreach ($joins as $join) {
@@ -188,6 +193,54 @@ class ReadAction extends AbstractAction
         }
 
         return $parsed;
+    }
+
+    /**
+     * The `q` of a list request: one search term, at most 200 characters; an empty one is no search.
+     * It matches (case-insensitive substring, literal) any string or text column of the table, never a
+     * password, and combines with the filters by AND.
+     *
+     * @return array{columns: list<string>, term: string}|null
+     *
+     * @throws ValidationException
+     */
+    private function getSearch(StoryPlot $plot, string $subject): ?array
+    {
+        $term = $plot->requestData['data']['q'] ?? null;
+        if ($term === null || $term === '') {
+            return null;
+        }
+        if (! is_string($term)) {
+            throw new ValidationException(['q' => ['The search must be q=text']]);
+        }
+        if (mb_strlen($term) > self::SEARCH_MAX_LENGTH) {
+            throw new ValidationException(['q' => ['The search must be at most '.self::SEARCH_MAX_LENGTH.' characters']]);
+        }
+        $columns = $this->getMapper($subject)->getFields($subject)
+            ->whereIn('type', self::SEARCH_TYPES)->pluck('name')->values()->all();
+
+        return ['columns' => $columns, 'term' => $term];
+    }
+
+    /**
+     * @param  array{columns: list<string>, term: string}|null  $search
+     */
+    private function applySearch(Builder|QueryBuilder $query, ?array $search): Builder|QueryBuilder
+    {
+        if ($search === null) {
+            return $query;
+        }
+        $joined = $query instanceof QueryBuilder;
+        $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search['term']).'%';
+
+        // No text column: nothing can match.
+        return $query->where(function ($group) use ($search, $joined, $like): void {
+            $group->whereRaw('1 = 0');
+            foreach ($search['columns'] as $name) {
+                $column = $group->getGrammar()->wrap($joined ? $this->qualify($name) : $name);
+                $group->orWhereRaw($column." like ? escape '!'", [$like]);
+            }
+        });
     }
 
     /**

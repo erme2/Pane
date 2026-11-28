@@ -190,6 +190,52 @@ class QueryLanguageTest extends TestCase
         ];
     }
 
+    public function test_search_matches_text_columns_case_insensitively_and_literally(): void
+    {
+        $this->assertSame(['Bread'], $this->titles('q=BREA'));
+        $this->assertSame(['100% juice'], $this->titles('q=%25'));
+        $this->assertSame([], $this->titles('q=_'));
+        $this->assertSame([], $this->titles('q=nothing-like-this'));
+        $this->assertSame(['Dates', 'Apples'], $this->titles('q=s&sort=-title&filter[position][in]=1,4'));
+    }
+
+    public function test_search_never_matches_a_password_column(): void
+    {
+        DB::table('ql_items')->where('title', 'Dates')->update(['secret' => 'hunter2']);
+
+        $this->assertSame([], $this->titles('q=hunter2'));
+    }
+
+    public function test_search_combines_with_filters_paging_and_the_total(): void
+    {
+        $this->assertSame(['Cheese', 'Dates'], $this->titles('q=s&sort=title&filter[position][gte]=2'));
+
+        $first = $this->getJson('/crud/items?q=s&sort=title&limit=2&page=1')->assertOk()
+            ->assertJsonPath('pagination.total', 3)->assertJsonPath('pagination.pages', 2);
+        $second = $this->getJson('/crud/items?q=s&sort=title&limit=2&page=2')->assertOk()->assertJsonPath('pagination.total', 3);
+        $this->assertSame(['Apples', 'Cheese'], $first->collect('data')->pluck('title')->all());
+        $this->assertSame(['Dates'], $second->collect('data')->pluck('title')->all());
+        $this->getJson('/crud/items?q=s&count=only')->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('pagination.total', 3);
+    }
+
+    public function test_an_empty_search_is_no_search(): void
+    {
+        $this->assertCount(5, $this->titles('q='));
+    }
+
+    public function test_search_never_reaches_another_users_rows(): void
+    {
+        $this->assertSame([], $this->titles('q=Hidd'));
+        $this->getJson('/crud/items?count=only&q=Hidden')->assertOk()->assertJsonPath('pagination.total', 0);
+    }
+
+    public function test_search_length_limit_and_shape(): void
+    {
+        $this->getJson('/crud/items?q='.str_repeat('s', 200))->assertOk();
+        $this->getJson('/crud/items?q='.str_repeat('s', 201))->assertStatus(400);
+        $this->getJson('/crud/items?q[]=a')->assertStatus(400);
+    }
+
     public function test_injection_in_values_is_only_ever_data(): void
     {
         $this->assertSame([], $this->titles('filter[title]='.urlencode("' OR '1'='1")));
