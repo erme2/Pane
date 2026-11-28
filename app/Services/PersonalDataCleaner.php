@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\PersonalDataCleanupException;
+use App\Exceptions\PostHogDeletionException;
 use App\Models\Maps\MapSource;
 use App\Models\Maps\MapTable;
 use App\Models\User;
@@ -52,8 +53,9 @@ class PersonalDataCleaner
         } catch (PersonalDataCleanupException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            // The database message can echo row values.
-            throw new PersonalDataCleanupException('The personal data could not be cleaned. Nothing was changed; try again.', 0, $exception);
+            // The database message can echo row values (interpolated SQL with the uuid), and
+            // loggers serialise the previous exception, so it is not chained.
+            throw new PersonalDataCleanupException('The personal data could not be cleaned. Nothing was changed; try again.');
         }
 
         return ['tables' => $tables, 'posthog' => $this->deletePostHogPerson($uuid)];
@@ -91,6 +93,8 @@ class PersonalDataCleaner
             case 'soft_delete':
                 $deletedAt = $this->column($map, (string) $rule['deleted_at']);
                 $this->softDeleteCascade($map, $rule, $owner, $deletedAt, $uuid);
+                // Coarsen first, while the rows still match the owner, active and soft deleted alike.
+                $this->coarsen($map, $rule, $own);
                 // Only rows not already deleted, so a retry does not move the deletion date.
                 $count = $own()->whereNull($deletedAt)->update([
                     ...$this->blanks($map, $rule),
@@ -226,7 +230,7 @@ class PersonalDataCleaner
 
         try {
             $this->postHog->deletePerson($uuid);
-        } catch (HttpClientException) {
+        } catch (HttpClientException|PostHogDeletionException) {
             // Never carry the provider's message or the key.
             throw new PersonalDataCleanupException('PostHog could not delete the person. The database was cleaned; try again.');
         }

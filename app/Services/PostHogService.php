@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\PostHogDeletionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
@@ -21,12 +22,13 @@ class PostHogService
      * Safe to repeat: PostHog answers the same for a person that is already gone.
      *
      * @throws RequestException
+     * @throws PostHogDeletionException when PostHog answers 202 with deletion_errors
      */
     public function deletePerson(string $distinctId): void
     {
         $host = rtrim((string) config('services.posthog.host'), '/');
 
-        Http::withToken((string) config('services.posthog.private_key'))
+        $response = Http::withToken((string) config('services.posthog.private_key'))
             ->acceptJson()
             ->asJson()
             ->timeout(15)
@@ -36,5 +38,11 @@ class PostHogService
                 'delete_recordings' => true,
             ])
             ->throw();
+
+        // A 202 can still carry failures; the status alone is not a success.
+        $errors = $response->json('deletion_errors');
+        if (! empty($errors)) {
+            throw new PostHogDeletionException('PostHog reported errors while deleting the person.');
+        }
     }
 }

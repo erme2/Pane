@@ -52,7 +52,7 @@ If either is unset the job skips PostHog and says so (`posthog: skipped` in the 
 
 ## Failure and retry
 
-The cleanup runs right after the user is anonymised. If it fails, the user stays anonymised and the request still succeeds, because the user can no longer sign in to retry. The failure is logged, and recorded as the audit event `user.personal_data_cleanup` with outcome `failure` (success is recorded too). Repeat it with:
+The cleanup runs right after the user is anonymised. If it fails, the user stays anonymised and the request still succeeds, because the user can no longer sign in to retry. The failure is logged, and recorded as the audit event `user.personal_data_cleanup` with outcome `failure` (success is recorded too). A PostHog answer of `202` with a non-empty `deletion_errors` also counts as a failure, not a success. The failure carries no provider text, no user id and no chained database exception, so nothing in the logs points back at the person. Repeat it with:
 
 ```bash
 php artisan personal-data:clean <uuid>

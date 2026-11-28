@@ -64,6 +64,10 @@ class PersonalDataCleanupTest extends TestCase
         $this->assertNotNull($owned->deleted_at);
         $this->assertSame('', $owned->name);
         $this->assertSame(self::NONE, $owned->created_by_membership_id);
+        // The retained row's timestamp is cut to the day, also on a list that was already soft deleted.
+        $this->assertSame('2026-11-20 00:00:00', $owned->seen_at);
+        $this->assertSame('2026-11-02 00:00:00', DB::table('fixt_lists')->where('id', 3)->value('seen_at'));
+        $this->assertSame('2026-11-21 10:11:12', DB::table('fixt_lists')->where('id', 2)->value('seen_at'));
         $kept = DB::table('fixt_lists')->where('id', 2)->first();
         $this->assertNull($kept->deleted_at);
         $this->assertSame('Their list', $kept->name);
@@ -113,6 +117,9 @@ class PersonalDataCleanupTest extends TestCase
             $this->fail('The cleanup should have failed.');
         } catch (PersonalDataCleanupException $exception) {
             $this->assertStringNotContainsString(self::ME, $exception->getMessage());
+            // No chained database exception: its SQL carries the uuid and loggers serialise it.
+            $this->assertNull($exception->getPrevious());
+            $this->assertStringNotContainsString(self::ME, (string) $exception);
         }
         $this->assertSame($before, $this->snapshot());
 
@@ -155,6 +162,26 @@ class PersonalDataCleanupTest extends TestCase
             $this->fail('The cleanup should have failed.');
         } catch (PersonalDataCleanupException $exception) {
             $this->assertStringNotContainsString('phx_secret', $exception->getMessage());
+        }
+
+        $this->assertSame('deleted', $this->cleaner()->clean($this->user())['posthog']);
+    }
+
+    public function test_a_posthog_202_with_deletion_errors_is_a_failure_and_can_be_retried(): void
+    {
+        config()->set('services.posthog.private_key', 'phx_secret');
+        config()->set('services.posthog.host', 'https://eu.posthog.test');
+        Http::fake(['eu.posthog.test/*' => Http::sequence()
+            ->push(['deletion_errors' => [['distinct_id' => self::ME, 'error' => 'phx_secret failed']]], 202)
+            ->push(['deletion_errors' => []], 202)]);
+
+        try {
+            $this->cleaner()->clean($this->user());
+            $this->fail('The cleanup should have failed.');
+        } catch (PersonalDataCleanupException $exception) {
+            $this->assertStringNotContainsString('phx_secret', (string) $exception);
+            $this->assertStringNotContainsString(self::ME, (string) $exception);
+            $this->assertNull($exception->getPrevious());
         }
 
         $this->assertSame('deleted', $this->cleaner()->clean($this->user())['posthog']);
@@ -235,8 +262,9 @@ class PersonalDataCleanupTest extends TestCase
     private function seedRows(): void
     {
         DB::table('fixt_lists')->insert([
-            ['id' => 1, 'name' => 'My secret list', 'created_by_membership_id' => self::ME, 'deleted_at' => null],
-            ['id' => 2, 'name' => 'Their list', 'created_by_membership_id' => self::OTHER, 'deleted_at' => null],
+            ['id' => 1, 'name' => 'My secret list', 'created_by_membership_id' => self::ME, 'deleted_at' => null, 'seen_at' => '2026-11-20 09:15:42'],
+            ['id' => 2, 'name' => 'Their list', 'created_by_membership_id' => self::OTHER, 'deleted_at' => null, 'seen_at' => '2026-11-21 10:11:12'],
+            ['id' => 3, 'name' => '', 'created_by_membership_id' => self::ME, 'deleted_at' => '2026-11-01 08:00:00', 'seen_at' => '2026-11-02 07:06:05'],
         ]);
         DB::table('fixt_list_members')->insert([
             ['id' => 1, 'list_id' => 1, 'membership_id' => self::ME],
@@ -265,6 +293,7 @@ class PersonalDataCleanupTest extends TestCase
             $table->string('name');
             $table->string('created_by_membership_id', 36);
             $table->dateTime('deleted_at')->nullable();
+            $table->dateTime('seen_at')->nullable();
         });
         Schema::create('fixt_list_members', function (Blueprint $table): void {
             $table->unsignedBigInteger('id')->primary();
@@ -303,8 +332,9 @@ class PersonalDataCleanupTest extends TestCase
                 ['name' => 'name', 'type' => 'string'],
                 ['name' => 'created_by_membership_id', 'type' => 'string'],
                 ['name' => 'deleted_at', 'type' => 'date', 'nullable' => true],
+                ['name' => 'seen_at', 'type' => 'date', 'nullable' => true],
             ], 'personal_data' => [
-                'owner' => 'created_by_membership_id', 'action' => 'soft_delete', 'deleted_at' => 'deleted_at', 'clear' => ['name'],
+                'owner' => 'created_by_membership_id', 'action' => 'soft_delete', 'deleted_at' => 'deleted_at', 'clear' => ['name'], 'coarsen' => ['seen_at'],
                 'cascade' => [['table' => 'list_items', 'field' => 'list_id', 'deleted_at' => 'deleted_at']],
             ]],
             ['name' => 'list_members', 'sql_name' => 'fixt_list_members', 'fields' => [
