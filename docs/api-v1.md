@@ -256,6 +256,11 @@ aggregates other than count:
   `ne`, `gt`, `gte`, `lt`, `lte`, `in` (comma separated values) or `contains`
   (a literal substring match). Only mapped fields, never passwords; several filters
   combine with AND. An unknown field or operator is a `400`.
+- `q=<text>` (Pane#249) searches every string and text column of the table with one
+  case-insensitive, literal substring match (an OR across the columns, never a password).
+  It combines with the filters (AND), `sort`, `page`, `limit` and `count=only`, and
+  `pagination.total` counts the matches. An empty `q` is no search; more than 200 characters
+  is a `400`. The access rule of the table applies as on a list without a search.
 - `sort=<field>[,<field>]` sorts on at most 2 sortable fields (a `-` prefix sorts that
   field descending; `order=asc|desc` sets the direction of the others). The key breaks
   ties, so pages are stable. More than 2 fields, a password or an unsortable field is a `400`.
