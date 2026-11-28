@@ -243,6 +243,16 @@ HTML;
             throw new SystemException("Forbidden CRUD subject ($subject)", Response::HTTP_FORBIDDEN);
         }
 
+        // The reports rule (Pane#245): everyone files, only administrators read, update the status and nothing else.
+        $reports = $user instanceof User ? app(AppMaps::class)->reportScope($subject, $user, $isAdministrator) : null;
+        if ($reports !== null) {
+            if (! $isAdministrator && $request->method() !== Request::METHOD_POST) {
+                throw $reports->forbidden();
+            }
+
+            return $reports;
+        }
+
         // The owner rule holds for administrators too (Pane#218).
         $owner = $user instanceof User ? app(AppMaps::class)->ownerScope($subject, $user) : null;
         if ($owner !== null) {

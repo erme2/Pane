@@ -11,10 +11,24 @@ class ValidationException extends \Exception
      * The main difference from the default Laravel ValidationException is that
      * this exception returns an array of errors instead of a string.
      */
-    public function __construct(array $errors, int $status = 400)
+    /**
+     * @param  string|null  $errorCode  machine-readable reason (for example `text_rejected`), or null
+     * @param  string|null  $field  the field the reason is about, or null
+     */
+    public function __construct(array $errors, int $status = 400, protected readonly ?string $errorCode = null, protected readonly ?string $field = null)
     {
         $this->errors = $errors;
         parent::__construct('Validation failed', $status);
+    }
+
+    public function getErrorCode(): ?string
+    {
+        return $this->errorCode;
+    }
+
+    public function getField(): ?string
+    {
+        return $this->field;
     }
 
     /**

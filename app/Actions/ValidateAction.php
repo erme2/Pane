@@ -11,6 +11,8 @@ use App\Services\AuditEventService;
 use App\Services\TextScreener;
 use App\Stories\StoryPlot;
 use App\Support\Maps\MemberScope;
+use App\Support\Maps\OwnerScope;
+use App\Support\Maps\ReportScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -43,6 +45,15 @@ class ValidateAction extends AbstractAction
         $scope = $this->memberScope($plot);
         if ($scope instanceof MemberScope) {
             $plot->requestData['data'] = $scope->withCreator($plot->requestData['data']);
+        }
+        // the reporter and the status of a new report are Pane's too (Pane#245)
+        if ($scope instanceof ReportScope && $this->isCreate($plot)) {
+            $plot->requestData['data'] = $scope->withStamp($plot->requestData['data']);
+        }
+
+        // so is the blocker of a new block: set from the session, whatever the client sent (Pane#245)
+        if ($scope instanceof OwnerScope && $this->isCreate($plot)) {
+            $plot->requestData['data'] = $scope->withStamp($plot->requestData['data']);
         }
 
         // if it's an update we need to add the primary key to the data array
@@ -133,7 +144,7 @@ class ValidateAction extends AbstractAction
             'metadata' => ['reasons' => $rejected],
         ]);
 
-        throw new ValidationException($errors, Response::HTTP_UNPROCESSABLE_ENTITY);
+        throw new ValidationException($errors, Response::HTTP_UNPROCESSABLE_ENTITY, 'text_rejected', (string) array_key_first($errors));
     }
 
     /**

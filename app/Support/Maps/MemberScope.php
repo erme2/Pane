@@ -37,6 +37,13 @@ final class MemberScope implements RowScope
         public readonly ?string $creatorField = null,
         /** True for an administrator: no row is hidden or refused, but the creator is still set by Pane. */
         public readonly bool $unrestricted = false,
+        /**
+         * Hides, from a read, the rows written by a member the user blocked in that list (Pane#245):
+         * the author column of this table and the blocks table's name and columns. Null for no hiding.
+         *
+         * @var array{author: string, table: string, list: string, blocker: string, blocked: string}|null
+         */
+        private readonly ?array $hideBlocked = null,
     ) {}
 
     /**
@@ -48,7 +55,7 @@ final class MemberScope implements RowScope
         return new self(
             $this->keyField, $this->keyIsPrimary, $this->membersTableHasRule, $this->membersTable,
             $this->membersKey, $this->membersUser, $this->userUuid, $this->membersRole,
-            $this->readValue, $this->editValue, $this->creatorField, true,
+            $this->readValue, $this->editValue, $this->creatorField, true, null,
         );
     }
 
@@ -113,13 +120,40 @@ final class MemberScope implements RowScope
             return $query;
         }
 
-        return $query->whereIn(
+        $query->whereIn(
             $this->keyField,
             function ($sub) use ($write): void {
                 $sub->from($this->membersTable)->select($this->membersKey)->where($this->membersUser, $this->userUuid);
                 $this->forRole($sub, $write);
             }
         );
+
+        return $write ? $query : $this->withoutBlocked($query);
+    }
+
+    /**
+     * A block hides the blocked member's rows for the blocker only, in the list the block was made for.
+     *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    private function withoutBlocked(Builder $query): Builder
+    {
+        if ($this->hideBlocked === null) {
+            return $query;
+        }
+        $rule = $this->hideBlocked;
+        $table = $query->getModel()->getTable();
+
+        return $query->whereNotExists(function ($sub) use ($rule, $table): void {
+            $sub->from($rule['table'])
+                ->selectRaw('1')
+                ->where($rule['table'].'.'.$rule['blocker'], $this->userUuid)
+                ->whereColumn($rule['table'].'.'.$rule['list'], $table.'.'.$this->keyField)
+                ->whereColumn($rule['table'].'.'.$rule['blocked'], $table.'.'.$rule['author']);
+        });
     }
 
     /**

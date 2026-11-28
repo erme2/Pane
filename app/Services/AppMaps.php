@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\Maps\MapFieldValidation;
 use App\Support\Maps\MemberScope;
 use App\Support\Maps\OwnerScope;
+use App\Support\Maps\ReportScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
 
@@ -116,7 +117,39 @@ class AppMaps
             readValue: is_array($roleRule) ? (string) $roleRule['read'] : null,
             editValue: is_array($roleRule) ? (string) $roleRule['edit'] : null,
             creatorField: is_string($rule['creator'] ?? null) && $this->column($map, $rule['creator']) !== null ? $rule['creator'] : null,
+            hideBlocked: $this->hideBlocked($subject, $map, $rule['hide_blocked'] ?? null),
         );
+    }
+
+    /**
+     * The block rule of a members rule (Pane#245): `hide_blocked` names this table's author column and a
+     * blocks table (`table`, `list`, `blocker`, `blocked`). Fails closed on a column the maps don't describe.
+     *
+     * @return array{author: string, table: string, list: string, blocker: string, blocked: string}|null
+     *
+     * @throws SystemException
+     */
+    private function hideBlocked(string $subject, MapTable $map, mixed $rule): ?array
+    {
+        if (! is_array($rule)) {
+            return null;
+        }
+        $blocks = $this->table((string) ($rule['table'] ?? ''));
+        $author = $this->column($map, (string) ($rule['author'] ?? ''));
+        $list = $blocks === null ? null : $this->column($blocks, (string) ($rule['list'] ?? ''));
+        $blocker = $blocks === null ? null : $this->column($blocks, (string) ($rule['blocker'] ?? ''));
+        $blocked = $blocks === null ? null : $this->column($blocks, (string) ($rule['blocked'] ?? ''));
+        if ($blocks === null || $author === null || $list === null || $blocker === null || $blocked === null) {
+            throw $this->misconfigured($subject, 'its block rule is not in the maps');
+        }
+
+        return [
+            'author' => $author->name,
+            'table' => $this->sqlName($blocks),
+            'list' => $list->name,
+            'blocker' => $blocker->name,
+            'blocked' => $blocked->name,
+        ];
     }
 
     /**
@@ -141,7 +174,87 @@ class AppMaps
             throw new SystemException('The signed-in user has no uuid', Response::HTTP_FORBIDDEN);
         }
 
-        return new OwnerScope($key->name, (string) $user->uuid);
+        return new OwnerScope($key->name, (string) $user->uuid, $this->ownerMembership($subject, $map, $rule['member_of'] ?? null));
+    }
+
+    /**
+     * The optional `member_of` of an owner rule (Pane#245): the new row names a list (`list`) the user belongs
+     * to, found in a members table (`table`, `members_key`, `members_user`), and may name another member in
+     * `other`. Fails closed on a column the maps don't describe.
+     *
+     * @return array{list: string, table: string, key: string, user: string, other: string|null}|null
+     *
+     * @throws SystemException
+     */
+    private function ownerMembership(string $subject, MapTable $map, mixed $rule): ?array
+    {
+        if (! is_array($rule)) {
+            return null;
+        }
+        $members = $this->table((string) ($rule['table'] ?? ''));
+        $list = $this->column($map, (string) ($rule['list'] ?? ''));
+        $key = $members === null ? null : $this->column($members, (string) ($rule['members_key'] ?? ''));
+        $user = $members === null ? null : $this->column($members, (string) ($rule['members_user'] ?? ''));
+        $other = isset($rule['other']) ? $this->column($map, (string) $rule['other']) : null;
+        if ($members === null || $list === null || $key === null || $user === null || (isset($rule['other']) && $other === null)) {
+            throw new SystemException("The owner rule of $subject cannot be used: its member_of is not in the maps", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return [
+            'list' => $list->name,
+            'table' => $this->sqlName($members),
+            'key' => $key->sql_name ?? $key->name,
+            'user' => $user->sql_name ?? $user->name,
+            'other' => $other?->name,
+        ];
+    }
+
+    /**
+     * The reports rule of a subject for a user (Pane#245), or null when the subject has none. The rule names the
+     * `reporter`, `list`, `status` and `reason` columns, the allowed `reasons`, the `targets` of which exactly one is set, and the `members`
+     * table (`table`, `members_key`, `members_user`) that says who belongs to a list. Fails closed.
+     *
+     * @throws SystemException
+     */
+    public function reportScope(string $subject, User $user, bool $administrator): ?ReportScope
+    {
+        $map = $this->table($subject);
+        $rule = $this->rule($subject, $map, 'reports');
+        if ($map === null || ! is_array($rule)) {
+            return null;
+        }
+
+        $members = $this->table((string) ($rule['members']['table'] ?? ''));
+        $reporter = $this->column($map, (string) ($rule['reporter'] ?? ''));
+        $list = $this->column($map, (string) ($rule['list'] ?? ''));
+        $status = $this->column($map, (string) ($rule['status'] ?? ''));
+        $targets = array_values(array_filter((array) ($rule['targets'] ?? []), 'is_string'));
+        $membersKey = $members === null ? null : $this->column($members, (string) ($rule['members']['members_key'] ?? ''));
+        $membersUser = $members === null ? null : $this->column($members, (string) ($rule['members']['members_user'] ?? ''));
+        $reason = $this->column($map, (string) ($rule['reason'] ?? ''));
+        $reasons = array_values(array_filter((array) ($rule['reasons'] ?? []), 'is_string'));
+        $targetsMapped = $targets !== [] && collect($targets)->every(fn (string $target): bool => $this->column($map, $target) !== null);
+        if ($members === null || $reporter === null || $list === null || $status === null
+            || $membersKey === null || $membersUser === null || ! $targetsMapped || $reason === null || $reasons === []) {
+            throw new SystemException("The reports rule of $subject cannot be used: a column of its rule is not in the maps", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        if (! filled($user->uuid)) {
+            throw new SystemException('The signed-in user has no uuid', Response::HTTP_FORBIDDEN);
+        }
+
+        return new ReportScope(
+            keyField: $reporter->name,
+            listField: $list->name,
+            targets: $targets,
+            statusField: $status->name,
+            membersTable: $this->sqlName($members),
+            membersKey: $membersKey->sql_name ?? $membersKey->name,
+            membersUser: $membersUser->sql_name ?? $membersUser->name,
+            userUuid: (string) $user->uuid,
+            administrator: $administrator,
+            reasonField: $reason->name,
+            reasons: $reasons,
+        );
     }
 
     /**
@@ -165,7 +278,8 @@ class AppMaps
 
         return $this->hasReadRule($subject)
             || $this->rule($subject, $map, 'members') !== null
-            || $this->rule($subject, $map, 'owner') !== null;
+            || $this->rule($subject, $map, 'owner') !== null
+            || $this->rule($subject, $map, 'reports') !== null;
     }
 
     /**

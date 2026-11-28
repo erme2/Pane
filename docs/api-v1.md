@@ -206,7 +206,9 @@ subject and the from and to versions; the full diff stays in `maps_versions`.
   more characters than `PANE_SCREENING_MAX_LENGTH` (default 2000), a long run of one
   character, or a link (per install settings, see `docs/environment.md`). The error
   names the field with the generic message `This text is not allowed.` and never echoes
-  the text. Each refusal writes a `data.text.screened` audit row (denied) with the user,
+  the text. The response also carries `data.code` (`text_rejected`), `data.field` (the
+  field name) and `data.message` (the generic message), so an app can show a friendly
+  message without repeating the text (Pane#245). Each refusal writes a `data.text.screened` audit row (denied) with the user,
   table and field names and the reason, not the text. Unmarked fields are never screened.
   Screening is a first filter, not a safe harbour: reporting, blocking and the risk
   assessment are still needed.

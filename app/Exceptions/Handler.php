@@ -71,6 +71,12 @@ class Handler extends ExceptionHandler
         switch ($e) {
             case $e instanceof ValidationException:
                 $content['data']['errors'] = $e->getErrors();
+                if ($e->getErrorCode() !== null) {
+                    // a friendly, text-free reason the app can show as it is (Pane#245)
+                    $content['data']['code'] = $e->getErrorCode();
+                    $content['data']['field'] = $e->getField();
+                    $content['data']['message'] = $e->getErrors()[0]['message'] ?? 'Validation failed';
+                }
                 break;
             case $e instanceof SystemException:
             default:

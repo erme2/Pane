@@ -49,6 +49,14 @@ Pane filters every row a signed-in user reads or writes from the session, with r
 - Joined tables (`join`) are read through their own rule, so a joined table with no rule is refused as well.
 - `config/pane_access.php` ships the rules of Sweegly's tables, taken from `data/maps/sweegly.json`: `categories`, `products`, `chains`, `shops`, `offers` (`read`), and `lists`, `list_members`, `list_items` (`members`). An install with other tables adds its own entries there.
 
+## Reports and blocks (Pane#245)
+
+Tables for reporting content and blocking members come from maps (erme2/sweegly `data/`); the rules are Pane's, in `config/pane_access.php`. The maps must use the column names the rules name.
+
+- **Reports rule** (`content_reports`: `reports`): any signed-in user creates a row for a list they belong to, with exactly one of the `targets` set (`list_item_id` or `message_id`) and one of the `reasons` (Spam, Abusive or hateful, Sexual content, Personal information, Illegal content, Other); anything else answers `422`, a list they don't belong to `403`. Pane sets the reporter (`reporter_membership_id`) from the session and the status to `open`; the client's values are ignored. Only an administrator reads reports (everyone else gets `403`, reads included) and changes the status to `open` or `closed`: an update is a full row, but every value but the status is ignored and the stored one kept. Nobody deletes a report through the API. The note (up to 500 characters) is the map's `max` rule.
+- **Blocks** (`member_blocks`: `owner` with `member_of`): the owner rule on `blocker_membership_id`, so a blocker reads, creates and deletes (unblocks) only their own rows. Pane sets the blocker from the session on a new row and ignores what the client sent for it. A new row must be for a list the blocker belongs to (`403` otherwise) and name another member in `blocked_membership_id` (`422` when it is the blocker or empty). An update that touches the list or the blocked member is held to the same two checks, so a block cannot be rewritten into one that breaks them.
+- **Hiding blocked content** (`hide_blocked` inside a `members` rule): a read of a table that carries it leaves out the rows whose author column holds a member the signed-in user blocked in that row's list. Only the blocker sees the difference; writes and administrators are not filtered. The rule is not switched on for `list_items` yet: it needs an author column on that table (and on the messages table), which comes with the maps of erme2/sweegly#41.
+
 ## Members rule (one hop)
 
 A table map can carry an `access` rule that opens the table to signed-in members (Pane#185). The rule names a members table and the columns that connect a row to it:
