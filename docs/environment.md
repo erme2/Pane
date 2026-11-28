@@ -90,6 +90,7 @@ php artisan key:generate --force
 
 ## WorkOS And Latte
 
+- `POSTHOG_PRIVATE_KEY` and `POSTHOG_HOST` let the personal-data cleanup delete an anonymised user's PostHog person. Server-side secrets, never printed or committed; when either is empty the cleanup skips PostHog. See [Personal data cleanup](personal-data.md).
 - `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_PROVIDER`, `WORKOS_ORGANIZATION_ID`, and `WORKOS_CONNECTION_ID` configure WorkOS AuthKit for Pane.
 - `FRONTEND_URL` is the trusted Latte origin Pane uses for v1 session application projection and CORS.
 - `LATTE_REDIRECT_URIS` is a comma-separated list of exact, normalized Latte return URLs that v1 login intents may use.

@@ -49,7 +49,7 @@ No table is created or altered outside the migration files: the command itself o
 ```
 
 - `source` is optional and can only be `install`.
-- Each table is a table map in the format of the maps API (`name`, `sql_name`, `description`, `ui`, and `fields` with `name`, `sql_name`, `type`, `description`, `format`, `primary`, `index`, `sortable`, `nullable`, `default`, `validations`, `computed`, `ui`), checked with the same rules as a map saved through `MapStore`.
+- Each table is a table map in the format of the maps API (`name`, `sql_name`, `description`, `ui`, `access`, `queries`, an optional `personal_data` section (what happens to a table's rows when a user is anonymised, see [Personal data cleanup](personal-data.md)), and `fields` with `name`, `sql_name`, `type`, `description`, `format`, `primary`, `index`, `sortable`, `nullable`, `default`, `validations`, `computed`, `ui`), checked with the same rules as a map saved through `MapStore`.
 - The load is idempotent: a new map is created, a changed map is saved as a new version (author `app:install`), and a map that already matches is left alone.
 - System maps are refused: a `sql_name` under `DB_TABLE_PREFIX` or one of the maps' own tables. A `sql_name` outside `APP_TABLE_PREFIX` is refused too.
 - Every maps file is read and checked before the first migration runs, so an invalid maps file changes nothing.
