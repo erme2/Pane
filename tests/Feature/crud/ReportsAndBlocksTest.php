@@ -224,10 +224,35 @@ class ReportsAndBlocksTest extends TestCase
         $this->actingAs($this->alice);
 
         $as = fn (array $row) => $this->withCsrfToken()->postJson('/crud/blocks', $row);
-        $as(['list_id' => 1, 'blocker' => $this->bob->uuid, 'blocked' => $this->carol->uuid])->assertForbidden();
         $as(['list_id' => 2, 'blocker' => $this->alice->uuid, 'blocked' => $this->carol->uuid])->assertForbidden();
         $as(['list_id' => 1, 'blocker' => $this->alice->uuid, 'blocked' => $this->alice->uuid])->assertUnprocessable();
+        $as(['list_id' => 1])->assertStatus(400);
         $this->assertSame(0, DB::table('rb_blocks')->count());
+    }
+
+    public function test_the_blocker_is_set_from_the_session_whatever_the_client_sent(): void
+    {
+        $this->actingAs($this->alice);
+
+        $this->withCsrfToken()->postJson('/crud/blocks', ['list_id' => 1, 'blocked' => $this->bob->uuid])->assertCreated();
+        $this->withCsrfToken()->postJson('/crud/blocks', ['list_id' => 1, 'blocker' => $this->bob->uuid, 'blocked' => $this->carol->uuid])->assertCreated();
+
+        $this->assertSame(2, DB::table('rb_blocks')->where('blocker', $this->alice->uuid)->count());
+        $this->assertSame(0, DB::table('rb_blocks')->where('blocker', $this->bob->uuid)->count());
+    }
+
+    public function test_a_block_cannot_be_rewritten_into_one_that_breaks_the_rules(): void
+    {
+        DB::table('rb_blocks')->insert(['list_id' => 1, 'blocker' => $this->alice->uuid, 'blocked' => $this->bob->uuid]);
+        $this->actingAs($this->alice);
+
+        $put = fn (array $row) => $this->withCsrfToken()->putJson('/crud/blocks/1', $row);
+        $put(['list_id' => 2, 'blocker' => $this->alice->uuid, 'blocked' => $this->alice->uuid])->assertForbidden();
+        $put(['list_id' => 2, 'blocker' => $this->alice->uuid, 'blocked' => $this->bob->uuid])->assertForbidden();
+        $put(['list_id' => 1, 'blocker' => $this->alice->uuid, 'blocked' => $this->alice->uuid])->assertUnprocessable();
+
+        $row = DB::table('rb_blocks')->first();
+        $this->assertSame([1, $this->alice->uuid, $this->bob->uuid], [(int) $row->list_id, $row->blocker, $row->blocked]);
     }
 
     public function test_a_block_hides_the_blocked_members_rows_for_the_blocker_only(): void

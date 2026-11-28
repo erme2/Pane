@@ -11,6 +11,7 @@ use App\Services\AuditEventService;
 use App\Services\TextScreener;
 use App\Stories\StoryPlot;
 use App\Support\Maps\MemberScope;
+use App\Support\Maps\OwnerScope;
 use App\Support\Maps\ReportScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +48,11 @@ class ValidateAction extends AbstractAction
         }
         // the reporter and the status of a new report are Pane's too (Pane#245)
         if ($scope instanceof ReportScope && $this->isCreate($plot)) {
+            $plot->requestData['data'] = $scope->withStamp($plot->requestData['data']);
+        }
+
+        // so is the blocker of a new block: set from the session, whatever the client sent (Pane#245)
+        if ($scope instanceof OwnerScope && $this->isCreate($plot)) {
             $plot->requestData['data'] = $scope->withStamp($plot->requestData['data']);
         }
 
