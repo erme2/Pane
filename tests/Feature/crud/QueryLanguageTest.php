@@ -199,6 +199,13 @@ class QueryLanguageTest extends TestCase
         $this->assertSame(['Dates', 'Apples'], $this->titles('q=s&sort=-title&filter[position][in]=1,4'));
     }
 
+    public function test_search_is_case_insensitive_for_accented_letters(): void
+    {
+        DB::table('ql_items')->where('title', 'Dates')->update(['title' => 'Éclair']);
+
+        $this->assertSame(['Éclair'], $this->titles('q=éCL'));
+    }
+
     public function test_search_never_matches_a_password_column(): void
     {
         DB::table('ql_items')->where('title', 'Dates')->update(['secret' => 'hunter2']);

@@ -9,6 +9,7 @@ use App\Models\Maps\MapTable;
 use App\Services\AppMaps;
 use App\Stories\StoryPlot;
 use App\Support\Maps\RowScope;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Response;
@@ -233,12 +234,25 @@ class ReadAction extends AbstractAction
         $joined = $query instanceof QueryBuilder;
         $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search['term']).'%';
 
+        // SQLite folds only ASCII case in LIKE: lower both sides with a multibyte-aware function.
+        $connection = $query->getConnection();
+        $fold = $connection instanceof Connection && $connection->getDriverName() === 'sqlite';
+        if ($fold) {
+            $like = mb_strtolower($like);
+            $connection->getPdo()->sqliteCreateFunction(
+                'pane_lower',
+                static fn ($value) => $value === null ? null : mb_strtolower((string) $value),
+                1,
+                \PDO::SQLITE_DETERMINISTIC
+            );
+        }
+
         // No text column: nothing can match.
-        return $query->where(function ($group) use ($search, $joined, $like): void {
+        return $query->where(function ($group) use ($search, $joined, $like, $fold): void {
             $group->whereRaw('1 = 0');
             foreach ($search['columns'] as $name) {
                 $column = $group->getGrammar()->wrap($joined ? $this->qualify($name) : $name);
-                $group->orWhereRaw($column." like ? escape '!'", [$like]);
+                $group->orWhereRaw(($fold ? 'pane_lower('.$column.')' : $column)." like ? escape '!'", [$like]);
             }
         });
     }
