@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Exceptions\ValidationException;
 use App\Helpers\ActionHelper;
 use App\Stories\StoryPlot;
+use App\Support\Maps\ReportScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -35,6 +36,9 @@ class DeleteAction extends AbstractAction
                 } else {
                     $record = $this->scopedQuery($model, $plot, true)->find($key);
                     $scope = $this->memberScope($plot);
+                    if ($scope instanceof ReportScope) {
+                        $scope->assertCanDelete();
+                    }
                     if ($record === null && $scope !== null) {
                         throw $scope->forbidden();
                     }

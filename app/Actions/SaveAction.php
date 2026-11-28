@@ -6,6 +6,7 @@ use App\Exceptions\SystemException;
 use App\Helpers\ActionHelper;
 use App\Stories\StoryPlot;
 use App\Support\Maps\MemberScope;
+use App\Support\Maps\ReportScope;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
@@ -56,6 +57,9 @@ class SaveAction extends AbstractAction
             $scope?->assertCanUpdate($plot->requestData['data'], $record?->{$scope->keyField});
             if ($scope instanceof MemberScope) {
                 $plot->requestData['data'] = $scope->withoutCreator($plot->requestData['data']);
+            }
+            if ($scope instanceof ReportScope && $record !== null) {
+                $plot->requestData['data'] = $scope->onlyStatus($plot->requestData['data'], $record->getAttributes());
             }
         }
         if ($record) {

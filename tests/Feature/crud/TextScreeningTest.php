@@ -72,6 +72,7 @@ class TextScreeningTest extends TestCase
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
         $this->assertStringNotContainsString('fuck', strtolower($response->getContent()));
         $this->assertStringContainsString('body', $response->getContent());
+        $response->assertJsonPath('data.code', 'text_rejected')->assertJsonPath('data.field', 'body');
         $this->assertSame(0, DB::table('tsc_notes')->count());
     }
 
